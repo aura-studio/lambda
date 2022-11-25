@@ -9,9 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Engine struct{}
-
-func (engine *Engine) ServeHTTP(handler func(string, string) string) {
+func ServeHTTP(handler func(string, string) string) {
 	r := gin.Default()
 	r.GET("/*path", func(c *gin.Context) {
 		var dataMap = map[string]interface{}{}
