@@ -3,7 +3,7 @@ module github.com/aura-studio/lambda
 go 1.18
 
 require (
-	github.com/aura-studio/dynamic v1.0.1
+	github.com/aura-studio/dynamic v1.0.2
 	github.com/disiqueira/gotree v1.0.0
 	github.com/frankban/quicktest v1.14.4
 	github.com/gin-gonic/gin v1.8.1
