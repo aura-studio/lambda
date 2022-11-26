@@ -2,14 +2,30 @@ package engine
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"strings"
 
+	"github.com/aura-studio/dynamic"
 	"github.com/aura-studio/lambda/boost/cast"
 	"github.com/gin-gonic/gin"
 )
 
-func ServeHTTP(handler func(string, string) string) {
+func ServeHTTP() {
+	var handler = func(path string, req string) string {
+		strs := strings.Split(path, "/")[1:]
+		name := strings.Join(strs[:2], "_")
+		route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
+
+		tunnel, err := dynamic.GetTunnel(name)
+		if err != nil {
+			panic(err)
+		}
+
+		return tunnel.Invoke(route, req)
+	}
+
 	r := gin.Default()
 	r.GET("/*path", func(c *gin.Context) {
 		var dataMap = map[string]interface{}{}
