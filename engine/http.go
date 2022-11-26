@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/aura-studio/dynamic"
-	"github.com/aura-studio/lambda/boost/cast"
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,7 +41,7 @@ func ServeHTTP() {
 		var rsp string
 		defer func() {
 			if v := recover(); v != nil {
-				log.Printf("Recovered from panic: %s", cast.ToError(v).Error())
+				log.Printf("Recovered from panic: %s", v.(error).Error())
 				c.String(500, "Internal Server Error")
 			} else {
 				c.String(200, rsp)
@@ -61,7 +60,7 @@ func ServeHTTP() {
 		var rsp string
 		defer func() {
 			if v := recover(); v != nil {
-				log.Printf("Recovered from panic: %s", cast.ToError(v).Error())
+				log.Printf("Recovered from panic: %s", v.(error).Error())
 				c.String(500, "Internal Server Error")
 			} else {
 				c.String(200, rsp)
