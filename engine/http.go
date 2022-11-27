@@ -13,20 +13,26 @@ import (
 )
 
 func ServeHTTP() {
-	var handler = func(path string, req string) string {
-		strs := strings.Split(path, "/")[1:]
+	var handler = func(path string, req string) (string, error) {
+		path = strings.TrimPrefix(path, "/")
+		path = strings.TrimSuffix(path, "/")
+		strs := strings.Split(path, "/")
+		if len(strs) < 2 {
+			return "", fmt.Errorf("invalid path")
+		}
 		name := strings.Join(strs[:2], "_")
 		route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
 
 		tunnel, err := dynamic.GetTunnel(name)
 		if err != nil {
-			panic(err)
+			return "", err
 		}
 
-		return tunnel.Invoke(route, req)
+		return tunnel.Invoke(route, req), nil
 	}
 
 	r := gin.Default()
+
 	r.GET("/*path", func(c *gin.Context) {
 		var dataMap = map[string]interface{}{}
 		for k, v := range c.Request.URL.Query() {
@@ -44,12 +50,17 @@ func ServeHTTP() {
 			if v := recover(); v != nil {
 				log.Printf("Recovered from panic: %s\n%s", v.(error).Error(), debug.Stack())
 				c.String(500, "Internal Server Error")
-			} else {
-				c.String(200, rsp)
 			}
 		}()
 
-		rsp = handler(c.Request.URL.Path, string(data))
+		rsp, err = handler(c.Request.URL.Path, string(data))
+		if err != nil {
+			log.Printf("Invoke error: %v", err)
+			c.String(500, err.Error())
+			return
+		}
+
+		c.String(200, rsp)
 	})
 
 	r.POST("/*path", func(c *gin.Context) {
@@ -63,12 +74,17 @@ func ServeHTTP() {
 			if v := recover(); v != nil {
 				log.Printf("Recovered from panic: %s\n%s", v.(error).Error(), debug.Stack())
 				c.String(500, "Internal Server Error")
-			} else {
-				c.String(200, rsp)
 			}
 		}()
 
-		rsp = handler(c.Request.URL.Path, string(data))
+		rsp, err = handler(c.Request.URL.Path, string(data))
+		if err != nil {
+			log.Printf("Invoke error: %v", err)
+			c.String(500, err.Error())
+			return
+		}
+
+		c.String(200, rsp)
 	})
 
 	// listen and serve on 0.0.0.0:8080
