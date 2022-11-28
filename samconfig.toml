@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "lambda-http-server"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-us92bomjfpw4"
+s3_prefix = "lambda-http-server"
+region = "us-west-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = ["GinFunction=615170445210.dkr.ecr.us-west-1.amazonaws.com/lambdahttpserver28913390/ginfunctionbfce9735repo"]
