@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"runtime/debug"
 	"strings"
 
 	"github.com/aura-studio/dynamic"
@@ -47,7 +48,7 @@ func ServeHTTP() {
 		var rsp string
 		defer func() {
 			if v := recover(); v != nil {
-				// log.Printf("Recovered from panic: %s\n%s", v.(error).Error(), debug.Stack())
+				log.Printf("Recovered from panic: %s\n%s", v.(error).Error(), debug.Stack())
 				c.String(200, "Internal Server Error")
 			}
 		}()
@@ -71,14 +72,14 @@ func ServeHTTP() {
 		var rsp string
 		defer func() {
 			if v := recover(); v != nil {
-				// log.Printf("Recovered from panic: %s\n%s", v.(error).Error(), debug.Stack())
+				log.Printf("Recovered from panic: %s\n%s", v.(error).Error(), debug.Stack())
 				c.String(200, "Internal Server Error")
 			}
 		}()
 
 		rsp, err = handler(c.Request.URL.Path, string(data))
 		if err != nil {
-			// log.Printf("Invoke error: %v", err)
+			log.Printf("Invoke error: %v", err)
 			c.String(200, err.Error())
 			return
 		}
