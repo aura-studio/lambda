@@ -14,14 +14,16 @@ import (
 
 func ServeHTTP() {
 	var handler = func(path string, req string) (string, error) {
-		path = strings.TrimPrefix(path, "/")
-		path = strings.TrimSuffix(path, "/")
-		strs := strings.Split(path, "/")
+		strs := strings.Split(strings.Trim(path, "/"), "/")
 		if len(strs) < 2 {
-			return "", fmt.Errorf("invalid path")
+			return "", fmt.Errorf("invalid path: %s", path)
 		}
 		name := strings.Join(strs[:2], "_")
 		route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
+
+		// These environment variables must be set:
+		// S3_REGION/S3_BUCKET/S3_ACCESS_KEY/S3_SECRET_KEY
+		dynamic.MustExists(name)
 
 		tunnel, err := dynamic.GetTunnel(name)
 		if err != nil {

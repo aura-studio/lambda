@@ -6,7 +6,8 @@ RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shangh
     apt update && apt upgrade -y && apt install -y git gcc g++ ca-certificates golang
 
 COPY . .
-ENV GO_DYNAMIC_WAREHOUSE=/lambda/warehouse
+
+ENV GO_DYNAMIC_WAREHOUSE=/tmp/warehouse
 RUN go mod download && go build -o bootstrap ./httpserver
 
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.5.0 /lambda-adapter /opt/extensions/lambda-adapter
