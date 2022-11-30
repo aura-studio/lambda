@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04 as builder
 ENV GOOS=linux
 ENV CGO_ENABLED=1
 RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone && \
@@ -7,4 +7,7 @@ RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shangh
 ARG VERSION=v1.0.0
 RUN	go install github.com/aura-studio/dynamic-cli@${VERSION}
 
-ENTRYPOINT ["/root/go/bin/dynamic-cli"]
+From ubuntu:22.04
+COPY --from=builder /root/go/bin/dynamic-cli /usr/bin/dynamic-cli
+
+ENTRYPOINT ["/usr/bin/dynamic-cli"]
