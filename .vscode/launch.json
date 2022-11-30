@@ -5,11 +5,11 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Example",
+			"name": "HTTP Server",
 			"type": "go",
 			"request": "launch",
 			"mode": "debug",
-			"program": "${workspaceRoot}/example/main",
+			"program": "${workspaceRoot}/httpserver",
 		},
 	]
 }
