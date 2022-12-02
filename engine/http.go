@@ -58,6 +58,11 @@ func ServeHTTP() {
 			return
 		}
 
+		if strings.HasPrefix(rsp, "http") {
+			c.Redirect(302, rsp)
+			return
+		}
+
 		c.String(200, rsp)
 	})
 
@@ -79,6 +84,11 @@ func ServeHTTP() {
 		if err != nil {
 			log.Printf("Invoke error: %v", err)
 			c.String(200, err.Error())
+			return
+		}
+
+		if strings.HasPrefix(rsp, "http") {
+			c.Redirect(302, rsp)
 			return
 		}
 
