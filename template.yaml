@@ -10,14 +10,31 @@ Globals:
     Timeout: 10
 
 Resources:
+  ItemsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      TableName: lambda
+
   GinFunction:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      MemorySize: 128
+      MemorySize: 1792
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ItemsTable
       Events:
         APIEvent:
           Type: HttpApi
+      Environment:
+        Variables:
+          S3_REGION: '{{resolve:ssm:S3_REGION:1}}'
+          S3_BUCKET: '{{resolve:ssm:S3_BUCKET:1}}'
+          S3_ACCESS_KEY: '{{resolve:ssm:S3_ACCESS_KEY:1}}'
+          S3_SECRET_KEY: '{{resolve:ssm:S3_SECRET_KEY:1}}'
     Metadata:
       DockerTag: v1
       DockerContext: .
@@ -27,4 +44,3 @@ Outputs:
   GinApi:
     Description: "API Gateway endpoint URL for Prod stage for Gin function"
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/"
-
