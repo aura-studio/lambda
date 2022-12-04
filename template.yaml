@@ -22,7 +22,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      MemorySize: 1792
+      MemorySize: 512
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ItemsTable
