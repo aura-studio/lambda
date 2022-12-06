@@ -7,34 +7,21 @@ Description: >
 
 Globals:
   Function:
-    Timeout: 10
+    Timeout: 5
 
 Resources:
-  ItemsTable:
-    Type: AWS::Serverless::SimpleTable
-    Properties:
-      PrimaryKey:
-        Name: id
-        Type: String
-      TableName: lambda
-
   GinFunction:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
       MemorySize: 512
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ItemsTable
       Events:
         APIEvent:
           Type: HttpApi
       Environment:
         Variables:
-          S3_REGION: '{{resolve:ssm:S3_REGION:1}}'
-          S3_BUCKET: '{{resolve:ssm:S3_BUCKET:1}}'
-          S3_ACCESS_KEY: '{{resolve:ssm:S3_ACCESS_KEY:1}}'
-          S3_SECRET_KEY: '{{resolve:ssm:S3_SECRET_KEY:1}}'
+          AWS_ACCESS_KEY_ID: '{{resolve:ssm:LAMBDA_AWS_ACCESS_KEY_ID:1}}'
+          AWS_SECRET_ACCESS_KEY: '{{resolve:ssm:LAMBDA_AWS_SECRET_ACCESS_KEY:1}}'
     Metadata:
       DockerTag: v1
       DockerContext: .
