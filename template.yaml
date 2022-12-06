@@ -13,6 +13,9 @@ Resources:
   GinFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Policies:
+        - S3ReadPolicy:
+            BucketName: "{{resolve:ssm:/lambda/go/dynamic/s3-bucket:1}}"
       PackageType: Image
       MemorySize: 512
       Events:
