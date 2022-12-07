@@ -70,7 +70,7 @@ func process(c *gin.Context, req string) {
 			c.Redirect(302, rsp)
 			return
 		}
-		rsp = fmt.Sprintf("Stdout: %s\nStderr: %s\nDebug Error: %s\nHandler Error: %s\nResponse Body: %s", stdout, stderr, debugErr.Error(), err.Error(), rsp)
+		rsp = fmt.Sprintf("Stdout: %s\nStderr: %s\nDebug Error: %v\nHandler Error: %v\nResponse Body: %s", stdout, stderr, debugErr, err, rsp)
 		c.String(200, rsp)
 		return
 	} else {
