@@ -16,7 +16,7 @@ func ServeHTTP() {
 	var handler = func(path string, req string) (string, error) {
 		strs := strings.Split(strings.Trim(path, "/"), "/")
 		if len(strs) < 2 {
-			return "", fmt.Errorf("invalid path: %s", path)
+			return "OK", nil
 		}
 		name := strings.Join(strs[:2], "_")
 		route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))

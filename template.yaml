@@ -21,8 +21,8 @@ Resources:
       Environment:
         Variables:
           CONFIG_REGION: "{{resolve:ssm:/lambda/config/region:1}}"
-          CONFIG_ACCESS: "{{resolve:ssm:/lambda/config/access:1}}"
-          CONFIG_SECRET: "{{resolve:ssm:/lambda/config/secret:1}}"
+          CONFIG_ACCESS_KEY_ID: "{{resolve:ssm:/lambda/config/access_key_id:1}}"
+          CONFIG_SECRET_ACCESS_KEY: "{{resolve:ssm:/lambda/config/secret_access_key:1}}"
           DYNAMIC_LOCAL: "{{resolve:ssm:/lambda/dynamic/local:1}}"
           DYNAMIC_REMOTE: "{{resolve:ssm:/lambda/dynamic/remote:1}}"
     Metadata:

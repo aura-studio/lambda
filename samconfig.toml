@@ -6,7 +6,7 @@ stack_name = "http-server"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-us92bomjfpw4"
 s3_prefix = "http-server"
 region = "us-west-1"
-confirm_changeset = true
+confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
 disable_rollback = true
 image_repositories = ["GinFunction=615170445210.dkr.ecr.us-west-1.amazonaws.com/httpservera058712f/ginfunctionbfce9735repo"]
