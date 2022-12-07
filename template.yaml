@@ -13,9 +13,6 @@ Resources:
   GinFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Policies:
-        - S3ReadPolicy:
-            BucketName: "{{resolve:ssm:/lambda/go/dynamic/s3-bucket:1}}"
       PackageType: Image
       MemorySize: 512
       Events:
@@ -23,8 +20,11 @@ Resources:
           Type: HttpApi
       Environment:
         Variables:
-          GO_DYNAMIC_LOCAL: "{{resolve:ssm:/lambda/go/dynamic/local:1}}"
-          GO_DYNAMIC_REMOTE: "{{resolve:ssm:/lambda/go/dynamic/remote:1}}"
+          CONFIG_REGION: "{{resolve:ssm:/lambda/config/region:1}}"
+          CONFIG_ACCESS: "{{resolve:ssm:/lambda/config/access:1}}"
+          CONFIG_SECRET: "{{resolve:ssm:/lambda/config/secret:1}}"
+          DYNAMIC_LOCAL: "{{resolve:ssm:/lambda/dynamic/local:1}}"
+          DYNAMIC_REMOTE: "{{resolve:ssm:/lambda/dynamic/remote:1}}"
     Metadata:
       DockerTag: v1
       DockerContext: .
