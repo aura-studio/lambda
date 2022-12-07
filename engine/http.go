@@ -63,7 +63,7 @@ func process(c *gin.Context, req string) {
 	)
 	if strings.HasPrefix(c.Request.URL.Path, "/__debug__") {
 		stdout, stderr, debugErr := doDebug(func() {
-			rsp, err = handler(c.Request.URL.Path, req)
+			rsp, err = handler(strings.TrimPrefix(c.Request.URL.Path, "/__debug__"), req)
 		})
 		if strings.HasPrefix(rsp, "http") {
 			c.Redirect(302, rsp)
