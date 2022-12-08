@@ -11,10 +11,3 @@ const (
 	StderrContext    = "stderr"
 	ProcessorContext = "processor"
 )
-
-const (
-	debugFormat = `Stdout: %s
-Stderr: %s
-Error: %v
-Response: %s`
-)

@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Proccessor func(*gin.Context, LocalHandler)
-type LocalHandler func(string, string) (string, error)
+type Proccessor = func(*gin.Context, LocalHandler)
+type LocalHandler = func(string, string) (string, error)
 
 var (
 	Handlers = []gin.HandlerFunc{
@@ -35,9 +36,9 @@ var (
 	}
 
 	Path = func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/__debug__") {
+		if strings.HasPrefix(c.Request.URL.Path, "/debug") {
 			c.Set(DebugContext, true)
-			c.Set(PathContext, strings.TrimPrefix(c.Request.URL.Path, "/__debug__"))
+			c.Set(PathContext, strings.TrimPrefix(c.Request.URL.Path, "/debug"))
 		} else {
 			c.Set(DebugContext, false)
 			c.Set(PathContext, c.Request.URL.Path)
@@ -62,7 +63,7 @@ var (
 
 	Handle = func(c *gin.Context) {
 		if v, ok := c.Get(ProcessorContext); ok {
-			v.(Proccessor)(c, do)
+			v.(Proccessor)(c, handle)
 		} else {
 			c.String(http.StatusInternalServerError, "No processor")
 		}
@@ -77,12 +78,7 @@ var (
 
 	Response = func(c *gin.Context) {
 		if c.GetBool(DebugContext) {
-			c.String(http.StatusOK, debugFormat,
-				c.GetString(StdoutContext),
-				c.GetString(StderrContext),
-				c.GetString(ErrorContext),
-				c.GetString(ResponseContext),
-			)
+			c.String(http.StatusOK, formatDebug(c))
 		} else {
 			if v, ok := c.Get(ErrorContext); ok && v != nil {
 				c.String(http.StatusOK, v.(error).Error())
@@ -139,14 +135,14 @@ func genDebugProcessor(c *gin.Context) func(*gin.Context, LocalHandler) {
 			c.Set(ErrorContext, err)
 		}
 
-		stdout, stderr, p := doDebug(doFunc)
+		stdout, stderr, panicErr := doDebug(doFunc)
 		c.Set(StdoutContext, stdout)
 		c.Set(StderrContext, stderr)
-		c.Set(PanicContext, p)
+		c.Set(PanicContext, panicErr)
 	}
 }
 
-func do(path string, req string) (string, error) {
+func handle(path string, req string) (string, error) {
 	strs := strings.Split(strings.Trim(path, "/"), "/")
 	name := strings.Join(strs[:2], "_")
 	route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
@@ -156,4 +152,40 @@ func do(path string, req string) (string, error) {
 	}
 
 	return tunnel.Invoke(route, req), nil
+}
+
+func formatDebug(c *gin.Context) string {
+	var buf bytes.Buffer
+	buf.WriteString(`Method: `)
+	buf.WriteString(c.Request.Method)
+	buf.WriteString("\n")
+	buf.WriteString(`Host: `)
+	buf.WriteString(c.Request.URL.Host)
+	buf.WriteString("\n")
+	buf.WriteString(`Path: `)
+	buf.WriteString(c.GetString(PathContext))
+	buf.WriteString("\n")
+	buf.WriteString(`Stdout: `)
+	buf.WriteString(c.GetString(StdoutContext))
+	buf.WriteString("\n")
+	buf.WriteString(`Stderr: `)
+	buf.WriteString(c.GetString(StderrContext))
+	buf.WriteString("\n")
+	buf.WriteString(`Error: `)
+	if v, ok := c.Get(ErrorContext); ok && v != nil {
+		buf.WriteString(v.(error).Error())
+	}
+	buf.WriteString("\n")
+	buf.WriteString(`Panic: `)
+	if v, ok := c.Get(PanicContext); ok && v != nil {
+		buf.WriteString(v.(error).Error())
+	}
+	buf.WriteString("\n")
+	buf.WriteString(`Request: `)
+	buf.WriteString(c.GetString(RequestContext))
+	buf.WriteString("\n")
+	buf.WriteString(`Response: `)
+	buf.WriteString(c.GetString(ResponseContext))
+	buf.WriteString("\n")
+	return buf.String()
 }
