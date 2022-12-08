@@ -41,5 +41,5 @@ func init() {
 	// is called directly, e.g.:
 	// httpCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	httpCmd.Flags().StringP("port", "p", "", "port to listen on")
+	httpCmd.Flags().StringP("port", "p", "8000", "port to listen on")
 }
