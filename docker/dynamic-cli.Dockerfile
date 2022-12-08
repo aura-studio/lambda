@@ -6,9 +6,4 @@ RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shangh
 ARG VERSION=v1.0.3
 RUN	go install github.com/aura-studio/dynamic-cli@${VERSION}
 
-# FROM ubuntu:22.04
-# COPY --from=builder /root/go/bin/dynamic-cli /usr/bin/dynamic-cli
-
-# ENTRYPOINT ["/usr/bin/dynamic-cli"]
-
 ENTRYPOINT ["/root/go/bin/dynamic-cli"]
