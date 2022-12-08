@@ -1,4 +1,4 @@
-package engine
+package httpserver
 
 import (
 	"bytes"
@@ -19,7 +19,13 @@ func doSafe(f func()) (err error) {
 	return nil
 }
 
-func doDebug(fn func()) (stdout string, stderr string, err error) {
+func doDebug(f func()) (stdout string, stderr string, err error) {
+	defer func() {
+		if v := recover(); v != nil {
+			err = fmt.Errorf("panic: %v", v)
+		}
+	}()
+
 	// keep backup of the real file
 	originStdout := os.Stdout
 	originStderr := os.Stderr
@@ -33,12 +39,12 @@ func doDebug(fn func()) (stdout string, stderr string, err error) {
 	// Create pipe to create reader & writer
 	stdoutPipeReader, stdoutPipeWriter, err := os.Pipe()
 	if err != nil {
-		return "", "", err
+		panic(err)
 	}
 	defer stdoutPipeWriter.Close()
 	stderrPipeReader, stderrPipeWriter, err := os.Pipe()
 	if err != nil {
-		return "", "", err
+		panic(err)
 	}
 	defer stderrPipeWriter.Close()
 
@@ -69,24 +75,22 @@ func doDebug(fn func()) (stdout string, stderr string, err error) {
 		stdoutErrCh <- nil
 	}()
 
-	if err := doSafe(fn); err != nil {
-		return "", "", err
-	}
+	f()
 
 	if err := stdoutPipeWriter.Close(); err != nil {
-		return "", "", err
+		panic(err)
 	}
 
 	if err := stderrPipeWriter.Close(); err != nil {
-		return "", "", err
+		panic(err)
 	}
 
 	if err := <-stdoutErrCh; err != nil {
-		return "", "", err
+		panic(err)
 	}
 
 	if err := <-stdoutErrCh; err != nil {
-		return "", "", err
+		panic(err)
 	}
 
 	return stdoutBuf.String(), stderrBuf.String(), nil
