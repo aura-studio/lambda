@@ -156,6 +156,9 @@ func handle(path string, req string) (string, error) {
 
 func formatDebug(c *gin.Context) string {
 	var buf bytes.Buffer
+	buf.WriteString(`Schema: `)
+	buf.WriteString(c.Request.URL.Scheme)
+	buf.WriteString("\n")
 	buf.WriteString(`Method: `)
 	buf.WriteString(c.Request.Method)
 	buf.WriteString("\n")
