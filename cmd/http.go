@@ -20,11 +20,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		portStr := cmd.Flag("port").Value.String()
-		if len(portStr) > 0 {
-			httpserver.Serve(":" + portStr)
-		} else {
-			httpserver.Serve()
-		}
+		httpserver.Serve(":" + portStr)
 	},
 }
 
