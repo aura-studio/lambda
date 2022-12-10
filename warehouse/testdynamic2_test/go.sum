@@ -1,0 +1,4 @@
+github.com/aura-studio/dynamic v0.0.0-20221126055656-bf7e9bf1a396 h1:Y6NVG9MbcFu4hyIIjFnDwUYVbSI3Q8xsc9kQvj1HwFY=
+github.com/aura-studio/dynamic v0.0.0-20221126055656-bf7e9bf1a396/go.mod h1:t2oMf1/ZebeiFTz7R1ajucysAu7/fApZqztNeo8kRsA=
+github.com/aura-studio/testdynamic2 v0.0.0-20221126061544-81d563fd97e5 h1:9l35c58w0wl7S3CyhnrIBV5VtPLadWwncXawSNGAk4A=
+github.com/aura-studio/testdynamic2 v0.0.0-20221126061544-81d563fd97e5/go.mod h1:+HWURvHpYFHfnGkpJhYabf/J/Syu7+13FYMCNQihEKM=
