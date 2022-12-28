@@ -25,6 +25,7 @@ Resources:
           CONFIG_SECRET_ACCESS_KEY: "{{resolve:ssm:/lambda/config/secret_access_key:1}}"
           DYNAMIC_LOCAL: "{{resolve:ssm:/lambda/dynamic/local:1}}"
           DYNAMIC_REMOTE: "{{resolve:ssm:/lambda/dynamic/remote:1}}"
+          RUNTIME: "{{resolve:ssm:/lambda/runtime:1}}"
     Metadata:
       DockerTag: v1
       DockerContext: .
