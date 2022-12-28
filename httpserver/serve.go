@@ -2,16 +2,16 @@ package httpserver
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
+	"github.com/aura-studio/dynamic"
 	"github.com/gin-gonic/gin"
 )
 
 var srv *http.Server
 
-func Serve(addr string) {
+func Serve(addr string) error {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
@@ -25,14 +25,22 @@ func Serve(addr string) {
 	}
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("listen: %s\n", err)
+		return err
 	}
+
+	return nil
 }
 
-func Close() {
+func Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
+}
+
+func Register(name string, tunnel dynamic.Tunnel) {
+	dynamic.RegisterTunnel(name, tunnel)
 }
