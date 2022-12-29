@@ -2,6 +2,8 @@ package httpserver
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -11,7 +13,7 @@ import (
 
 var srv *http.Server
 
-func Serve(addr string) error {
+func Serve(addr string) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
@@ -25,22 +27,18 @@ func Serve(addr string) error {
 	}
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return err
+		log.Fatal(err)
 	}
-
-	return nil
 }
 
-func Close() error {
+func Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		return err
+		log.Fatal(err)
 	}
-
-	return nil
+	defer cancel()
 }
 
-func Register(name string, tunnel dynamic.Tunnel) {
-	dynamic.RegisterTunnel(name, tunnel)
+func Register(pkg string, ver string, tunnel dynamic.Tunnel) {
+	dynamic.RegisterTunnel(fmt.Sprintf("%s_%s", pkg, ver), tunnel)
 }
