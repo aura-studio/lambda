@@ -29,7 +29,7 @@ Resources:
     Metadata:
       DockerTag: v1
       DockerContext: .
-      Dockerfile: ./docker/http-server.Dockerfile
+      Dockerfile: http-server.Dockerfile
 
 Outputs:
   GinApi:
