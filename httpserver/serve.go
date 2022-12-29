@@ -11,6 +11,7 @@ import (
 )
 
 var srv *http.Server
+var namespace string
 
 func Serve(addr string) {
 	gin.SetMode(gin.ReleaseMode)
@@ -40,4 +41,8 @@ func Close() {
 
 func Register(name string, tunnel dynamic.Tunnel) {
 	dynamic.RegisterTunnel(name, tunnel)
+}
+
+func UseNamespace(name string) {
+	namespace = name
 }

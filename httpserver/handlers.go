@@ -145,6 +145,9 @@ func genDebugProcessor(c *gin.Context) func(*gin.Context, LocalHandler) {
 func handle(path string, req string) (string, error) {
 	strs := strings.Split(strings.Trim(path, "/"), "/")
 	name := strings.Join(strs[:2], "_")
+	if len(namespace) > 0 {
+		name = fmt.Sprintf("%s_%s", namespace, name)
+	}
 	route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
 	tunnel, err := dynamic.GetTunnel(name)
 	if err != nil {
