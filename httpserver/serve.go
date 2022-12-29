@@ -14,7 +14,6 @@ var srv *http.Server
 var namespace string
 
 func Serve(addr string) {
-	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
 	r.GET("/*path", Handlers...)
