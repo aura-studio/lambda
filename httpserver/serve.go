@@ -2,7 +2,6 @@ package httpserver
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -39,6 +38,6 @@ func Close() {
 	defer cancel()
 }
 
-func Register(pkg string, ver string, tunnel dynamic.Tunnel) {
-	dynamic.RegisterTunnel(fmt.Sprintf("%s_%s", pkg, ver), tunnel)
+func Register(name string, tunnel dynamic.Tunnel) {
+	dynamic.RegisterTunnel(name, tunnel)
 }
