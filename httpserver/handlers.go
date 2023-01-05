@@ -41,6 +41,9 @@ var (
 		if strings.HasPrefix(c.Request.URL.Path, "/debug") {
 			c.Set(DebugContext, true)
 			c.Set(PathContext, strings.TrimPrefix(c.Request.URL.Path, "/debug"))
+		} else if strings.LastIndex(c.Request.URL.Path, "/") == 0 {
+			c.Set(DebugContext, false)
+			c.Set(PathContext, c.Request.URL.Path+"/latest")
 		} else {
 			c.Set(DebugContext, false)
 			c.Set(PathContext, c.Request.URL.Path)
@@ -76,7 +79,7 @@ var (
 		if strings.HasPrefix(rsp, "http://") || strings.HasPrefix(rsp, "https://") {
 			c.Redirect(http.StatusTemporaryRedirect, rsp)
 		} else if strings.HasPrefix(rsp, "path://") {
-			c.Request.URL.Path = strings.TrimPrefix(rsp, "path:/")
+			c.Request.URL.Path = "/" + strings.TrimPrefix(rsp, "path://")
 			r.HandleContext(c)
 		}
 	}
