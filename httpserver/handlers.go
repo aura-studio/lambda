@@ -18,7 +18,6 @@ type LocalHandler = func(string, string) (string, error)
 
 var (
 	Handlers = []gin.HandlerFunc{
-		OK,
 		Path,
 		Request,
 		Processor,
@@ -44,9 +43,6 @@ var (
 			path = strings.TrimPrefix(path, "/debug")
 		} else {
 			c.Set(DebugContext, false)
-		}
-		if strings.LastIndex(path, "/") == 0 {
-			path += "/latest"
 		}
 		c.Set(PathContext, path)
 	}
