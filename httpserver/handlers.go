@@ -14,7 +14,7 @@ import (
 )
 
 func install() {
-	app.Use(StaticLink)
+	app.Use(StaticLink, PrefixLink)
 
 	app.GET("/", OK)
 	app.POST("/", OK)
@@ -42,6 +42,17 @@ var (
 			app.HandleContext(c)
 			c.Abort()
 			return
+		}
+	}
+
+	PrefixLink = func(c *gin.Context) {
+		for oldPrefix, newPrefix := range options.PrefixLinkMap {
+			if strings.HasPrefix(c.Request.URL.Path, oldPrefix) {
+				c.Request.URL.Path = strings.Replace(c.Request.URL.Path, oldPrefix, newPrefix, 1)
+				app.HandleContext(c)
+				c.Abort()
+				return
+			}
 		}
 	}
 

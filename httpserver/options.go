@@ -3,6 +3,7 @@ package httpserver
 type Options struct {
 	Namespace     string
 	StaticLinkMap map[string]string
+	PrefixLinkMap map[string]string
 }
 
 type Option func(*Options)
@@ -10,6 +11,7 @@ type Option func(*Options)
 var options = Options{
 	Namespace:     "",
 	StaticLinkMap: map[string]string{},
+	PrefixLinkMap: map[string]string{},
 }
 
 func (o *Options) init(opts ...Option) {
@@ -27,5 +29,11 @@ func WithNamespace(namespace string) Option {
 func WithStaticLink(oldPath, newPath string) Option {
 	return func(o *Options) {
 		o.StaticLinkMap[oldPath] = newPath
+	}
+}
+
+func WithPrefixLink(oldPrefix string, newPrefix string) Option {
+	return func(o *Options) {
+		o.PrefixLinkMap[oldPrefix] = newPrefix
 	}
 }
