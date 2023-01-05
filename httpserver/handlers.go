@@ -38,15 +38,16 @@ var (
 	}
 
 	Path = func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/debug") {
+		path := strings.TrimSuffix(c.Request.URL.Path, "/")
+		if strings.HasPrefix(path, "/debug") {
 			c.Set(DebugContext, true)
-			c.Set(PathContext, strings.TrimPrefix(c.Request.URL.Path, "/debug"))
-		} else if strings.LastIndex(c.Request.URL.Path, "/") == 0 {
+			c.Set(PathContext, strings.TrimPrefix(path, "/debug"))
+		} else if strings.LastIndex(path, "/") == 0 {
 			c.Set(DebugContext, false)
-			c.Set(PathContext, c.Request.URL.Path+"/latest")
+			c.Set(PathContext, path+"/latest")
 		} else {
 			c.Set(DebugContext, false)
-			c.Set(PathContext, c.Request.URL.Path)
+			c.Set(PathContext, path)
 		}
 	}
 
