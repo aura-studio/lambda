@@ -13,7 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func installHandlers() {
+func install() {
+	app.Use(StaticLink)
+
 	app.GET("/", OK)
 	app.POST("/", OK)
 
@@ -34,8 +36,18 @@ type Proccessor = func(*gin.Context, LocalHandler)
 type LocalHandler = func(string, string) (string, error)
 
 var (
+	StaticLink = func(c *gin.Context) {
+		if newPath, ok := options.StaticLinkMap[c.Request.URL.Path]; ok {
+			c.Request.URL.Path = newPath
+			app.HandleContext(c)
+			c.Abort()
+			return
+		}
+	}
+
 	OK = func(c *gin.Context) {
 		c.String(http.StatusOK, "OK")
+		c.Abort()
 	}
 
 	Debug = func(c *gin.Context) {
@@ -65,6 +77,7 @@ var (
 			v.(Proccessor)(c, handle)
 		} else {
 			c.String(http.StatusInternalServerError, "No processor")
+			c.Abort()
 			return
 		}
 
@@ -72,22 +85,28 @@ var (
 		rsp := c.GetString(ResponseContext)
 		if strings.HasPrefix(rsp, "http://") || strings.HasPrefix(rsp, "https://") {
 			c.Redirect(http.StatusTemporaryRedirect, rsp)
+			c.Abort()
 			return
 		} else if strings.HasPrefix(rsp, "path://") {
 			c.Request.URL.Path = "/" + strings.TrimPrefix(rsp, "path://")
 			app.HandleContext(c)
+			c.Abort()
 			return
 		}
 
 		// response
 		if c.GetBool(DebugContext) {
 			c.String(http.StatusOK, formatDebug(c))
+			c.Abort()
+			return
 		} else {
 			if v, ok := c.Get(ErrorContext); ok && v != nil {
 				c.String(http.StatusOK, v.(error).Error())
+				c.Abort()
 				return
 			} else {
 				c.String(http.StatusOK, c.GetString(ResponseContext))
+				c.Abort()
 				return
 			}
 		}
@@ -95,10 +114,12 @@ var (
 
 	NoRoute = func(c *gin.Context) {
 		c.String(404, "404 page not found")
+		c.Abort()
 	}
 
 	NoMethod = func(c *gin.Context) {
 		c.String(405, "405 method not allowed")
+		c.Abort()
 	}
 )
 
@@ -160,8 +181,8 @@ func genDebugProcessor(c *gin.Context) func(*gin.Context, LocalHandler) {
 func handle(path string, req string) (string, error) {
 	strs := strings.Split(strings.Trim(path, "/"), "/")
 	name := strings.Join(strs[:2], "_")
-	if len(options.namespace) > 0 {
-		name = fmt.Sprintf("%s_%s", options.namespace, name)
+	if len(options.Namespace) > 0 {
+		name = fmt.Sprintf("%s_%s", options.Namespace, name)
 	}
 	route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
 	tunnel, err := dynamic.GetTunnel(name)

@@ -1,12 +1,16 @@
 package httpserver
 
 type Options struct {
-	namespace string
+	Namespace     string
+	StaticLinkMap map[string]string
 }
 
 type Option func(*Options)
 
-var options = Options{}
+var options = Options{
+	Namespace:     "",
+	StaticLinkMap: map[string]string{},
+}
 
 func (o *Options) init(opts ...Option) {
 	for _, opt := range opts {
@@ -16,6 +20,12 @@ func (o *Options) init(opts ...Option) {
 
 func WithNamespace(namespace string) Option {
 	return func(o *Options) {
-		o.namespace = namespace
+		o.Namespace = namespace
+	}
+}
+
+func WithStaticLink(oldPath, newPath string) Option {
+	return func(o *Options) {
+		o.StaticLinkMap[oldPath] = newPath
 	}
 }
