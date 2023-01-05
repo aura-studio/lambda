@@ -116,6 +116,8 @@ func genPostReq(c *gin.Context) string {
 		log.Fatal(err)
 	}
 
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(data))
+
 	return string(data)
 }
 
