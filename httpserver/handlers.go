@@ -73,8 +73,11 @@ var (
 
 	Redirect = func(c *gin.Context) {
 		rsp := c.GetString(ResponseContext)
-		if strings.HasPrefix(rsp, "http") {
+		if strings.HasPrefix(rsp, "http://") || strings.HasPrefix(rsp, "https://") {
 			c.Redirect(http.StatusTemporaryRedirect, rsp)
+		} else if strings.HasPrefix(rsp, "path://") {
+			c.Request.URL.Path = strings.TrimPrefix(rsp, "path:/")
+			r.HandleContext(c)
 		}
 	}
 

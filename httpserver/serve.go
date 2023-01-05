@@ -10,30 +10,33 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var srv *http.Server
+var (
+	s *http.Server
+	r *gin.Engine
+)
 
 func Serve(addr string, opts ...Option) {
 	options.init(opts...)
 
-	r := gin.Default()
+	r = gin.Default()
 
 	r.GET("/*path", Handlers...)
 
 	r.POST("/*path", Handlers...)
 
-	srv = &http.Server{
+	s = &http.Server{
 		Addr:    addr,
 		Handler: r,
 	}
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }
 
 func Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := s.Shutdown(ctx); err != nil {
 		log.Fatal(err)
 	}
 	defer cancel()
