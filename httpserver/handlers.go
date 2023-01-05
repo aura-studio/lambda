@@ -23,8 +23,8 @@ func installHandlers(r *gin.Engine) {
 	r.GET("/api/*path", API)
 	r.POST("/api/*path", API)
 
-	r.GET("/#/api/*path", Debug, API)
-	r.POST("/#/api/*path", Debug, API)
+	r.GET("/_/api/*path", Debug, API)
+	r.POST("/_/api/*path", Debug, API)
 
 	r.NoRoute(NoRoute)
 	r.NoMethod(NoMethod)
@@ -65,15 +65,18 @@ var (
 			v.(Proccessor)(c, handle)
 		} else {
 			c.String(http.StatusInternalServerError, "No processor")
+			return
 		}
 
 		// redirect
 		rsp := c.GetString(ResponseContext)
 		if strings.HasPrefix(rsp, "http://") || strings.HasPrefix(rsp, "https://") {
 			c.Redirect(http.StatusTemporaryRedirect, rsp)
+			return
 		} else if strings.HasPrefix(rsp, "path://") {
 			c.Request.URL.Path = "/" + strings.TrimPrefix(rsp, "path://")
 			r.HandleContext(c)
+			return
 		}
 
 		// response
@@ -82,8 +85,10 @@ var (
 		} else {
 			if v, ok := c.Get(ErrorContext); ok && v != nil {
 				c.String(http.StatusOK, v.(error).Error())
+				return
 			} else {
 				c.String(http.StatusOK, c.GetString(ResponseContext))
+				return
 			}
 		}
 	}
