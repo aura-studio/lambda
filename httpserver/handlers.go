@@ -89,11 +89,11 @@ var (
 	}
 
 	NoRoute = func(c *gin.Context) {
-		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+		c.String(404, "404 page not found")
 	}
 
 	NoMethod = func(c *gin.Context) {
-		c.JSON(405, gin.H{"code": "METHOD_NOT_ALLOWED", "message": "Method not allowed"})
+		c.String(405, "405 method not allowed")
 	}
 )
 
