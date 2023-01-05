@@ -41,14 +41,14 @@ var (
 		path := strings.TrimSuffix(c.Request.URL.Path, "/")
 		if strings.HasPrefix(path, "/debug") {
 			c.Set(DebugContext, true)
-			c.Set(PathContext, strings.TrimPrefix(path, "/debug"))
-		} else if strings.LastIndex(path, "/") == 0 {
-			c.Set(DebugContext, false)
-			c.Set(PathContext, path+"/latest")
+			path = strings.TrimPrefix(path, "/debug")
 		} else {
 			c.Set(DebugContext, false)
-			c.Set(PathContext, path)
 		}
+		if strings.LastIndex(path, "/") == 0 {
+			path += "/latest"
+		}
+		c.Set(PathContext, path)
 	}
 
 	Request = func(c *gin.Context) {
