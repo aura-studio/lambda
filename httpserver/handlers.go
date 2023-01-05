@@ -13,21 +13,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func installHandlers(r *gin.Engine) {
-	r.GET("/", OK)
-	r.POST("/", OK)
+func installHandlers() {
+	app.GET("/", OK)
+	app.POST("/", OK)
 
-	r.GET("/health-check", OK)
-	r.POST("/health-check", OK)
+	app.GET("/health-check", OK)
+	app.POST("/health-check", OK)
 
-	r.GET("/api/*path", API)
-	r.POST("/api/*path", API)
+	app.GET("/api/*path", API)
+	app.POST("/api/*path", API)
 
-	r.GET("/_/api/*path", Debug, API)
-	r.POST("/_/api/*path", Debug, API)
+	app.GET("/_/api/*path", Debug, API)
+	app.POST("/_/api/*path", Debug, API)
 
-	r.NoRoute(NoRoute)
-	r.NoMethod(NoMethod)
+	app.NoRoute(NoRoute)
+	app.NoMethod(NoMethod)
+
+	for _, link := range options.links {
+		app.GET(link[0], genLink(link[1]))
+		app.POST(link[0], genLink(link[1]))
+	}
 }
 
 type Proccessor = func(*gin.Context, LocalHandler)
@@ -75,7 +80,7 @@ var (
 			return
 		} else if strings.HasPrefix(rsp, "path://") {
 			c.Request.URL.Path = "/" + strings.TrimPrefix(rsp, "path://")
-			r.HandleContext(c)
+			app.HandleContext(c)
 			return
 		}
 
@@ -101,6 +106,13 @@ var (
 		c.String(405, "405 method not allowed")
 	}
 )
+
+func genLink(newPath string) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.Request.URL.Path = newPath
+		app.HandleContext(c)
+	}
+}
 
 func genGetReq(c *gin.Context) string {
 	dataMap := map[string]interface{}{}

@@ -11,30 +11,30 @@ import (
 )
 
 var (
-	s *http.Server
-	r *gin.Engine
+	srv *http.Server
+	app *gin.Engine
 )
 
 func Serve(addr string, opts ...Option) {
 	options.init(opts...)
 
-	r = gin.Default()
+	app = gin.Default()
 
-	installHandlers(r)
+	installHandlers()
 
-	s = &http.Server{
+	srv = &http.Server{
 		Addr:    addr,
-		Handler: r,
+		Handler: app,
 	}
 
-	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }
 
 func Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	if err := s.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal(err)
 	}
 	defer cancel()
