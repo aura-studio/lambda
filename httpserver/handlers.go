@@ -102,13 +102,6 @@ var (
 	}
 )
 
-func genLink(newPath string) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		c.Request.URL.Path = newPath
-		app.HandleContext(c)
-	}
-}
-
 func genGetReq(c *gin.Context) string {
 	dataMap := map[string]interface{}{}
 	for k, v := range c.Request.URL.Query() {
