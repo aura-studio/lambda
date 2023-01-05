@@ -13,65 +13,61 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func installHandlers(r *gin.Engine) {
+	r.GET("/", OK)
+	r.POST("/", OK)
+
+	r.GET("/health-check", OK)
+	r.POST("/health-check", OK)
+
+	r.GET("/api/*path", API)
+	r.POST("/api/*path", API)
+
+	r.GET("/#/api/*path", Debug, API)
+	r.POST("/#/api/*path", Debug, API)
+
+	r.NoRoute(NoRoute)
+	r.NoMethod(NoMethod)
+}
+
 type Proccessor = func(*gin.Context, LocalHandler)
 type LocalHandler = func(string, string) (string, error)
 
 var (
-	Handlers = []gin.HandlerFunc{
-		Path,
-		Request,
-		Processor,
-		Handle,
-		Redirect,
-		Response,
-	}
-)
-
-var (
 	OK = func(c *gin.Context) {
-		if c.Request.URL.Path == "/" {
-			c.String(http.StatusOK, "OK")
-		} else if c.Request.URL.Path == "/health-check" {
-			c.String(http.StatusOK, "OK")
-		}
+		c.String(http.StatusOK, "OK")
 	}
 
-	Path = func(c *gin.Context) {
-		path := strings.TrimSuffix(c.Request.URL.Path, "/")
-		if strings.HasPrefix(path, "/debug") {
-			c.Set(DebugContext, true)
-			path = strings.TrimPrefix(path, "/debug")
-		} else {
-			c.Set(DebugContext, false)
-		}
-		c.Set(PathContext, path)
+	Debug = func(c *gin.Context) {
+		c.Set(DebugContext, true)
 	}
 
-	Request = func(c *gin.Context) {
+	API = func(c *gin.Context) {
+		// path
+		c.Set(PathContext, c.Param("path"))
+
+		// request
 		if c.Request.Method == http.MethodGet {
 			c.Set(RequestContext, genGetReq(c))
 		} else if c.Request.Method == http.MethodPost {
 			c.Set(RequestContext, genPostReq(c))
 		}
-	}
 
-	Processor = func(c *gin.Context) {
+		// processor
 		if c.GetBool(DebugContext) {
 			c.Set(ProcessorContext, genDebugProcessor(c))
 		} else {
 			c.Set(ProcessorContext, genSafeProcessor(c))
 		}
-	}
 
-	Handle = func(c *gin.Context) {
+		// handle
 		if v, ok := c.Get(ProcessorContext); ok {
 			v.(Proccessor)(c, handle)
 		} else {
 			c.String(http.StatusInternalServerError, "No processor")
 		}
-	}
 
-	Redirect = func(c *gin.Context) {
+		// redirect
 		rsp := c.GetString(ResponseContext)
 		if strings.HasPrefix(rsp, "http://") || strings.HasPrefix(rsp, "https://") {
 			c.Redirect(http.StatusTemporaryRedirect, rsp)
@@ -79,9 +75,8 @@ var (
 			c.Request.URL.Path = "/" + strings.TrimPrefix(rsp, "path://")
 			r.HandleContext(c)
 		}
-	}
 
-	Response = func(c *gin.Context) {
+		// response
 		if c.GetBool(DebugContext) {
 			c.String(http.StatusOK, formatDebug(c))
 		} else {
@@ -91,6 +86,14 @@ var (
 				c.String(http.StatusOK, c.GetString(ResponseContext))
 			}
 		}
+	}
+
+	NoRoute = func(c *gin.Context) {
+		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+	}
+
+	NoMethod = func(c *gin.Context) {
+		c.JSON(405, gin.H{"code": "METHOD_NOT_ALLOWED", "message": "Method not allowed"})
 	}
 )
 

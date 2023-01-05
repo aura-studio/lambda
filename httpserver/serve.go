@@ -20,9 +20,7 @@ func Serve(addr string, opts ...Option) {
 
 	r = gin.Default()
 
-	r.GET("/*path", Handlers...)
-
-	r.POST("/*path", Handlers...)
+	installHandlers(r)
 
 	s = &http.Server{
 		Addr:    addr,
