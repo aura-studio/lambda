@@ -28,11 +28,6 @@ func installHandlers() {
 
 	app.NoRoute(NoRoute)
 	app.NoMethod(NoMethod)
-
-	for _, link := range options.links {
-		app.GET(link[0], genLink(link[1]))
-		app.POST(link[0], genLink(link[1]))
-	}
 }
 
 type Proccessor = func(*gin.Context, LocalHandler)
