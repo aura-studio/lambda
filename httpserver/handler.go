@@ -186,16 +186,15 @@ func (e *Engine) debugProcessor(c *gin.Context, f LocalHandler) {
 
 func (e *Engine) handle(path string, req string) (string, error) {
 	strs := strings.Split(strings.Trim(path, "/"), "/")
-	name := strings.Join(strs[:2], "_")
-	if len(e.Namespace) > 0 {
-		name = fmt.Sprintf("%s_%s", e.Namespace, name)
-	}
-	route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
-	tunnel, err := dynamic.GetTunnel(name)
+	packageName := strs[0]
+	commit := strs[1]
+
+	tunnel, err := dynamic.GetPackage(packageName, commit)
 	if err != nil {
 		return "", err
 	}
 
+	route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
 	return tunnel.Invoke(route, req), nil
 }
 
