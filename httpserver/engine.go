@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	HeaderContext    = "header"
 	PathContext      = "path"
 	RequestContext   = "request"
 	ResponseContext  = "response"

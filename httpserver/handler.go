@@ -36,6 +36,15 @@ func (e *Engine) InstallHandlers() {
 	e.NoMethod(e.MethodNotAllowed)
 }
 
+func (e *Engine) HeaderLink(c *gin.Context) {
+	if headerLink, ok := c.Request.Header[e.HeaderLinkKey]; ok && len(headerLink) > 0 {
+		c.Request.URL.Path = headerLink[0]
+		e.HandleContext(c)
+		c.Abort()
+		return
+	}
+}
+
 func (e *Engine) StaticLink(c *gin.Context) {
 	if dstPath, ok := e.StaticLinkMap[c.Request.URL.Path]; ok {
 		c.Request.URL.Path = dstPath
@@ -68,6 +77,9 @@ func (e *Engine) Debug(c *gin.Context) {
 func (e *Engine) API(c *gin.Context) {
 	// path
 	c.Set(PathContext, c.Param("path"))
+
+	// header
+	c.Set(HeaderContext, c.Request.Header)
 
 	// request
 	if c.Request.Method == http.MethodGet {
@@ -211,6 +223,10 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	buf.WriteString("\n")
 	buf.WriteString(`Path: `)
 	buf.WriteString(c.GetString(PathContext))
+	buf.WriteString("\n")
+	buf.WriteString(`Header: `)
+	headerBytes, _ := json.Marshal(c.GetString(HeaderContext))
+	buf.WriteString(string(headerBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Stdout: `)
 	buf.WriteString(c.GetString(StdoutContext))
