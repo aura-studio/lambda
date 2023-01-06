@@ -5,26 +5,14 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/aura-studio/dynamic"
-	"github.com/gin-gonic/gin"
 )
 
-var (
-	srv *http.Server
-	app *gin.Engine
-)
+var srv *http.Server
 
 func Serve(addr string, opts ...Option) {
-	options.init(opts...)
-
-	app = gin.Default()
-
-	install()
-
 	srv = &http.Server{
 		Addr:    addr,
-		Handler: app,
+		Handler: NewEngine(opts...),
 	}
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -38,8 +26,4 @@ func Close() {
 		log.Fatal(err)
 	}
 	defer cancel()
-}
-
-func Register(name string, tunnel dynamic.Tunnel) {
-	dynamic.RegisterTunnel(name, tunnel)
 }
