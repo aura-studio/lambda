@@ -17,7 +17,7 @@ type Options struct {
 	PrefixLinkMap   map[string]string
 	StaticPackages  []*Package
 	PreloadPackages []*Package
-	HeaderLinkKey   string
+	HeaderLinkMap   map[string]string
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -34,7 +34,7 @@ var defaultOptions = &Options{
 	PrefixLinkMap:   map[string]string{},
 	StaticPackages:  []*Package{},
 	PreloadPackages: []*Package{},
-	HeaderLinkKey:   "Lambda-Redirect",
+	HeaderLinkMap:   map[string]string{},
 }
 
 func (o *Options) init(opts ...Option) {
@@ -80,8 +80,8 @@ func WithPreloadPackage(packageName, commit string) Option {
 	}
 }
 
-func WithHeaderLinkKey(key string) Option {
+func WithHeaderLinkKey(key string, prefix string) Option {
 	return func(o *Options) {
-		o.HeaderLinkKey = key
+		o.HeaderLinkMap[key] = prefix
 	}
 }
