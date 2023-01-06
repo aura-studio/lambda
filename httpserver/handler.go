@@ -18,7 +18,7 @@ type Proccessor = func(*gin.Context, LocalHandler)
 type LocalHandler = func(string, string) (string, error)
 
 func (e *Engine) InstallHandlers() {
-	e.Use(e.StaticLink, e.PrefixLink)
+	e.Use(e.StaticLink, e.PrefixLink, e.HeaderLink)
 
 	e.GET("/", e.OK)
 	e.POST("/", e.OK)
@@ -48,6 +48,7 @@ func (e *Engine) HeaderLink(c *gin.Context) {
 func (e *Engine) StaticLink(c *gin.Context) {
 	if dstPath, ok := e.StaticLinkMap[c.Request.URL.Path]; ok {
 		c.Request.URL.Path = dstPath
+		c.Request.Header.Del(e.HeaderLinkKey)
 		e.HandleContext(c)
 		c.Abort()
 		return
