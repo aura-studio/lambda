@@ -12,6 +12,7 @@ type Package struct {
 }
 
 type Options struct {
+	ReleaseMode     bool
 	Namespace       string
 	StaticLinkMap   map[string]string
 	PrefixLinkMap   map[string]string
@@ -40,6 +41,12 @@ var defaultOptions = &Options{
 func (o *Options) init(opts ...Option) {
 	for _, opt := range opts {
 		opt(o)
+	}
+}
+
+func WithReleaseMode(releaseMode bool) Option {
+	return func(o *Options) {
+		o.ReleaseMode = releaseMode
 	}
 }
 
