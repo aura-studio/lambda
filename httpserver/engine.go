@@ -28,10 +28,6 @@ func NewEngine(opts ...Option) *Engine {
 		Engine:  gin.Default(),
 	}
 
-	if e.ReleaseMode {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
 	e.InstallPackages()
 	e.InstallHandlers()
 

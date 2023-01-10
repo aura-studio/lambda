@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"github.com/aura-studio/dynamic"
+	"github.com/gin-gonic/gin"
 	"github.com/mohae/deepcopy"
 )
 
@@ -47,6 +48,7 @@ func (o *Options) init(opts ...Option) {
 func WithReleaseMode() Option {
 	return func(o *Options) {
 		o.ReleaseMode = true
+		gin.SetMode(gin.ReleaseMode)
 	}
 }
 
