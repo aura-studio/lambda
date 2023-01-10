@@ -44,9 +44,9 @@ func (o *Options) init(opts ...Option) {
 	}
 }
 
-func WithReleaseMode(releaseMode bool) Option {
+func WithReleaseMode() Option {
 	return func(o *Options) {
-		o.ReleaseMode = releaseMode
+		o.ReleaseMode = true
 	}
 }
 
