@@ -181,7 +181,7 @@ func (e *Engine) WAPI(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
-		c.Writer.Write([]byte(c.GetString(WireResponseContext)))
+		c.String(http.StatusOK, c.GetString(ResponseContext))
 		c.Abort()
 		return
 	}
