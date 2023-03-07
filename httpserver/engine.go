@@ -5,16 +5,18 @@ import (
 )
 
 const (
-	HeaderContext    = "header"
-	PathContext      = "path"
-	RequestContext   = "request"
-	ResponseContext  = "response"
-	ErrorContext     = "error"
-	PanicContext     = "panic"
-	DebugContext     = "debug"
-	StdoutContext    = "stdout"
-	StderrContext    = "stderr"
-	ProcessorContext = "processor"
+	HeaderContext       = "header"
+	PathContext         = "path"
+	RequestContext      = "request"
+	ResponseContext     = "response"
+	WireRequestContext  = "wire_request"
+	WireResponseContext = "wire_response"
+	ErrorContext        = "error"
+	PanicContext        = "panic"
+	DebugContext        = "debug"
+	StdoutContext       = "stdout"
+	StderrContext       = "stderr"
+	ProcessorContext    = "processor"
 )
 
 type Engine struct {

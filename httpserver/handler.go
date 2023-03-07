@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -31,6 +32,12 @@ func (e *Engine) InstallHandlers() {
 
 	e.GET("/_/api/*path", e.Debug, e.API)
 	e.POST("/_/api/*path", e.Debug, e.API)
+
+	e.GET("/wapi/*path", e.WAPI)
+	e.POST("/wapi/*path", e.WAPI)
+
+	e.GET("/_/wapi/*path", e.Debug, e.WAPI)
+	e.POST("/_/wapi/*path", e.Debug, e.WAPI)
 
 	e.NoRoute(e.PageNotFound)
 	e.NoMethod(e.MethodNotAllowed)
@@ -139,6 +146,47 @@ func (e *Engine) API(c *gin.Context) {
 	}
 }
 
+func (e *Engine) WAPI(c *gin.Context) {
+	// path
+	c.Set(PathContext, c.Param("path"))
+
+	// header
+	c.Set(HeaderContext, c.Request.Header)
+
+	// request
+	if c.Request.Method == http.MethodGet {
+		c.Set(RequestContext, e.genGetReq(c))
+	} else if c.Request.Method == http.MethodPost {
+		c.Set(RequestContext, e.genPostReq(c))
+	}
+
+	// processor
+	if c.GetBool(DebugContext) {
+		c.Set(ProcessorContext, e.debugWireProcessor)
+	} else {
+		c.Set(ProcessorContext, e.safeWireProcessor)
+	}
+
+	// handle
+	if v, ok := c.Get(ProcessorContext); ok {
+		v.(Proccessor)(c, e.handle)
+	} else {
+		c.String(http.StatusInternalServerError, "No processor")
+		c.Abort()
+		return
+	}
+
+	if v, ok := c.Get(ErrorContext); ok && v != nil {
+		c.String(http.StatusOK, v.(error).Error())
+		c.Abort()
+		return
+	} else {
+		c.Writer.Write([]byte(c.GetString(WireResponseContext)))
+		c.Abort()
+		return
+	}
+}
+
 func (e *Engine) PageNotFound(c *gin.Context) {
 	c.String(404, "404 page not found")
 	c.Abort()
@@ -167,34 +215,91 @@ func (e *Engine) genPostReq(c *gin.Context) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer c.Request.Body.Close()
 
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(data))
 
 	return string(data)
 }
 
-func (e *Engine) safeProcessor(c *gin.Context, f LocalHandler) {
-	doFunc := func() {
-		path := c.GetString(PathContext)
-		req := c.GetString(RequestContext)
-		rsp, err := f(path, req)
+func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
+	var (
+		wireReq string
+		rsp     string
+		wireRsp string
+		err     error
+	)
+	defer func() {
+		c.Set(WireRequestContext, wireReq)
 		c.Set(ResponseContext, rsp)
+		c.Set(WireResponseContext, wireRsp)
 		c.Set(ErrorContext, err)
+	}()
+
+	path := c.GetString(PathContext)
+
+	var buf bytes.Buffer
+	err = c.Request.Write(&buf)
+	if err != nil {
+		return
+	}
+	wireReq = buf.String()
+
+	wireRsp, err = e.handle(path, wireReq)
+	if err != nil {
+		return
 	}
 
-	c.Set(PanicContext, e.doSafe(doFunc))
+	response, err := http.ReadResponse(bufio.NewReader(bytes.NewBufferString(wireRsp)), c.Request)
+	if response != nil {
+		defer response.Body.Close()
+	}
+	if err != nil {
+		return
+	}
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+	rsp = string(data)
+
+	return
+}
+
+func (e *Engine) safeWireProcessor(c *gin.Context, f LocalHandler) {
+	c.Set(PanicContext, e.doSafe(func() {
+		e.doWireProcessor(c, f)
+	}))
+}
+
+func (e *Engine) debugWireProcessor(c *gin.Context, f LocalHandler) {
+	stdout, stderr, panicErr := e.doDebug(func() {
+		e.doWireProcessor(c, f)
+	})
+	c.Set(StdoutContext, stdout)
+	c.Set(StderrContext, stderr)
+	c.Set(PanicContext, panicErr)
+}
+
+func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
+	path := c.GetString(PathContext)
+	req := c.GetString(RequestContext)
+	rsp, err := f(path, req)
+	c.Set(ResponseContext, rsp)
+	c.Set(ErrorContext, err)
+}
+
+func (e *Engine) safeProcessor(c *gin.Context, f LocalHandler) {
+	c.Set(PanicContext, e.doSafe(func() {
+		e.doProcessor(c, f)
+	}))
 }
 
 func (e *Engine) debugProcessor(c *gin.Context, f LocalHandler) {
-	doFunc := func() {
-		path := c.GetString(PathContext)
-		req := c.GetString(RequestContext)
-		rsp, err := f(path, req)
-		c.Set(ResponseContext, rsp)
-		c.Set(ErrorContext, err)
-	}
-
-	stdout, stderr, panicErr := e.doDebug(doFunc)
+	stdout, stderr, panicErr := e.doDebug(func() {
+		e.doProcessor(c, f)
+	})
 	c.Set(StdoutContext, stdout)
 	c.Set(StderrContext, stderr)
 	c.Set(PanicContext, panicErr)
@@ -253,6 +358,12 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	buf.WriteString("\n")
 	buf.WriteString(`Response: `)
 	buf.WriteString(c.GetString(ResponseContext))
+	buf.WriteString("\n")
+	buf.WriteString(`Wire Request: `)
+	buf.WriteString(c.GetString(WireRequestContext))
+	buf.WriteString("\n")
+	buf.WriteString(`Wire Response: `)
+	buf.WriteString(c.GetString(WireResponseContext))
 	buf.WriteString("\n")
 	return buf.String()
 }
