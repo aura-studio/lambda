@@ -133,16 +133,18 @@ func (e *Engine) API(c *gin.Context) {
 		c.String(http.StatusOK, e.formatDebug(c))
 		c.Abort()
 		return
+	} else if v, ok := c.Get(PanicContext); ok && v != nil {
+		c.String(http.StatusInternalServerError, v.(error).Error())
+		c.Abort()
+		return
+	} else if v, ok := c.Get(ErrorContext); ok && v != nil {
+		c.String(http.StatusInternalServerError, v.(error).Error())
+		c.Abort()
+		return
 	} else {
-		if v, ok := c.Get(ErrorContext); ok && v != nil {
-			c.String(http.StatusOK, v.(error).Error())
-			c.Abort()
-			return
-		} else {
-			c.String(http.StatusOK, c.GetString(ResponseContext))
-			c.Abort()
-			return
-		}
+		c.String(http.StatusOK, c.GetString(ResponseContext))
+		c.Abort()
+		return
 	}
 }
 
@@ -176,8 +178,17 @@ func (e *Engine) WAPI(c *gin.Context) {
 		return
 	}
 
-	if v, ok := c.Get(ErrorContext); ok && v != nil {
-		c.String(http.StatusOK, v.(error).Error())
+	// response
+	if c.GetBool(DebugContext) {
+		c.String(http.StatusOK, e.formatDebug(c))
+		c.Abort()
+		return
+	} else if v, ok := c.Get(PanicContext); ok && v != nil {
+		c.String(http.StatusInternalServerError, v.(error).Error())
+		c.Abort()
+		return
+	} else if v, ok := c.Get(ErrorContext); ok && v != nil {
+		c.String(http.StatusInternalServerError, v.(error).Error())
 		c.Abort()
 		return
 	} else {
