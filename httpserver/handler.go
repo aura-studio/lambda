@@ -18,29 +18,25 @@ import (
 type Proccessor = func(*gin.Context, LocalHandler)
 type LocalHandler = func(string, string) (string, error)
 
+var methods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions}
+
 func (e *Engine) InstallHandlers() {
 	e.Use(e.HeaderLink, e.StaticLink, e.PrefixLink)
 
-	e.GET("/", e.OK)
-	e.POST("/", e.OK)
-
-	e.GET("/health-check", e.OK)
-	e.POST("/health-check", e.OK)
-
-	e.GET("/api/*path", e.API)
-	e.POST("/api/*path", e.API)
-
-	e.GET("/_/api/*path", e.Debug, e.API)
-	e.POST("/_/api/*path", e.Debug, e.API)
-
-	e.GET("/wapi/*path", e.WAPI)
-	e.POST("/wapi/*path", e.WAPI)
-
-	e.GET("/_/wapi/*path", e.Debug, e.WAPI)
-	e.POST("/_/wapi/*path", e.Debug, e.WAPI)
-
+	e.HandleAllMethods("/", e.OK)
+	e.HandleAllMethods("/health-check", e.OK)
+	e.HandleAllMethods("/api/*path", e.API)
+	e.HandleAllMethods("/_/api/*path", e.Debug, e.API)
+	e.HandleAllMethods("/wapi/*path", e.WAPI)
+	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
 	e.NoRoute(e.PageNotFound)
 	e.NoMethod(e.MethodNotAllowed)
+}
+
+func (e *Engine) HandleAllMethods(relativePath string, handlers ...gin.HandlerFunc) {
+	for _, method := range methods {
+		e.Handle(method, relativePath, handlers...)
+	}
 }
 
 func (e *Engine) HeaderLink(c *gin.Context) {
@@ -97,6 +93,8 @@ func (e *Engine) API(c *gin.Context) {
 		c.Set(RequestContext, e.genGetReq(c))
 	} else if c.Request.Method == http.MethodPost {
 		c.Set(RequestContext, e.genPostReq(c))
+	} else {
+		c.Set(RequestContext, "")
 	}
 
 	// processor
@@ -160,6 +158,8 @@ func (e *Engine) WAPI(c *gin.Context) {
 		c.Set(RequestContext, e.genGetReq(c))
 	} else if c.Request.Method == http.MethodPost {
 		c.Set(RequestContext, e.genPostReq(c))
+	} else {
+		c.Set(RequestContext, "")
 	}
 
 	// processor
