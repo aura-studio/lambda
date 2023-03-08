@@ -192,7 +192,18 @@ func (e *Engine) WAPI(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
-		c.String(http.StatusOK, c.GetString(ResponseContext))
+		response, err := http.ReadResponse(bufio.NewReader(strings.NewReader(c.GetString(WireResponseContext))), c.Request)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			c.Abort()
+			return
+		}
+		c.Writer.WriteHeader(response.StatusCode)
+		for k, v := range response.Header {
+			c.Writer.Header().Set(k, v[0])
+		}
+		io.Copy(c.Writer, response.Body)
+		response.Body.Close()
 		c.Abort()
 		return
 	}
