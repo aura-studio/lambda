@@ -152,6 +152,7 @@ func (e *Engine) API(c *gin.Context) {
 	} else if strings.HasPrefix(rsp, "error://") {
 		c.String(http.StatusInternalServerError, strings.TrimPrefix(rsp, "error://"))
 		c.Abort()
+		return
 	}
 
 	// response
