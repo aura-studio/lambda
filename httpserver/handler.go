@@ -34,7 +34,7 @@ const (
 )
 
 const (
-	MetaClientIP = "client_ip"
+	MetaRemoteAddr = "remote_addr"
 )
 
 type Proccessor = func(*gin.Context, LocalHandler)
@@ -149,6 +149,9 @@ func (e *Engine) API(c *gin.Context) {
 		e.HandleContext(c)
 		c.Abort()
 		return
+	} else if strings.HasPrefix(rsp, "error://") {
+		c.String(http.StatusInternalServerError, strings.TrimPrefix(rsp, "error://"))
+		c.Abort()
 	}
 
 	// response
@@ -246,7 +249,7 @@ func (e *Engine) MethodNotAllowed(c *gin.Context) {
 
 func (e *Engine) genMeta(c *gin.Context) map[string]interface{} {
 	meta := map[string]interface{}{}
-	meta[MetaClientIP] = c.ClientIP()
+	meta[MetaRemoteAddr] = c.Request.RemoteAddr
 	return meta
 }
 
