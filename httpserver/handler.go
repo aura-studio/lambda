@@ -13,6 +13,28 @@ import (
 
 	"github.com/aura-studio/dynamic"
 	"github.com/gin-gonic/gin"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
+)
+
+const (
+	HeaderContext       = "header"
+	PathContext         = "path"
+	RequestContext      = "request"
+	ResponseContext     = "response"
+	MetaContext         = "meta"
+	WireRequestContext  = "wire_request"
+	WireResponseContext = "wire_response"
+	ErrorContext        = "error"
+	PanicContext        = "panic"
+	DebugContext        = "debug"
+	StdoutContext       = "stdout"
+	StderrContext       = "stderr"
+	ProcessorContext    = "processor"
+)
+
+const (
+	MetaClientIP = "client_ip"
 )
 
 type Proccessor = func(*gin.Context, LocalHandler)
@@ -87,6 +109,9 @@ func (e *Engine) API(c *gin.Context) {
 
 	// header
 	c.Set(HeaderContext, c.Request.Header)
+
+	// meta
+	c.Set(MetaContext, e.genMeta(c))
 
 	// request
 	if c.Request.Method == http.MethodGet {
@@ -219,6 +244,12 @@ func (e *Engine) MethodNotAllowed(c *gin.Context) {
 	c.Abort()
 }
 
+func (e *Engine) genMeta(c *gin.Context) map[string]interface{} {
+	meta := map[string]interface{}{}
+	meta[MetaClientIP] = c.ClientIP()
+	return meta
+}
+
 func (e *Engine) genGetReq(c *gin.Context) string {
 	dataMap := map[string]interface{}{}
 	for k, v := range c.Request.URL.Query() {
@@ -307,6 +338,10 @@ func (e *Engine) debugWireProcessor(c *gin.Context, f LocalHandler) {
 func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 	path := c.GetString(PathContext)
 	req := c.GetString(RequestContext)
+	meta := c.GetStringMap(MetaContext)
+	if gjson.ValidBytes([]byte(req)) && !gjson.Get(req, "__meta__").Exists() {
+		req, _ = sjson.Set(req, "__meta__", meta)
+	}
 	rsp, err := f(path, req)
 	c.Set(ResponseContext, rsp)
 	c.Set(ErrorContext, err)
@@ -358,6 +393,10 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	buf.WriteString(`Header: `)
 	headerBytes, _ := json.Marshal(c.GetString(HeaderContext))
 	buf.WriteString(string(headerBytes))
+	buf.WriteString("\n")
+	buf.WriteString(`Meta: `)
+	metaBytes, _ := json.Marshal(c.GetString(MetaContext))
+	buf.WriteString(string(metaBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Stdout: `)
 	buf.WriteString(c.GetString(StdoutContext))
