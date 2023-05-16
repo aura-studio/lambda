@@ -15,6 +15,9 @@ func NewEngine(opts ...Option) *Engine {
 		Engine:  gin.Default(),
 	}
 
+	e.Engine.SetTrustedProxies(nil)
+	e.Engine.TrustedPlatform = "X-Forwarded-For"
+
 	if e.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
