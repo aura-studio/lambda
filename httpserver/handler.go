@@ -255,7 +255,7 @@ func (e *Engine) genMeta(c *gin.Context) map[string]interface{} {
 	if len(xForwardFor) == 0 {
 		meta[MetaRemoteAddr] = c.Request.RemoteAddr
 	} else {
-		meta[MetaRemoteAddr] = xForwardFor + ":0"
+		meta[MetaRemoteAddr] = strings.Split(xForwardFor, ",")[0] + ":0"
 	}
 
 	return meta
