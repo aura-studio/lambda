@@ -349,6 +349,7 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 	meta := c.GetStringMap(MetaContext)
 	if gjson.ValidBytes([]byte(req)) && !gjson.Get(req, "__meta__").Exists() {
 		req, _ = sjson.Set(req, "__meta__", meta)
+		log.Printf("Add meta to request: %s", req)
 	}
 	rsp, err := f(path, req)
 	c.Set(ResponseContext, rsp)
