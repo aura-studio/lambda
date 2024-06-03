@@ -251,7 +251,7 @@ func (e *Engine) MethodNotAllowed(c *gin.Context) {
 
 func (e *Engine) genMeta(c *gin.Context) map[string]interface{} {
 	meta := map[string]interface{}{}
-
+	fmt.Println(c.Request)
 	meta[MetaXForwardFor] = c.Request.Header.Get("X-Forwarded-For")
 	meta[MetaRemoteAddr] = c.Request.RemoteAddr
 
