@@ -34,8 +34,10 @@ const (
 )
 
 const (
-	MetaRemoteAddr  = "remote_addr"
-	MetaXForwardFor = "x_forward_for"
+	MetaRemoteAddr      = "remote_addr"
+	MetaXForwardedFor   = "x_forwarded_for"
+	MetaXForwardedPort  = "x_forwarded_port"
+	MetaXForwardedProto = "x_forwarded_proto"
 )
 
 type Proccessor = func(*gin.Context, LocalHandler)
@@ -251,8 +253,10 @@ func (e *Engine) MethodNotAllowed(c *gin.Context) {
 
 func (e *Engine) genMeta(c *gin.Context) map[string]interface{} {
 	meta := map[string]interface{}{}
-	fmt.Println(c.Request)
-	meta[MetaXForwardFor] = c.Request.Header.Get("X-Forwarded-For")
+
+	meta[MetaXForwardedFor] = c.Request.Header.Get("X-Forwarded-For")
+	meta[MetaXForwardedPort] = c.Request.Header.Get("X-Forwarded-Port")
+	meta[MetaXForwardedProto] = c.Request.Header.Get("X-Forwarded-Proto")
 	meta[MetaRemoteAddr] = c.Request.RemoteAddr
 
 	return meta
