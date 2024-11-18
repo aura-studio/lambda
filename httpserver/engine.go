@@ -19,6 +19,10 @@ func NewEngine(opts ...Option) *Engine {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	if e.CorsMode {
+		e.Use(Cors())
+	}
+
 	e.InstallPackages()
 	e.InstallHandlers()
 

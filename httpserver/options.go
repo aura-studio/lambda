@@ -13,6 +13,7 @@ type Package struct {
 
 type Options struct {
 	ReleaseMode     bool
+	CorsMode        bool
 	Namespace       string
 	StaticLinkMap   map[string]string
 	PrefixLinkMap   map[string]string
@@ -47,6 +48,12 @@ func (o *Options) init(opts ...Option) {
 func WithReleaseMode() Option {
 	return func(o *Options) {
 		o.ReleaseMode = true
+	}
+}
+
+func WithCors() Option {
+	return func(o *Options) {
+		o.CorsMode = true
 	}
 }
 
