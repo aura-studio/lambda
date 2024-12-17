@@ -11,9 +11,15 @@ type Package struct {
 	Tunnel dynamic.Tunnel
 }
 
+type Library struct {
+	Local  string
+	Remote string
+}
+
 type Options struct {
 	ReleaseMode     bool
 	CorsMode        bool
+	Library         Library
 	Namespace       string
 	StaticLinkMap   map[string]string
 	PrefixLinkMap   map[string]string
@@ -54,6 +60,12 @@ func WithReleaseMode() Option {
 func WithCors() Option {
 	return func(o *Options) {
 		o.CorsMode = true
+	}
+}
+
+func WithLibrary(Library Library) Option {
+	return func(o *Options) {
+		o.Library = Library
 	}
 }
 
