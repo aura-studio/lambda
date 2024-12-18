@@ -12,16 +12,16 @@ type Package struct {
 }
 
 type Options struct {
-	ReleaseMode     bool
-	CorsMode        bool
-	LocalLibrary    string
-	RemoteLibrary   string
-	Namespace       string
-	StaticLinkMap   map[string]string
-	PrefixLinkMap   map[string]string
-	StaticPackages  []*Package
-	PreloadPackages []*Package
-	HeaderLinkMap   map[string]string
+	ReleaseMode      bool
+	CorsMode         bool
+	LocalLibrary     string
+	RemoteLibrary    string
+	LibraryNamespace string
+	StaticLinkMap    map[string]string
+	PrefixLinkMap    map[string]string
+	StaticPackages   []*Package
+	PreloadPackages  []*Package
+	HeaderLinkMap    map[string]string
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -33,12 +33,12 @@ func NewOptions(opts ...Option) *Options {
 type Option func(*Options)
 
 var defaultOptions = &Options{
-	Namespace:       "",
-	StaticLinkMap:   map[string]string{},
-	PrefixLinkMap:   map[string]string{},
-	StaticPackages:  []*Package{},
-	PreloadPackages: []*Package{},
-	HeaderLinkMap:   map[string]string{},
+	LibraryNamespace: "",
+	StaticLinkMap:    map[string]string{},
+	PrefixLinkMap:    map[string]string{},
+	StaticPackages:   []*Package{},
+	PreloadPackages:  []*Package{},
+	HeaderLinkMap:    map[string]string{},
 }
 
 func (o *Options) init(opts ...Option) {
@@ -71,9 +71,9 @@ func WithRemoteLibrary(remoteLibrary string) Option {
 	}
 }
 
-func WithNamespace(namespace string) Option {
+func WithLibraryNamespace(libraryNamespace string) Option {
 	return func(o *Options) {
-		o.Namespace = namespace
+		o.LibraryNamespace = libraryNamespace
 	}
 }
 

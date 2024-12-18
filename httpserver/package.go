@@ -9,7 +9,7 @@ import (
 func (e *Engine) InstallPackages() {
 	dynamic.Init(e.LocalLibrary, e.RemoteLibrary)
 
-	dynamic.UseNamespace(e.Namespace)
+	dynamic.UseNamespace(e.LibraryNamespace)
 
 	for _, p := range e.StaticPackages {
 		dynamic.RegisterPackage(p.Name, p.Commit, p.Tunnel)
