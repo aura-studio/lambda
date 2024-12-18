@@ -7,7 +7,7 @@ import (
 )
 
 func (e *Engine) InstallPackages() {
-	dynamic.Init(e.Library.Local, e.Library.Remote)
+	dynamic.Init(e.LocalLibrary, e.RemoteLibrary)
 
 	dynamic.UseNamespace(e.Namespace)
 
