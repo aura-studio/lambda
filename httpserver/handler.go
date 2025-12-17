@@ -117,11 +117,12 @@ func (e *Engine) API(c *gin.Context) {
 	c.Set(MetaContext, e.genMeta(c))
 
 	// request
-	if c.Request.Method == http.MethodGet {
+	switch c.Request.Method {
+	case http.MethodGet, "": // empty method treated as GET
 		c.Set(RequestContext, e.genGetReq(c))
-	} else if c.Request.Method == http.MethodPost {
+	case http.MethodPost:
 		c.Set(RequestContext, e.genPostReq(c))
-	} else {
+	default:
 		c.Set(RequestContext, "")
 	}
 
@@ -186,11 +187,12 @@ func (e *Engine) WAPI(c *gin.Context) {
 	c.Set(HeaderContext, c.Request.Header)
 
 	// request
-	if c.Request.Method == http.MethodGet {
+	switch c.Request.Method {
+	case http.MethodGet, "": // empty method treated as GET
 		c.Set(RequestContext, e.genGetReq(c))
-	} else if c.Request.Method == http.MethodPost {
+	case http.MethodPost:
 		c.Set(RequestContext, e.genPostReq(c))
-	} else {
+	default:
 		c.Set(RequestContext, "")
 	}
 
