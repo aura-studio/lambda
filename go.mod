@@ -5,7 +5,7 @@ go 1.22
 toolchain go1.24.0
 
 require (
-	github.com/aura-studio/dynamic v1.5.4
+	github.com/aura-studio/dynamic v1.5.5
 	github.com/gin-gonic/gin v1.8.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/spf13/cobra v1.6.1
