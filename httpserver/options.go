@@ -61,9 +61,9 @@ func WithCors() Option {
 	}
 }
 
-func WithLocalLibrary(localLibrary string) Option {
+func WithLocalLibrary() Option {
 	return func(o *Options) {
-		o.LocalLibrary = localLibrary
+		o.LocalLibrary = "local-library"
 	}
 }
 
