@@ -7,8 +7,10 @@ import (
 )
 
 func (e *Engine) InstallPackages() {
-	if e.LocalLibrary != "" && e.RemoteLibrary != "" {
-		dynamic.UseWarehouse(e.LocalLibrary, e.RemoteLibrary)
+	if e.RemoteLibrary != "" {
+		dynamic.UseRemoteWarehouse(e.RemoteLibrary)
+	} else if e.LocalLibrary != "" {
+		dynamic.UseLocalWarehouse()
 	}
 
 	if e.LibraryNamespace != "" {
