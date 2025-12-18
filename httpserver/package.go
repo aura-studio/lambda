@@ -7,9 +7,17 @@ import (
 )
 
 func (e *Engine) InstallPackages() {
-	dynamic.Init(e.LocalLibrary, e.RemoteLibrary)
+	if e.LocalLibrary != "" && e.RemoteLibrary != "" {
+		dynamic.UseWarehouse(e.LocalLibrary, e.RemoteLibrary)
+	}
 
-	dynamic.UseNamespace(e.LibraryNamespace)
+	if e.LibraryNamespace != "" {
+		dynamic.UseNamespace(e.LibraryNamespace)
+	}
+
+	if e.LibraryDefaultVersion != "" {
+		dynamic.UseDefaultVersion(e.LibraryDefaultVersion)
+	}
 
 	for _, p := range e.StaticPackages {
 		dynamic.RegisterPackage(p.Name, p.Commit, p.Tunnel)

@@ -1,5 +1,5 @@
-github.com/aura-studio/dynamic v1.4.5 h1:xGGVTRi6lcUt2DQq+FL3DlMxer2j+ANkw5dBdqV4I5o=
-github.com/aura-studio/dynamic v1.4.5/go.mod h1:qc20rNXeDmKaqPQmz17D2f1FtDdil9/XfKLlaMAbnPo=
+github.com/aura-studio/dynamic v1.5.1 h1:cUmpk75naCR9/l+XN0A8ct77xEFAK2fWcWQLfmR8ws4=
+github.com/aura-studio/dynamic v1.5.1/go.mod h1:qc20rNXeDmKaqPQmz17D2f1FtDdil9/XfKLlaMAbnPo=
 github.com/aws/aws-sdk-go-v2 v1.17.2/go.mod h1:uzbQtefpm44goOPmdKyAlXSNcwlRgF3ePWVW6EtJvvw=
 github.com/aws/aws-sdk-go-v2 v1.36.2 h1:Ub6I4lq/71+tPb/atswvToaLGVMxKZvjYDVOWEExOcU=
 github.com/aws/aws-sdk-go-v2 v1.36.2/go.mod h1:LLXuLpgzEbD766Z5ECcRmi8AzSwfZItDtmABVkRLGzg=
