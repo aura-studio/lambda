@@ -378,16 +378,19 @@ func (e *Engine) debugProcessor(c *gin.Context, f LocalHandler) {
 }
 
 func (e *Engine) handle(path string, req string) (string, error) {
-	strs := strings.Split(strings.Trim(path, "/"), "/")
-	pkg := strs[0]
-	version := strs[1]
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid path: %q", path)
+	}
+	pkg := parts[0]
+	version := parts[1]
 
 	tunnel, err := e.GetPackage(pkg, version)
 	if err != nil {
 		return "", err
 	}
 
-	route := fmt.Sprintf("/%s", strings.Join(strs[2:], "/"))
+	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
 	return tunnel.Invoke(route, req), nil
 }
 
