@@ -1,0 +1,19 @@
+syntax = "proto3";
+package sqs;
+option go_package = "github.com/aura-studio/lambda/sqs";
+
+message Request {
+  string client_sqs_id = 1;
+  string server_sqs_id = 2;
+  string correlation_id = 3;
+  string path = 4;
+  bytes payload = 5;
+}
+
+message Response {
+  string client_sqs_id = 1;
+  string server_sqs_id = 2;
+  string correlation_id = 3;
+  bytes payload = 4;
+  string error = 5;
+}
