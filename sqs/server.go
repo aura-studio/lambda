@@ -12,5 +12,7 @@ func Serve(opts ...ServeOption) {
 }
 
 func Close() {
-	
+	if engine != nil {
+		engine.Stop()
+	}
 }

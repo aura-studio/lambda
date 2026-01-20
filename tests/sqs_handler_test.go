@@ -7,7 +7,17 @@ import (
 
 	lambdasqs "github.com/aura-studio/lambda/sqs"
 	events "github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
+
+type mockSQSClient struct {
+	messages []*sqs.SendMessageInput
+}
+
+func (m *mockSQSClient) SendMessage(ctx context.Context, params *sqs.SendMessageInput, optFns ...func(*sqs.Options)) (*sqs.SendMessageOutput, error) {
+	m.messages = append(m.messages, params)
+	return &sqs.SendMessageOutput{}, nil
+}
 
 func mustPBRequest(t *testing.T, r *lambdasqs.Request) string {
 	t.Helper()
@@ -26,9 +36,17 @@ func TestSQSHandler_PartialFailures(t *testing.T) {
 		{MessageId: "2", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/pkg/version/route", Payload: []byte(`{}`), ClientSqsId: "c2"})}, // GetPackage likely fails -> fail
 	}}
 
-	resp, err := e.Handle(context.Background(), ev)
+	err := e.HandleSQSMessagesWithoutResponse(context.Background(), ev)
+	if err == nil {
+		t.Fatal("HandleSQSMessagesWithoutResponse expected error, got nil")
+	}
+	// HandleSQSMessagesWithoutResponse returns error on failure, but doesn't return partial failures response directly.
+	// The test logic for partial failures might need adjustment or use HandleSQSMessagesWithResponse.
+	// Assuming we want to test partial failures, we should use HandleSQSMessagesWithResponse.
+
+	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
 	if err != nil {
-		t.Fatalf("Handle error: %v", err)
+		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
 	}
 	if len(resp.BatchItemFailures) != 2 {
 		t.Fatalf("BatchItemFailures len = %d", len(resp.BatchItemFailures))
@@ -37,26 +55,28 @@ func TestSQSHandler_PartialFailures(t *testing.T) {
 
 func TestSQSHandler_ResponseRouting(t *testing.T) {
 	e := lambdasqs.NewEngine()
+	mock := &mockSQSClient{}
+	e.SetSQSClient(mock)
 	e.SetInvokeFunc(func(path string, req string) (string, error) {
 		return "OK", nil
 	})
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
-		{MessageId: "ignored-1", Body: mustPBRequest(t, &lambdasqs.Request{ClientSqsId: "client-1", ServerSqsId: "server-9", Path: "/api/pkg/version/route", Payload: []byte(`{}`)})},
+		{MessageId: "ignored-1", Body: mustPBRequest(t, &lambdasqs.Request{ClientSqsId: "client-1", ServerSqsId: "server-9", CorrelationId: "corr-1", Path: "/api/pkg/version/route", Payload: []byte(`{}`)})},
 		{MessageId: "ignored-2", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/pkg/version/route", Payload: []byte(`{}`), ClientSqsId: "client-2"})},
 	}}
 
-	_, out, err := e.HandleWithResponses(context.Background(), ev)
+	_, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
 	if err != nil {
-		t.Fatalf("HandleWithResponses error: %v", err)
+		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
 	}
-	if len(out) != 1 {
-		t.Fatalf("out len = %d", len(out))
+	if len(mock.messages) != 1 {
+		t.Fatalf("out len = %d", len(mock.messages))
 	}
-	if out[0].QueueID != "server-9" {
-		t.Fatalf("QueueID = %q", out[0].QueueID)
+	if *mock.messages[0].QueueUrl != "server-9" {
+		t.Fatalf("QueueUrl = %q", *mock.messages[0].QueueUrl)
 	}
-	rsp, err := lambdasqs.UnmarshalResponse([]byte(out[0].Body))
+	rsp, err := lambdasqs.UnmarshalResponse([]byte(*mock.messages[0].MessageBody))
 	if err != nil {
 		t.Fatalf("UnmarshalResponse: %v", err)
 	}
@@ -73,6 +93,8 @@ func TestSQSHandler_ResponseRouting(t *testing.T) {
 
 func TestSQSHandler_NoResponse_AllowsEmptyClientSqsId(t *testing.T) {
 	e := lambdasqs.NewEngine()
+	mock := &mockSQSClient{}
+	e.SetSQSClient(mock)
 	e.SetInvokeFunc(func(path string, req string) (string, error) {
 		return "OK", nil
 	})
@@ -83,39 +105,43 @@ func TestSQSHandler_NoResponse_AllowsEmptyClientSqsId(t *testing.T) {
 		{MessageId: "m1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/pkg/version/route", Payload: []byte(`{}`)})},
 	}}
 
-	resp, out, err := e.HandleWithResponses(context.Background(), ev)
+	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
 	if err != nil {
-		t.Fatalf("HandleWithResponses error: %v", err)
+		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
 	}
 	if len(resp.BatchItemFailures) != 0 {
 		t.Fatalf("BatchItemFailures len = %d", len(resp.BatchItemFailures))
 	}
-	if len(out) != 0 {
-		t.Fatalf("out len = %d", len(out))
+	if len(mock.messages) != 0 {
+		t.Fatalf("out len = %d", len(mock.messages))
 	}
 }
 
 func TestSQSHandler_HealthCheck_OK(t *testing.T) {
 	e := lambdasqs.NewEngine()
+	mock := &mockSQSClient{}
+	e.SetSQSClient(mock)
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "h1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/health-check"})},
 	}}
 
-	resp, out, err := e.HandleWithResponses(context.Background(), ev)
+	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
 	if err != nil {
-		t.Fatalf("HandleWithResponses error: %v", err)
+		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
 	}
 	if len(resp.BatchItemFailures) != 0 {
 		t.Fatalf("BatchItemFailures len = %d", len(resp.BatchItemFailures))
 	}
-	if len(out) != 0 {
-		t.Fatalf("out len = %d", len(out))
+	if len(mock.messages) != 0 {
+		t.Fatalf("out len = %d", len(mock.messages))
 	}
 }
 
 func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
 	e := lambdasqs.NewEngine()
+	mock := &mockSQSClient{}
+	e.SetSQSClient(mock)
 	var gotPath string
 	e.SetInvokeFunc(func(path string, req string) (string, error) {
 		gotPath = path
@@ -126,15 +152,15 @@ func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
 		{MessageId: "a1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/pkg/version/route", Payload: []byte(`{}`)})},
 	}}
 
-	resp, out, err := e.HandleWithResponses(context.Background(), ev)
+	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
 	if err != nil {
-		t.Fatalf("HandleWithResponses error: %v", err)
+		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
 	}
 	if len(resp.BatchItemFailures) != 0 {
 		t.Fatalf("BatchItemFailures len = %d", len(resp.BatchItemFailures))
 	}
-	if len(out) != 0 {
-		t.Fatalf("out len = %d", len(out))
+	if len(mock.messages) != 0 {
+		t.Fatalf("out len = %d", len(mock.messages))
 	}
 	if gotPath != "/pkg/version/route" {
 		t.Fatalf("gotPath = %q", gotPath)
@@ -143,6 +169,8 @@ func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
 
 func TestSQSHandler_APIPath_RequiresPrefix(t *testing.T) {
 	e := lambdasqs.NewEngine()
+	mock := &mockSQSClient{}
+	e.SetSQSClient(mock)
 	e.SetInvokeFunc(func(path string, req string) (string, error) {
 		return "OK", nil
 	})
@@ -151,12 +179,12 @@ func TestSQSHandler_APIPath_RequiresPrefix(t *testing.T) {
 		{MessageId: "p1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/pkg/version/route", Payload: []byte(`{}`)})},
 	}}
 
-	resp, out, err := e.HandleWithResponses(context.Background(), ev)
+	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
 	if err != nil {
-		t.Fatalf("HandleWithResponses error: %v", err)
+		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
 	}
-	if len(out) != 0 {
-		t.Fatalf("out len = %d", len(out))
+	if len(mock.messages) != 0 {
+		t.Fatalf("out len = %d", len(mock.messages))
 	}
 	if len(resp.BatchItemFailures) != 1 {
 		t.Fatalf("BatchItemFailures len = %d", len(resp.BatchItemFailures))

@@ -3,18 +3,25 @@ package sqs
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync/atomic"
 
 	"github.com/aura-studio/lambda/dynamic"
 	events "github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
+
+type SQSClient interface {
+	SendMessage(ctx context.Context, params *sqs.SendMessageInput, optFns ...func(*sqs.Options)) (*sqs.SendMessageOutput, error)
+}
 
 type Engine struct {
 	*Options
 	*dynamic.Dynamic
-	r       *router
-	running atomic.Int32
+	r         *router
+	running   atomic.Int32
+	sqsClient SQSClient
 }
 
 func NewEngine(opts ...ServeOption) *Engine {
@@ -25,46 +32,41 @@ func NewEngine(opts ...ServeOption) *Engine {
 		}
 	}
 
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
 	e := &Engine{
-		Options: NewOptions(bag.sqs...),
-		Dynamic: dynamic.NewDynamic(bag.dynamic...),
+		Options:   NewOptions(bag.sqs...),
+		Dynamic:   dynamic.NewDynamic(bag.dynamic...),
+		sqsClient: sqs.NewFromConfig(cfg),
 	}
 	e.InstallHandlers()
 	return e
 }
 
-type InvokeFunc func(path string, req string) (string, error)
-
 func (e *Engine) Start() {
+	e.running.Store(1)
 }
 
 func (e *Engine) Stop() {
-}
-
-func (e *Engine) invokeDefault(path string, req string) (string, error) {
-	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid path: %q", path)
-	}
-	pkg := parts[0]
-	version := parts[1]
-
-	tunnel, err := e.GetPackage(pkg, version)
-	if err != nil {
-		return "", err
-	}
-
-	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
-	return tunnel.Invoke(route, req), nil
+	e.running.Store(0)
 }
 
 func (e *Engine) HandleSQSMessagesWithoutResponse(ctx context.Context, ev events.SQSEvent) error {
-	_, err := e.handleSQSMessages(ctx, ev)
-	return err
+	resp, err := e.handleSQSMessages(ctx, ev, false)
+	if err != nil {
+		return err
+	}
+	if len(resp.BatchItemFailures) > 0 {
+		return fmt.Errorf("batch item failures: %d", len(resp.BatchItemFailures))
+	}
+	return nil
 }
 
 func (e *Engine) HandleSQSMessagesWithResponse(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, error) {
-	e.handleSQSMessages()
+	return e.handleSQSMessages(ctx, ev, true)
 }
 
 func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent, partial bool) (resp events.SQSEventResponse, err error) {
@@ -115,8 +117,15 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent, part
 			continue
 		}
 
-		if rsp.ClientSqsId != "" && rsp.CorrelationId != "" {
-			
+		if request.ServerSqsId != "" {
+			_, err := e.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
+				MessageBody: aws.String(string(b)),
+				QueueUrl:    &request.ServerSqsId,
+			})
+			if err != nil {
+				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
+				continue
+			}
 		}
 	}
 

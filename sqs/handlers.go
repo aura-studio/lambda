@@ -13,12 +13,15 @@ func (e *Engine) InstallHandlers() {
 
 	e.r.Use(e.HeaderLink, e.StaticLink, e.PrefixLink)
 
-	e.r.Handle("/", e.OK)
-	e.r.Handle("/health-check", e.OK)
-	e.r.Handle("/api/*path", e.API)
-	e.r.Handle("/_/api/*path", e.Debug, e.API)
-	e.r.Handle("/wapi/*path", e.WAPI)
-	e.r.Handle("/_/wapi/*path", e.Debug, e.WAPI)
+	e.HandleAllMethods("/", e.OK)
+	e.HandleAllMethods("/health-check", e.OK)
+	e.HandleAllMethods("/api/*path", e.API)
+	e.HandleAllMethods("/_/api/*path", e.Debug, e.API)
+	e.HandleAllMethods("/wapi/*path", e.WAPI)
+	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
+
+	e.r.NoRoute(e.PageNotFound)
+	e.r.NoMethod(e.MethodNotAllowed)
 }
 
 func (e *Engine) Use(handlers ...HandlerFunc) {
@@ -35,11 +38,22 @@ func (e *Engine) Handle(pattern string, handlers ...HandlerFunc) {
 	e.r.Handle(pattern, handlers...)
 }
 
+func (e *Engine) HandleAllMethods(pattern string, handlers ...HandlerFunc) {
+	e.Handle(pattern, handlers...)
+}
+
 func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 	if e.r == nil {
 		e.r = newRouter()
 	}
 	e.r.NoRoute(handlers...)
+}
+
+func (e *Engine) NoMethod(handlers ...HandlerFunc) {
+	if e.r == nil {
+		e.r = newRouter()
+	}
+	e.r.NoMethod(handlers...)
 }
 
 func (e *Engine) HeaderLink(c *Context) {

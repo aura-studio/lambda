@@ -1,8 +1,8 @@
 module github.com/aura-studio/lambda
 
-go 1.22
+go 1.23
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	github.com/aura-studio/dynamic v1.6.5
@@ -15,13 +15,13 @@ require (
 
 require (
 	github.com/aws/aws-lambda-go v1.48.0 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.36.2 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.41.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.4 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.20 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.33 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.33 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.17 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.17 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.27 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.33 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
@@ -29,10 +29,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.77.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.42.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.26 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.17.6 // indirect
-	github.com/aws/smithy-go v1.22.2 // indirect
+	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
