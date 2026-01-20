@@ -1,0 +1,12 @@
+http:
+  release: true
+  cors: true
+  staticLink:
+    - srcPath:
+      dstPath:
+  prefixLink:
+    - srcPrefix:
+      dstPrefix:
+  headerLinkKey:
+    - key:
+      prefix:

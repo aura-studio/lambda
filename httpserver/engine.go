@@ -1,12 +1,14 @@
 package httpserver
 
 import (
+	"github.com/aura-studio/lambda/dynamic"
 	"github.com/gin-gonic/gin"
 )
 
 type Engine struct {
 	*Options
 	*gin.Engine
+	*dynamic.Dynamic
 }
 
 func NewEngine(opts ...Option) *Engine {
@@ -23,7 +25,6 @@ func NewEngine(opts ...Option) *Engine {
 		e.Use(Cors())
 	}
 
-	e.InstallPackages()
 	e.InstallHandlers()
 
 	return e

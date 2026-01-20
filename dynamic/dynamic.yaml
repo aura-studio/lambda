@@ -1,0 +1,16 @@
+enviroment:
+  toolchain:
+    os: ubuntu24.04
+    arch: amd64v1
+    compiler: go1.25.5
+    variant: generic
+  warehouse:
+    local:
+    remote:
+
+package:
+  namespace:
+  defaultVersion:
+  preload:
+    - package:
+      version:

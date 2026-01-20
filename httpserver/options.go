@@ -1,28 +1,16 @@
 package httpserver
 
 import (
-	"github.com/aura-studio/dynamic"
 	"github.com/mohae/deepcopy"
 )
 
-type Package struct {
-	Name   string
-	Commit string
-	Tunnel dynamic.Tunnel
-}
-
 type Options struct {
-	ReleaseMode           bool
-	CorsMode              bool
-	LocalLibrary          string
-	RemoteLibrary         string
-	LibraryNamespace      string
-	LibraryDefaultVersion string
-	StaticLinkMap         map[string]string
-	PrefixLinkMap         map[string]string
-	StaticPackages        []*Package
-	PreloadPackages       []*Package
-	HeaderLinkMap         map[string]string
+	// Http Options
+	ReleaseMode   bool
+	CorsMode      bool
+	StaticLinkMap map[string]string
+	PrefixLinkMap map[string]string
+	HeaderLinkMap map[string]string
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -34,13 +22,11 @@ func NewOptions(opts ...Option) *Options {
 type Option func(*Options)
 
 var defaultOptions = &Options{
-	LibraryNamespace:      "",
-	LibraryDefaultVersion: "",
-	StaticLinkMap:         map[string]string{},
-	PrefixLinkMap:         map[string]string{},
-	StaticPackages:        []*Package{},
-	PreloadPackages:       []*Package{},
-	HeaderLinkMap:         map[string]string{},
+	ReleaseMode:   false,
+	CorsMode:      false,
+	StaticLinkMap: map[string]string{},
+	PrefixLinkMap: map[string]string{},
+	HeaderLinkMap: map[string]string{},
 }
 
 func (o *Options) init(opts ...Option) {
@@ -49,6 +35,7 @@ func (o *Options) init(opts ...Option) {
 	}
 }
 
+// -------------- HttpServer Options ----------------
 func WithReleaseMode() Option {
 	return func(o *Options) {
 		o.ReleaseMode = true
@@ -61,30 +48,6 @@ func WithCors() Option {
 	}
 }
 
-func WithLocalLibrary(localLibrary string) Option {
-	return func(o *Options) {
-		o.LocalLibrary = localLibrary
-	}
-}
-
-func WithRemoteLibrary(remoteLibrary string) Option {
-	return func(o *Options) {
-		o.RemoteLibrary = remoteLibrary
-	}
-}
-
-func WithLibraryNamespace(libraryNamespace string) Option {
-	return func(o *Options) {
-		o.LibraryNamespace = libraryNamespace
-	}
-}
-
-func WithLibraryDefaultVersion(libraryDefaultVersion string) Option {
-	return func(o *Options) {
-		o.LibraryDefaultVersion = libraryDefaultVersion
-	}
-}
-
 func WithStaticLink(srcPath, dstPath string) Option {
 	return func(o *Options) {
 		o.StaticLinkMap[srcPath] = dstPath
@@ -94,25 +57,6 @@ func WithStaticLink(srcPath, dstPath string) Option {
 func WithPrefixLink(srcPrefix string, dstPrefix string) Option {
 	return func(o *Options) {
 		o.PrefixLinkMap[srcPrefix] = dstPrefix
-	}
-}
-
-func WithStaticPackage(packageName, commit string, tunnel dynamic.Tunnel) Option {
-	return func(o *Options) {
-		o.StaticPackages = append(o.StaticPackages, &Package{
-			Name:   packageName,
-			Commit: commit,
-			Tunnel: tunnel,
-		})
-	}
-}
-
-func WithPreloadPackage(packageName, commit string) Option {
-	return func(o *Options) {
-		o.PreloadPackages = append(o.PreloadPackages, &Package{
-			Name:   packageName,
-			Commit: commit,
-		})
 	}
 }
 
