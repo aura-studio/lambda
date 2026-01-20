@@ -1,4 +1,4 @@
-package httpserver
+package http
 
 import (
 	"bufio"
@@ -11,7 +11,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aura-studio/dynamic"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -381,7 +380,7 @@ func (e *Engine) handle(path string, req string) (string, error) {
 	packageName := strs[0]
 	commit := strs[1]
 
-	tunnel, err := dynamic.GetPackage(packageName, commit)
+	tunnel, err := e.GetPackage(packageName, commit)
 	if err != nil {
 		return "", err
 	}

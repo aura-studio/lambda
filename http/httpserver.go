@@ -1,29 +1,33 @@
-package httpserver
+package http
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 )
 
 var srv *http.Server
 
-func Serve(addr string, opts ...Option) {
+func Serve(addr string, opts ...ServeOption) error {
 	srv = &http.Server{
 		Addr:    addr,
 		Handler: NewEngine(opts...),
 	}
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
-func Close() {
+func Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal(err)
-	}
 	defer cancel()
+	if srv == nil {
+		return nil
+	}
+	if err := srv.Shutdown(ctx); err != nil {
+		return err
+	}
+	return nil
 }

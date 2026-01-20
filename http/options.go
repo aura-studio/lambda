@@ -1,4 +1,4 @@
-package httpserver
+package http
 
 import (
 	"github.com/mohae/deepcopy"
@@ -19,7 +19,13 @@ func NewOptions(opts ...Option) *Options {
 	return options
 }
 
-type Option func(*Options)
+type Option interface {
+	Apply(o *Options)
+}
+
+type HttpOption func(*Options)
+
+func (f HttpOption) Apply(o *Options) { f(o) }
 
 var defaultOptions = &Options{
 	ReleaseMode:   false,
@@ -31,37 +37,37 @@ var defaultOptions = &Options{
 
 func (o *Options) init(opts ...Option) {
 	for _, opt := range opts {
-		opt(o)
+		opt.Apply(o)
 	}
 }
 
 // -------------- HttpServer Options ----------------
 func WithReleaseMode() Option {
-	return func(o *Options) {
+	return HttpOption(func(o *Options) {
 		o.ReleaseMode = true
-	}
+	})
 }
 
 func WithCors() Option {
-	return func(o *Options) {
+	return HttpOption(func(o *Options) {
 		o.CorsMode = true
-	}
+	})
 }
 
 func WithStaticLink(srcPath, dstPath string) Option {
-	return func(o *Options) {
+	return HttpOption(func(o *Options) {
 		o.StaticLinkMap[srcPath] = dstPath
-	}
+	})
 }
 
 func WithPrefixLink(srcPrefix string, dstPrefix string) Option {
-	return func(o *Options) {
+	return HttpOption(func(o *Options) {
 		o.PrefixLinkMap[srcPrefix] = dstPrefix
-	}
+	})
 }
 
 func WithHeaderLinkKey(key string, prefix string) Option {
-	return func(o *Options) {
+	return HttpOption(func(o *Options) {
 		o.HeaderLinkMap[key] = prefix
-	}
+	})
 }

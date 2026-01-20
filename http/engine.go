@@ -1,4 +1,4 @@
-package httpserver
+package http
 
 import (
 	"github.com/aura-studio/lambda/dynamic"
@@ -11,10 +11,19 @@ type Engine struct {
 	*dynamic.Dynamic
 }
 
-func NewEngine(opts ...Option) *Engine {
+func NewEngine(opts ...ServeOption) *Engine {
+	bag := &serveOptionBag{}
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		opt.apply(bag)
+	}
+
 	e := &Engine{
-		Options: NewOptions(opts...),
+		Options: NewOptions(bag.http...),
 		Engine:  gin.Default(),
+		Dynamic: dynamic.NewDynamic(bag.dynamic...),
 	}
 
 	if e.ReleaseMode {
