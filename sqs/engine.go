@@ -132,19 +132,19 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			continue
 		}
 
-		// Response is produced only when ServerSqsId is provided.
-		if request.ServerSqsId == "" {
+		// Response is produced only when ResponseSqsId is provided and ResponseSwitch is on.
+		if !e.ResponseSwitch || request.ResponseSqsId == "" {
 			continue
 		}
-		// When a response is requested, ClientSqsId must be present.
-		if request.ClientSqsId == "" {
+		// When a response is requested, RequestSqsId must be present.
+		if request.RequestSqsId == "" {
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
 
 		rsp := &Response{
-			ClientSqsId:   request.ClientSqsId,
-			ServerSqsId:   request.ServerSqsId,
+			RequestSqsId:  request.RequestSqsId,
+			ResponseSqsId: request.ResponseSqsId,
 			CorrelationId: request.CorrelationId,
 			Payload:       []byte(c.Response),
 		}
@@ -154,10 +154,10 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			continue
 		}
 
-		if request.ServerSqsId != "" {
+		if request.ResponseSqsId != "" {
 			_, err := e.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 				MessageBody: aws.String(base64.StdEncoding.EncodeToString(b)),
-				QueueUrl:    &request.ServerSqsId,
+				QueueUrl:    &request.ResponseSqsId,
 			})
 			if err != nil {
 				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})

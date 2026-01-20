@@ -50,7 +50,7 @@ func TestSQSHandler_PartialFailures(t *testing.T) {
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "1", Body: "not-proto"}, // invalid protobuf -> fail
-		{MessageId: "2", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/pkg/version/route", Payload: []byte(`{}`), ClientSqsId: "c2"})}, // GetPackage likely fails -> fail
+		{MessageId: "2", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/pkg/version/route", Payload: []byte(`{}`), RequestSqsId: "c2"})}, // GetPackage likely fails -> fail
 	}}
 
 	err := e.HandleSQSMessagesWithoutResponse(context.Background(), ev)
@@ -72,7 +72,7 @@ func TestSQSHandler_PartialFailures(t *testing.T) {
 
 func TestSQSHandler_ResponseRouting(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
+	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)), lambdasqs.SQS(lambdasqs.WithResponseSwitch(true)))
 
 	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
 		invoke: func(route, req string) string {
@@ -81,8 +81,8 @@ func TestSQSHandler_ResponseRouting(t *testing.T) {
 	})
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
-		{MessageId: "ignored-1", Body: mustPBRequest(t, &lambdasqs.Request{ClientSqsId: "client-1", ServerSqsId: "server-9", CorrelationId: "corr-1", Path: "/api/pkg/version/route", Payload: []byte(`{}`)})},
-		{MessageId: "ignored-2", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/pkg/version/route", Payload: []byte(`{}`), ClientSqsId: "client-2"})},
+		{MessageId: "ignored-1", Body: mustPBRequest(t, &lambdasqs.Request{RequestSqsId: "client-1", ResponseSqsId: "server-9", CorrelationId: "corr-1", Path: "/api/pkg/version/route", Payload: []byte(`{}`)})},
+		{MessageId: "ignored-2", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/pkg/version/route", Payload: []byte(`{}`), RequestSqsId: "client-2"})},
 	}}
 
 	_, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
@@ -106,11 +106,11 @@ func TestSQSHandler_ResponseRouting(t *testing.T) {
 		t.Fatalf("proto.Unmarshal: %v", err)
 	}
 
-	if rsp.ClientSqsId != "client-1" {
-		t.Fatalf("ClientSqsId = %q", rsp.ClientSqsId)
+	if rsp.RequestSqsId != "client-1" {
+		t.Fatalf("RequestSqsId = %q", rsp.RequestSqsId)
 	}
-	if rsp.ServerSqsId != "server-9" {
-		t.Fatalf("ServerSqsId = %q", rsp.ServerSqsId)
+	if rsp.ResponseSqsId != "server-9" {
+		t.Fatalf("ResponseSqsId = %q", rsp.ResponseSqsId)
 	}
 	if strings.TrimSpace(string(rsp.Payload)) != "OK" {
 		t.Fatalf("Payload = %q", string(rsp.Payload))

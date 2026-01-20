@@ -4,11 +4,12 @@ import "github.com/mohae/deepcopy"
 
 type Options struct {
 	// reserved for future sqs-specific options
-	StaticLinkMap map[string]string
-	PrefixLinkMap map[string]string
-	SQSClient     SQSClient
-	ErrorSuspend  bool
-	PartialRetry  bool
+	StaticLinkMap  map[string]string
+	PrefixLinkMap  map[string]string
+	SQSClient      SQSClient
+	ErrorSuspend   bool
+	PartialRetry   bool
+	ResponseSwitch bool
 }
 
 type Option interface {
@@ -46,5 +47,11 @@ func WithErrorSuspend(suspend bool) Option {
 func WithPartialRetry(partial bool) Option {
 	return OptionFunc(func(o *Options) {
 		o.PartialRetry = partial
+	})
+}
+
+func WithResponseSwitch(sw bool) Option {
+	return OptionFunc(func(o *Options) {
+		o.ResponseSwitch = sw
 	})
 }
