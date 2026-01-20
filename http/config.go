@@ -8,10 +8,9 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-
 type yamlHTTPConfig struct {
-	Release bool `yaml:"release"`
-	Cors    bool `yaml:"cors"`
+	Release    bool `yaml:"release"`
+	Cors       bool `yaml:"cors"`
 	StaticLink []struct {
 		SrcPath string `yaml:"srcPath"`
 		DstPath string `yaml:"dstPath"`
@@ -32,7 +31,7 @@ type yamlConfig struct {
 
 type yamlServeConfig struct {
 	HTTP    yamlHTTPConfig `yaml:"http"`
-	Dynamic any           `yaml:"dynamic"`
+	Dynamic any            `yaml:"dynamic"`
 }
 
 func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {

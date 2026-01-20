@@ -39,8 +39,10 @@ const (
 	MetaXForwardedProto = "x_forwarded_proto"
 )
 
-type Proccessor = func(*gin.Context, LocalHandler)
-type LocalHandler = func(string, string) (string, error)
+type (
+	Proccessor   = func(*gin.Context, LocalHandler)
+	LocalHandler = func(string, string) (string, error)
+)
 
 var methods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions}
 
@@ -377,10 +379,10 @@ func (e *Engine) debugProcessor(c *gin.Context, f LocalHandler) {
 
 func (e *Engine) handle(path string, req string) (string, error) {
 	strs := strings.Split(strings.Trim(path, "/"), "/")
-	packageName := strs[0]
-	commit := strs[1]
+	pkg := strs[0]
+	version := strs[1]
 
-	tunnel, err := e.GetPackage(packageName, commit)
+	tunnel, err := e.GetPackage(pkg, version)
 	if err != nil {
 		return "", err
 	}
