@@ -80,7 +80,7 @@ func TestSQSHandler_PartialFailures(t *testing.T) {
 
 func TestSQSHandler_ResponseRouting(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)), lambdasqs.SQS(lambdasqs.WithResponseSwitch(true)))
+	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock), lambdasqs.WithResponseSwitch(true))
 
 	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
 		invoke: func(route, req string) string {
@@ -127,7 +127,7 @@ func TestSQSHandler_ResponseRouting(t *testing.T) {
 
 func TestSQSHandler_NoResponse_AllowsEmptyClientSqsId(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
+	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock))
 
 	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
 		invoke: func(route, req string) string {
@@ -155,7 +155,7 @@ func TestSQSHandler_NoResponse_AllowsEmptyClientSqsId(t *testing.T) {
 
 func TestSQSHandler_HealthCheck_OK(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
+	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock))
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "h1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/health-check"})},
@@ -175,7 +175,7 @@ func TestSQSHandler_HealthCheck_OK(t *testing.T) {
 
 func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
+	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock))
 
 	var gotRoute string
 	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
@@ -206,7 +206,7 @@ func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
 
 func TestSQSHandler_APIPath_RequiresPrefix(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
+	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock))
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "p1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/pkg/version/route", Payload: []byte(`{}`)})},

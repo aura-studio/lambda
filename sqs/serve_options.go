@@ -19,7 +19,3 @@ func (b *serveOptionBag) apply(opts ...ServeOption) {
 		}
 	}
 }
-
-func SQS(opt Option) ServeOption { return opt }
-
-func Dyn(opt dynamic.Option) ServeOption { return opt }
