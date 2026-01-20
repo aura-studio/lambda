@@ -52,3 +52,64 @@ func (o *Options) init(opts ...Option) {
 		}
 	}
 }
+
+// -------------- Dynamic Options ----------------
+func WithOs(os string) Option {
+	return OptionFunc(func(o *Options) {
+		o.Os = os
+	})
+}
+
+func WithArch(arch string) Option {
+	return OptionFunc(func(o *Options) {
+		o.Arch = arch
+	})
+}
+
+func WithCompiler(compiler string) Option {
+	return OptionFunc(func(o *Options) {
+		o.Compiler = compiler
+	})
+}
+
+func WithVariant(variant string) Option {
+	return OptionFunc(func(o *Options) {
+		o.Variant = variant
+	})
+}
+
+func WithLocalWarehouse(localWarehouse string) Option {
+	return OptionFunc(func(o *Options) {
+		o.LocalWarehouse = localWarehouse
+	})
+}
+
+func WithRemoteWarehouse(remoteWarehouse string) Option {
+	return OptionFunc(func(o *Options) {
+		o.RemoteWarehouse = remoteWarehouse
+	})
+}
+
+func WithPackageNamespace(packageNamespace string) Option {
+	return OptionFunc(func(o *Options) {
+		o.PackageNamespace = packageNamespace
+	})
+}
+
+func WithPackageDefaultVersion(packageDefaultVersion string) Option {
+	return OptionFunc(func(o *Options) {
+		o.PackageDefaultVersion = packageDefaultVersion
+	})
+}
+
+func WithStaticPackage(p *Package) Option {
+	return OptionFunc(func(o *Options) {
+		o.StaticPackages = append(o.StaticPackages, p)
+	})
+}
+
+func WithPreloadPackage(p *Package) Option {
+	return OptionFunc(func(o *Options) {
+		o.PreloadPackages = append(o.PreloadPackages, p)
+	})
+}

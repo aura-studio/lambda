@@ -4,6 +4,14 @@ import (
 	"github.com/mohae/deepcopy"
 )
 
+type Option interface {
+	Apply(o *Options)
+}
+
+type HttpOption func(*Options)
+
+func (f HttpOption) Apply(o *Options) { f(o) }
+
 type Options struct {
 	// Http Options
 	ReleaseMode   bool
@@ -13,26 +21,18 @@ type Options struct {
 	HeaderLinkMap map[string]string
 }
 
-func NewOptions(opts ...Option) *Options {
-	options := deepcopy.Copy(defaultOptions).(*Options)
-	options.init(opts...)
-	return options
-}
-
-type Option interface {
-	Apply(o *Options)
-}
-
-type HttpOption func(*Options)
-
-func (f HttpOption) Apply(o *Options) { f(o) }
-
 var defaultOptions = &Options{
 	ReleaseMode:   false,
 	CorsMode:      false,
 	StaticLinkMap: map[string]string{},
 	PrefixLinkMap: map[string]string{},
 	HeaderLinkMap: map[string]string{},
+}
+
+func NewOptions(opts ...Option) *Options {
+	options := deepcopy.Copy(defaultOptions).(*Options)
+	options.init(opts...)
+	return options
 }
 
 func (o *Options) init(opts ...Option) {
@@ -43,7 +43,7 @@ func (o *Options) init(opts ...Option) {
 	}
 }
 
-// -------------- HttpServer Options ----------------
+// -------------- Http Options ----------------
 func WithReleaseMode() Option {
 	return HttpOption(func(o *Options) {
 		o.ReleaseMode = true
