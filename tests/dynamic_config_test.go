@@ -7,7 +7,7 @@ import (
 )
 
 func TestDynamicWithConfig(t *testing.T) {
-	yaml := []byte(`enviroment:
+	yaml := []byte(`environment:
   toolchain:
     os: ubuntu24.04
     arch: amd64v1

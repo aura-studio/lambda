@@ -1,4 +1,4 @@
-enviroment:
+environment:
   toolchain:
     os: ubuntu24.04
     arch: amd64v1

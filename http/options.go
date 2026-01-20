@@ -37,7 +37,9 @@ var defaultOptions = &Options{
 
 func (o *Options) init(opts ...Option) {
 	for _, opt := range opts {
-		opt.Apply(o)
+		if opt != nil {
+			opt.Apply(o)
+		}
 	}
 }
 
