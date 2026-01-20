@@ -7,7 +7,7 @@ var engine *Engine
 // Serve runs the SQS Engine handler for AWS Lambda SQS events.
 func Serve(opts ...ServeOption) {
 	engine = NewEngine(opts...)
-	lambda.Start(engine)
+	lambda.Start(engine.Invoke)
 }
 
 func Close() {

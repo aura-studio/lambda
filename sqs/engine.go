@@ -79,8 +79,9 @@ func (e *Engine) handle(path string, req string) (string, error) {
 	return tunnel.Invoke(route, req), nil
 }
 
+// HandleSQSMessagesWithoutResponse 重试全部数据
 func (e *Engine) HandleSQSMessagesWithoutResponse(ctx context.Context, ev events.SQSEvent) error {
-	resp, err := e.handleSQSMessages(ctx, ev, false)
+	resp, err := e.handleSQSMessages(ctx, ev)
 	if err != nil {
 		return err
 	}
@@ -90,11 +91,19 @@ func (e *Engine) HandleSQSMessagesWithoutResponse(ctx context.Context, ev events
 	return nil
 }
 
+// HandleSQSMessagesWithResponse 部分重试
 func (e *Engine) HandleSQSMessagesWithResponse(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, error) {
-	return e.handleSQSMessages(ctx, ev, true)
+	return e.handleSQSMessages(ctx, ev)
 }
 
-func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent, partial bool) (resp events.SQSEventResponse, err error) {
+func (e *Engine) Invoke(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, error) {
+	if e.PartialRetry {
+		return e.HandleSQSMessagesWithResponse(ctx, ev)
+	}
+	return events.SQSEventResponse{}, e.HandleSQSMessagesWithoutResponse(ctx, ev)
+}
+
+func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (resp events.SQSEventResponse, err error) {
 	_ = ctx
 	for _, msg := range ev.Records {
 		if e.running.Load() == 0 {
@@ -116,6 +125,9 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent, part
 		}
 		e.r.dispatch(c)
 		if c.Err != nil {
+			if e.ErrorSuspend {
+				return resp, c.Err
+			}
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}

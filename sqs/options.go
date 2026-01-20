@@ -7,6 +7,8 @@ type Options struct {
 	StaticLinkMap map[string]string
 	PrefixLinkMap map[string]string
 	SQSClient     SQSClient
+	ErrorSuspend  bool
+	PartialRetry  bool
 }
 
 type Option interface {
@@ -32,5 +34,17 @@ func NewOptions(opts ...Option) *Options {
 func WithSQSClient(client SQSClient) Option {
 	return OptionFunc(func(o *Options) {
 		o.SQSClient = client
+	})
+}
+
+func WithErrorSuspend(suspend bool) Option {
+	return OptionFunc(func(o *Options) {
+		o.ErrorSuspend = suspend
+	})
+}
+
+func WithPartialRetry(partial bool) Option {
+	return OptionFunc(func(o *Options) {
+		o.PartialRetry = partial
 	})
 }
