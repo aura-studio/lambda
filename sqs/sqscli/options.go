@@ -12,7 +12,6 @@ type Options struct {
 	RequestSqsId   string
 	ResponseSqsId  string
 	DefaultTimeout time.Duration
-	WorkerPoolSize int
 }
 
 type Option interface {
@@ -25,7 +24,6 @@ func (f OptionFunc) Apply(o *Options) { f(o) }
 
 var defaultOptions = &Options{
 	DefaultTimeout: 30 * time.Second,
-	WorkerPoolSize: 10,
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -59,11 +57,5 @@ func WithResponseSqsId(id string) Option {
 func WithDefaultTimeout(timeout time.Duration) Option {
 	return OptionFunc(func(o *Options) {
 		o.DefaultTimeout = timeout
-	})
-}
-
-func WithWorkerPoolSize(size int) Option {
-	return OptionFunc(func(o *Options) {
-		o.WorkerPoolSize = size
 	})
 }

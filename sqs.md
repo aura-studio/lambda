@@ -12,15 +12,15 @@
 
 ## 消息协议（Request / Response）
 
-- SQS Message `Body`：**protobuf 二进制（无 base64）**
+- SQS Message `Body`：**base64(protobuf 二进制)**
 - protobuf schema：见 [sqs/sqs.proto](sqs/sqs.proto)
 
 ### Request
 
 字段顺序（proto field number）：
 
-1. `client_sqs_id`：客户端标识（需要响应时必填）
-2. `server_sqs_id`：服务端/响应队列标识（非空表示“需要响应”）
+1. `request_sqs_id`：客户端标识（需要响应时必填）
+2. `response_sqs_id`：服务端/响应队列标识（非空表示“需要响应”）
 3. `correlation_id`：可选相关性字段（实现会透传到 Response）
 4. `path`：路由路径（如 `/api/pkg/version/route`）
 5. `payload`：请求内容（bytes）；在引擎内当作字符串传给 handler（`string(payload)`）
@@ -29,8 +29,8 @@
 
 字段顺序（proto field number）：
 
-1. `client_sqs_id`
-2. `server_sqs_id`
+1. `request_sqs_id`
+2. `response_sqs_id`
 3. `correlation_id`
 4. `payload`：响应内容（bytes）；当前实现写入 `[]byte(responseString)`
 5. `error`：保留字段（当前实现未填充；失败时通常不产出响应而是 batch failure）
@@ -65,11 +65,11 @@
     2. 创建 `Context{RawPath: request.Path, Path: request.Path, Request: string(request.Payload)}`
     3. router `dispatch`
     4. 若 `Context.Err != nil` → 记为 batch failure
-    5. 若 `request.ServerSqsId != ""` → 需要响应：
-        - 要求 `request.ClientSqsId != ""`，否则记为 batch failure
-        - 构造 `Response{ClientSqsId, ServerSqsId, CorrelationId, Payload}`
-        - 输出 `OutgoingMessage{QueueID: request.ServerSqsId, Body: base64(proto(Response))}`
-    6. 若 `request.ServerSqsId == ""` → 不需要响应（允许 `ClientSqsId` 为空）
+    5. 若 `request.ResponseSqsId != ""` 且 `ResponseSwitch` 为开启状态 → 需要响应：
+        - 要求 `request.RequestSqsId != ""`，否则记为 batch failure
+        - 构造 `Response{RequestSqsId, ResponseSqsId, CorrelationId, Payload}`
+        - 输出 `OutgoingMessage{QueueID: request.ResponseSqsId, Body: base64(proto(Response))}`
+    6. 若 `request.ResponseSqsId == ""` → 不需要响应（允许 `RequestSqsId` 为空）
 
 ### Partial batch failure
 

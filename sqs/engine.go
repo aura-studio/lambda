@@ -18,6 +18,8 @@ import (
 
 type SQSClient interface {
 	SendMessage(ctx context.Context, params *sqs.SendMessageInput, optFns ...func(*sqs.Options)) (*sqs.SendMessageOutput, error)
+	ReceiveMessage(ctx context.Context, params *sqs.ReceiveMessageInput, optFns ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error)
+	DeleteMessage(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error)
 }
 
 type Engine struct {
@@ -112,8 +114,14 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			continue
 		}
 
+		b, err := base64.StdEncoding.DecodeString(msg.Body)
+		if err != nil {
+			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
+			continue
+		}
+
 		var request Request
-		if err := proto.Unmarshal([]byte(msg.Body), &request); err != nil {
+		if err := proto.Unmarshal(b, &request); err != nil {
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
@@ -158,7 +166,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			CorrelationId: request.CorrelationId,
 			Payload:       []byte(c.Response),
 		}
-		b, err := proto.Marshal(rsp)
+		b, err = proto.Marshal(rsp)
 		if err != nil {
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue

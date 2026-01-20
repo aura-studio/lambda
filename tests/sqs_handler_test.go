@@ -22,13 +22,21 @@ func (m *mockSQSClient) SendMessage(ctx context.Context, params *sqs.SendMessage
 	return &sqs.SendMessageOutput{}, nil
 }
 
+func (m *mockSQSClient) ReceiveMessage(ctx context.Context, params *sqs.ReceiveMessageInput, optFns ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error) {
+	return &sqs.ReceiveMessageOutput{}, nil
+}
+
+func (m *mockSQSClient) DeleteMessage(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
+	return &sqs.DeleteMessageOutput{}, nil
+}
+
 func mustPBRequest(t *testing.T, r *lambdasqs.Request) string {
 	t.Helper()
 	b, err := proto.Marshal(r)
 	if err != nil {
 		t.Fatalf("proto.Marshal: %v", err)
 	}
-	return string(b)
+	return base64.StdEncoding.EncodeToString(b)
 }
 
 type mockTunnel struct {
