@@ -8,9 +8,9 @@ import (
 	lambdahttp "github.com/aura-studio/lambda/http"
 )
 
-func TestHTTPWithDefaultServeConfig(t *testing.T) {
+func TestHTTPWithDefaultServeConfigFile(t *testing.T) {
 	tmp := t.TempDir()
-	p := filepath.Join(tmp, "http.yaml")
+	p := filepath.Join(tmp, "serve.yml")
 	if err := os.WriteFile(p, []byte(
 		"http:\n"+
 			"  release: true\n"+
@@ -40,8 +40,9 @@ func TestHTTPWithDefaultServeConfig(t *testing.T) {
 		t.Fatalf("chdir: %v", err)
 	}
 
-	e := lambdahttp.NewEngine(lambdahttp.WithDefaultServeConfig())
+	e := lambdahttp.NewEngine(lambdahttp.WithDefaultServeConfigFile())
 	if !e.ReleaseMode {
+		t.Logf("Options: %+v", e.Options)
 		t.Fatalf("ReleaseMode = false")
 	}
 	if e.Os != "ubuntu24.04" {

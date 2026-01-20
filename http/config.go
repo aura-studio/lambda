@@ -39,6 +39,16 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 		o.ReleaseMode = cfg.Release
 		o.CorsMode = cfg.Cors
 
+		if o.StaticLinkMap == nil {
+			o.StaticLinkMap = make(map[string]string)
+		}
+		if o.PrefixLinkMap == nil {
+			o.PrefixLinkMap = make(map[string]string)
+		}
+		if o.HeaderLinkMap == nil {
+			o.HeaderLinkMap = make(map[string]string)
+		}
+
 		for _, link := range cfg.StaticLink {
 			if link.SrcPath == "" || link.DstPath == "" {
 				continue
@@ -69,7 +79,7 @@ func optionFromConfigBytes(b []byte) (Option, error) {
 	return optionFromHTTPConfig(cfg.HTTP), nil
 }
 
-// WithConfig parses YAML bytes following http.yaml structure and applies it to Options.
+// WithConfig parses YAML bytes following http.yml structure and applies it to Options.
 // It panics if the YAML is invalid.
 func WithConfig(yamlBytes []byte) Option {
 	opt, err := optionFromConfigBytes(yamlBytes)
@@ -111,8 +121,8 @@ func (o serveConfigOption) apply(b *serveOptionBag) {
 	}
 }
 
-// WithServeConfig parses YAML bytes following http.yaml structure, and also supports
-// embedding dynamic.yaml content under top-level `dynamic:`.
+// WithServeConfig parses YAML bytes following http.yml structure, and also supports
+// embedding dynamic.yml content under top-level `dynamic:`.
 // It panics if the YAML is invalid.
 func WithServeConfig(yamlBytes []byte) ServeOption {
 	var cfg yamlServeConfig
@@ -128,7 +138,7 @@ func WithServeConfig(yamlBytes []byte) ServeOption {
 		if err != nil {
 			return serveConfigOption{err: err}
 		}
-		// cfg.Dynamic is expected to be a dynamic.yaml document root (environment/package).
+		// cfg.Dynamic is expected to be a dynamic.yml document root (environment/package).
 		dynOpt = dynamic.WithConfig(b)
 	}
 

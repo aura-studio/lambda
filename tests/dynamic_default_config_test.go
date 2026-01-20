@@ -8,9 +8,9 @@ import (
 	"github.com/aura-studio/lambda/dynamic"
 )
 
-func TestDynamicWithDefaultConfig(t *testing.T) {
+func TestDynamicWithDefaultConfigFile(t *testing.T) {
 	tmp := t.TempDir()
-	p := filepath.Join(tmp, "dynamic.yaml")
+	p := filepath.Join(tmp, "dynamic.yml")
 	if err := os.WriteFile(p, []byte(`environment:
   toolchain:
     os: ubuntu24.04
@@ -34,7 +34,7 @@ package:
 		t.Fatalf("chdir: %v", err)
 	}
 
-	o := dynamic.NewOptions(dynamic.WithDefaultConfig())
+	o := dynamic.NewOptions(dynamic.WithDefaultConfigFile())
 	if o.Os != "ubuntu24.04" {
 		t.Fatalf("Os = %q", o.Os)
 	}

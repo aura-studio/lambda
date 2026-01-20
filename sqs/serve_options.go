@@ -16,6 +16,8 @@ func (b *serveOptionBag) apply(opts ...ServeOption) {
 			b.sqs = append(b.sqs, o)
 		case dynamic.Option:
 			b.dynamic = append(b.dynamic, o)
+		case interface{ apply(*serveOptionBag) }:
+			o.apply(b)
 		}
 	}
 }

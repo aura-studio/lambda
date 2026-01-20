@@ -58,7 +58,7 @@ func optionFromConfigBytes(b []byte) (Option, error) {
 	}), nil
 }
 
-// WithConfig parses YAML bytes following dynamic.yaml structure and applies it to Options.
+// WithConfig parses YAML bytes following dynamic.yml structure and applies it to Options.
 // It panics if the YAML is invalid.
 func WithConfig(yamlBytes []byte) Option {
 	opt, err := optionFromConfigBytes(yamlBytes)

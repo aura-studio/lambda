@@ -1,7 +1,6 @@
 package dynamic
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,7 +11,9 @@ import (
 func DefaultConfigCandidates() []string {
 	return []string{
 		"dynamic.yaml",
+		"dynamic.yml",
 		filepath.FromSlash("dynamic/dynamic.yaml"),
+		filepath.FromSlash("dynamic/dynamic.yml"),
 	}
 }
 
@@ -38,16 +39,16 @@ func FindDefaultConfigFile() (string, error) {
 		}
 	}
 
-	return "", errors.New("dynamic config not found (expected dynamic.yaml or dynamic/dynamic.yaml)")
+	return "", fmt.Errorf("dynamic config not found (expected %v)", candidates)
 }
 
-// WithDefaultConfig finds and loads the default dynamic config file.
+// WithDefaultConfigFile finds and loads the default dynamic config file.
 // It panics if the file cannot be found or read.
-func WithDefaultConfig() Option {
+func WithDefaultConfigFile() Option {
 	p, err := FindDefaultConfigFile()
 	if err != nil {
 		return OptionFunc(func(*Options) {
-			panic(fmt.Errorf("dynamic.WithDefaultConfig: %w", err))
+			panic(fmt.Errorf("dynamic.WithDefaultConfigFile: %w", err))
 		})
 	}
 	return WithConfigFile(p)

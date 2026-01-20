@@ -1,4 +1,4 @@
-package http
+package sqs
 
 import (
 	"fmt"
@@ -7,17 +7,17 @@ import (
 )
 
 // DefaultConfigCandidates returns relative paths that will be checked (in order)
-// when searching for a default http config.
+// when searching for a default sqs config.
 func DefaultConfigCandidates() []string {
 	return []string{
-		"http.yaml",
-		"http.yml",
-		filepath.FromSlash("http/http.yaml"),
-		filepath.FromSlash("http/http.yml"),
+		"sqs.yaml",
+		"sqs.yml",
+		filepath.FromSlash("sqs/sqs.yaml"),
+		filepath.FromSlash("sqs/sqs.yml"),
 	}
 }
 
-// FindDefaultConfigFile searches for an http config file in a small set of
+// FindDefaultConfigFile searches for an sqs config file in a small set of
 // well-known locations (CWD then executable directory).
 func FindDefaultConfigFile() (string, error) {
 	candidates := DefaultConfigCandidates()
@@ -39,16 +39,16 @@ func FindDefaultConfigFile() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("http config not found (expected %v)", candidates)
+	return "", fmt.Errorf("sqs config not found (expected %v)", candidates)
 }
 
-// WithDefaultConfigFile finds and loads the default http config file.
+// WithDefaultConfigFile finds and loads the default sqs config file.
 // It panics if the file cannot be found or read.
 func WithDefaultConfigFile() Option {
 	p, err := FindDefaultConfigFile()
 	if err != nil {
-		return HttpOption(func(*Options) {
-			panic(fmt.Errorf("http.WithDefaultConfigFile: %w", err))
+		return OptionFunc(func(*Options) {
+			panic(fmt.Errorf("sqs.WithDefaultConfigFile: %w", err))
 		})
 	}
 	return WithConfigFile(p)
@@ -60,8 +60,8 @@ func DefaultServeConfigCandidates() []string {
 	return []string{
 		"serve.yaml",
 		"serve.yml",
-		filepath.FromSlash("http/serve.yaml"),
-		filepath.FromSlash("http/serve.yml"),
+		filepath.FromSlash("sqs/serve.yaml"),
+		filepath.FromSlash("sqs/serve.yml"),
 	}
 }
 
@@ -90,12 +90,12 @@ func FindDefaultServeConfigFile() (string, error) {
 	return "", fmt.Errorf("serve config not found (expected %v)", candidates)
 }
 
-// WithDefaultServeConfigFile finds and loads the default serve config file as a ServeOption.
+// WithDefaultServeConfigFile finds and loads the default sqs config file as a ServeOption.
 // This supports the optional embedded `dynamic:` section in serve.yaml.
 func WithDefaultServeConfigFile() ServeOption {
 	p, err := FindDefaultServeConfigFile()
 	if err != nil {
-		return serveConfigOption{err: fmt.Errorf("http.WithDefaultServeConfigFile: %w", err)}
+		return serveConfigOption{err: fmt.Errorf("sqs.WithDefaultServeConfigFile: %w", err)}
 	}
 	return WithServeConfigFile(p)
 }
