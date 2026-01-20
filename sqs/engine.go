@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"strings"
 	"sync/atomic"
 
@@ -123,7 +124,16 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			Path:    request.Path,
 			Request: string(request.Payload),
 		}
+
+		if e.Release {
+			log.Printf("[SQS] Request: %s %s", c.Path, c.Request)
+		}
+
 		e.r.dispatch(c)
+
+		if e.Release {
+			log.Printf("[SQS] Response: %s %s", c.Path, c.Response)
+		}
 		if c.Err != nil {
 			if e.ErrorSuspend {
 				return resp, c.Err

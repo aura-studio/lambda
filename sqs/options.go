@@ -10,6 +10,7 @@ type Options struct {
 	ErrorSuspend   bool
 	PartialRetry   bool
 	ResponseSwitch bool
+	Release        bool
 }
 
 type Option interface {
@@ -53,5 +54,11 @@ func WithPartialRetry(partial bool) Option {
 func WithResponseSwitch(sw bool) Option {
 	return OptionFunc(func(o *Options) {
 		o.ResponseSwitch = sw
+	})
+}
+
+func WithRelease(release bool) Option {
+	return OptionFunc(func(o *Options) {
+		o.Release = release
 	})
 }

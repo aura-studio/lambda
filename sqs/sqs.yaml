@@ -1,0 +1,28 @@
+sqs:
+  release: true
+  responseSwitch: true
+  errorSuspend: false
+  partialRetry: false
+  staticLink:
+    - srcPath:
+      dstPath:
+  prefixLink:
+    - srcPrefix:
+      dstPrefix:
+
+dynamic:
+  environment:
+    toolchain:
+      os: ubuntu24.04
+      arch: amd64v1
+      compiler: go1.25.5
+      variant: generic
+    warehouse:
+      local:
+      remote:
+  package:
+    namespace:
+    defaultVersion:
+    preload:
+      - package:
+        version:
