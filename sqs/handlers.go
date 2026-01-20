@@ -94,7 +94,7 @@ func (e *Engine) API(c *Context) {
 		c.Err = fmt.Errorf("missing api path")
 		return
 	}
-	rsp, err := e.invokeFunc(c.ParamPath, c.Request)
+	rsp, err := e.handle(c.ParamPath, c.Request)
 	if err != nil {
 		c.Err = err
 		if c.Debug {

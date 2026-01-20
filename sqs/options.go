@@ -6,6 +6,7 @@ type Options struct {
 	// reserved for future sqs-specific options
 	StaticLinkMap map[string]string
 	PrefixLinkMap map[string]string
+	SQSClient     SQSClient
 }
 
 type Option interface {
@@ -26,4 +27,10 @@ func NewOptions(opts ...Option) *Options {
 		}
 	}
 	return o
+}
+
+func WithSQSClient(client SQSClient) Option {
+	return OptionFunc(func(o *Options) {
+		o.SQSClient = client
+	})
 }

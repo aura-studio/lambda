@@ -2,12 +2,15 @@ package tests
 
 import (
 	"context"
+	"encoding/base64"
 	"strings"
 	"testing"
 
+	"github.com/aura-studio/dynamic"
 	lambdasqs "github.com/aura-studio/lambda/sqs"
 	events "github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"google.golang.org/protobuf/proto"
 )
 
 type mockSQSClient struct {
@@ -21,11 +24,25 @@ func (m *mockSQSClient) SendMessage(ctx context.Context, params *sqs.SendMessage
 
 func mustPBRequest(t *testing.T, r *lambdasqs.Request) string {
 	t.Helper()
-	b, err := lambdasqs.MarshalRequest(r)
+	b, err := proto.Marshal(r)
 	if err != nil {
-		t.Fatalf("MarshalRequest: %v", err)
+		t.Fatalf("proto.Marshal: %v", err)
 	}
 	return string(b)
+}
+
+type mockTunnel struct {
+	invoke func(string, string) string
+}
+
+func (m *mockTunnel) Invoke(route string, req string) string {
+	return m.invoke(route, req)
+}
+
+func (m *mockTunnel) Init() {
+}
+
+func (m *mockTunnel) Close() {
 }
 
 func TestSQSHandler_PartialFailures(t *testing.T) {
@@ -54,11 +71,13 @@ func TestSQSHandler_PartialFailures(t *testing.T) {
 }
 
 func TestSQSHandler_ResponseRouting(t *testing.T) {
-	e := lambdasqs.NewEngine()
 	mock := &mockSQSClient{}
-	e.SetSQSClient(mock)
-	e.SetInvokeFunc(func(path string, req string) (string, error) {
-		return "OK", nil
+	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
+
+	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
+		invoke: func(route, req string) string {
+			return "OK"
+		},
 	})
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
@@ -76,10 +95,17 @@ func TestSQSHandler_ResponseRouting(t *testing.T) {
 	if *mock.messages[0].QueueUrl != "server-9" {
 		t.Fatalf("QueueUrl = %q", *mock.messages[0].QueueUrl)
 	}
-	rsp, err := lambdasqs.UnmarshalResponse([]byte(*mock.messages[0].MessageBody))
+
+	b, err := base64.StdEncoding.DecodeString(*mock.messages[0].MessageBody)
 	if err != nil {
-		t.Fatalf("UnmarshalResponse: %v", err)
+		t.Fatalf("base64.Decode: %v", err)
 	}
+
+	var rsp lambdasqs.Response
+	if err := proto.Unmarshal(b, &rsp); err != nil {
+		t.Fatalf("proto.Unmarshal: %v", err)
+	}
+
 	if rsp.ClientSqsId != "client-1" {
 		t.Fatalf("ClientSqsId = %q", rsp.ClientSqsId)
 	}
@@ -92,11 +118,13 @@ func TestSQSHandler_ResponseRouting(t *testing.T) {
 }
 
 func TestSQSHandler_NoResponse_AllowsEmptyClientSqsId(t *testing.T) {
-	e := lambdasqs.NewEngine()
 	mock := &mockSQSClient{}
-	e.SetSQSClient(mock)
-	e.SetInvokeFunc(func(path string, req string) (string, error) {
-		return "OK", nil
+	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
+
+	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
+		invoke: func(route, req string) string {
+			return "OK"
+		},
 	})
 
 	// No ServerSqsId and no `?rsp=` in path => no response needed.
@@ -118,9 +146,8 @@ func TestSQSHandler_NoResponse_AllowsEmptyClientSqsId(t *testing.T) {
 }
 
 func TestSQSHandler_HealthCheck_OK(t *testing.T) {
-	e := lambdasqs.NewEngine()
 	mock := &mockSQSClient{}
-	e.SetSQSClient(mock)
+	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "h1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/health-check"})},
@@ -139,13 +166,15 @@ func TestSQSHandler_HealthCheck_OK(t *testing.T) {
 }
 
 func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
-	e := lambdasqs.NewEngine()
 	mock := &mockSQSClient{}
-	e.SetSQSClient(mock)
-	var gotPath string
-	e.SetInvokeFunc(func(path string, req string) (string, error) {
-		gotPath = path
-		return "OK", nil
+	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
+
+	var gotRoute string
+	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
+		invoke: func(route, req string) string {
+			gotRoute = route
+			return "OK"
+		},
 	})
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
@@ -162,18 +191,14 @@ func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
 	if len(mock.messages) != 0 {
 		t.Fatalf("out len = %d", len(mock.messages))
 	}
-	if gotPath != "/pkg/version/route" {
-		t.Fatalf("gotPath = %q", gotPath)
+	if gotRoute != "/route" {
+		t.Fatalf("gotRoute = %q", gotRoute)
 	}
 }
 
 func TestSQSHandler_APIPath_RequiresPrefix(t *testing.T) {
-	e := lambdasqs.NewEngine()
 	mock := &mockSQSClient{}
-	e.SetSQSClient(mock)
-	e.SetInvokeFunc(func(path string, req string) (string, error) {
-		return "OK", nil
-	})
+	e := lambdasqs.NewEngine(lambdasqs.SQS(lambdasqs.WithSQSClient(mock)))
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "p1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/pkg/version/route", Payload: []byte(`{}`)})},
