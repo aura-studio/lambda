@@ -7,18 +7,17 @@ import (
 )
 
 func TestHTTPWithConfig(t *testing.T) {
-	yaml := []byte(`http:
-  release: true
-  cors: true
-  staticLink:
-    - srcPath: /a
-      dstPath: /b
-  prefixLink:
-    - srcPrefix: /api
-      dstPrefix: /v1
-  headerLinkKey:
-    - key: X-Rewrite
-      prefix: /p
+	yaml := []byte(`release: true
+cors: true
+staticLink:
+  - srcPath: /a
+    dstPath: /b
+prefixLink:
+  - srcPrefix: /api
+    dstPrefix: /v1
+headerLinkKey:
+  - key: X-Rewrite
+    prefix: /p
 `)
 
 	o := lambdahttp.NewOptions(lambdahttp.WithConfig(yaml))

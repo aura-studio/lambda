@@ -11,12 +11,11 @@ import (
 func TestHTTPWithDefaultConfigFile(t *testing.T) {
 	tmp := t.TempDir()
 	p := filepath.Join(tmp, "http.yml")
-	if err := os.WriteFile(p, []byte(`http:
-  release: true
-  cors: true
-  staticLink: []
-  prefixLink: []
-  headerLinkKey: []
+	if err := os.WriteFile(p, []byte(`release: true
+cors: true
+staticLink: []
+prefixLink: []
+headerLinkKey: []
 `), 0o644); err != nil {
 		t.Fatalf("write http.yaml: %v", err)
 	}
