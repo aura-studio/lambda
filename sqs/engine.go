@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync/atomic"
 
 	"github.com/aura-studio/lambda/dynamic"
 	events "github.com/aws/aws-lambda-go/events"
@@ -12,9 +13,8 @@ import (
 type Engine struct {
 	*Options
 	*dynamic.Dynamic
-	r *router
-
-	invokeFunc InvokeFunc
+	r       *router
+	running atomic.Int32
 }
 
 func NewEngine(opts ...ServeOption) *Engine {
@@ -33,19 +33,12 @@ func NewEngine(opts ...ServeOption) *Engine {
 	return e
 }
 
-type OutgoingMessage struct {
-	QueueID string
-	Body    string
-}
-
 type InvokeFunc func(path string, req string) (string, error)
 
 func (e *Engine) Start() {
-	e.invokeFunc = fn
 }
 
 func (e *Engine) Stop() {
-	e.invokeFunc = nil
 }
 
 func (e *Engine) invokeDefault(path string, req string) (string, error) {
@@ -65,24 +58,23 @@ func (e *Engine) invokeDefault(path string, req string) (string, error) {
 	return tunnel.Invoke(route, req), nil
 }
 
-// Handle implements an AWS Lambda SQS event handler.
-// It returns partial batch failures via SQSEventResponse.
-func (e *Engine) Handle(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, error) {
-	resp, _, err := e.HandleWithResponses(ctx, ev)
-	return resp, err
+func (e *Engine) HandleSQSMessagesWithoutResponse(ctx context.Context, ev events.SQSEvent) error {
+	_, err := e.handleSQSMessages(ctx, ev)
+	return err
 }
 
-// HandleWithResponses is like Handle, but additionally returns response messages
-// when the request path includes a response SQS id via query param `rsp`.
-//
-//   - If `rsp` is absent: no response message is produced for that record.
-//   - If `rsp` is present: response is serialized and returned as OutgoingMessage.
-//     The body includes both client and server SQS ids.
-func (e *Engine) HandleWithResponses(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, []OutgoingMessage, error) {
+func (e *Engine) HandleSQSMessagesWithResponse(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, error) {
+	e.handleSQSMessages()
+}
+
+func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent, partial bool) (resp events.SQSEventResponse, err error) {
 	_ = ctx
-	resp := events.SQSEventResponse{}
-	var out []OutgoingMessage
 	for _, msg := range ev.Records {
+		if e.running.Load() == 0 {
+			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
+			continue
+		}
+
 		request, err := DecodeRequestBody(msg.Body)
 		if err != nil {
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
@@ -122,7 +114,11 @@ func (e *Engine) HandleWithResponses(ctx context.Context, ev events.SQSEvent) (e
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
-		out = append(out, OutgoingMessage{QueueID: request.ServerSqsId, Body: string(b)})
+
+		if rsp.ClientSqsId != "" && rsp.CorrelationId != "" {
+			
+		}
 	}
-	return resp, out, nil
+
+	return resp, nil
 }

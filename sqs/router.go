@@ -18,7 +18,7 @@ type Context struct {
 	// It includes a leading slash, e.g. /pkg/commit/route.
 	ParamPath string
 
-	Request string
+	Request  string
 	Response string
 	Err      error
 
@@ -37,9 +37,8 @@ type route struct {
 type router struct {
 	pre []HandlerFunc
 
-	routes []route
+	routes  []route
 	noRoute []HandlerFunc
-	noMethod []HandlerFunc
 }
 
 func newRouter() *router {
@@ -50,12 +49,11 @@ func (r *router) Use(handlers ...HandlerFunc) {
 	r.pre = append(r.pre, handlers...)
 }
 
-func (r *router) HandleAllMethods(pattern string, handlers ...HandlerFunc) {
+func (r *router) Handle(pattern string, handlers ...HandlerFunc) {
 	r.routes = append(r.routes, route{pattern: pattern, handlers: handlers})
 }
 
 func (r *router) NoRoute(handlers ...HandlerFunc) { r.noRoute = handlers }
-func (r *router) NoMethod(handlers ...HandlerFunc) { r.noMethod = handlers }
 
 func (r *router) dispatch(ctx *Context) {
 	for _, h := range r.pre {
