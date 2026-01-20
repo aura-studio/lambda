@@ -32,11 +32,7 @@ type Engine struct {
 
 func NewEngine(opts ...ServeOption) *Engine {
 	bag := &serveOptionBag{}
-	for _, opt := range opts {
-		if opt != nil {
-			opt.apply(bag)
-		}
-	}
+	bag.apply(opts...)
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {

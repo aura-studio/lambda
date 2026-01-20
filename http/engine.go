@@ -13,12 +13,7 @@ type Engine struct {
 
 func NewEngine(opts ...ServeOption) *Engine {
 	bag := &serveOptionBag{}
-	for _, opt := range opts {
-		if opt == nil {
-			continue
-		}
-		opt.apply(bag)
-	}
+	bag.apply(opts...)
 
 	e := &Engine{
 		Options: NewOptions(bag.http...),

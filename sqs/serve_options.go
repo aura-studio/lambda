@@ -2,31 +2,24 @@ package sqs
 
 import "github.com/aura-studio/lambda/dynamic"
 
-type ServeOption interface {
-	apply(*serveOptionBag)
-}
+type ServeOption any
 
 type serveOptionBag struct {
 	sqs     []Option
 	dynamic []dynamic.Option
 }
 
-type sqsServeOption struct{ opt Option }
-
-func (o sqsServeOption) apply(b *serveOptionBag) {
-	if o.opt != nil {
-		b.sqs = append(b.sqs, o.opt)
+func (b *serveOptionBag) apply(opts ...ServeOption) {
+	for _, opt := range opts {
+		switch o := opt.(type) {
+		case Option:
+			b.sqs = append(b.sqs, o)
+		case dynamic.Option:
+			b.dynamic = append(b.dynamic, o)
+		}
 	}
 }
 
-type dynamicServeOption struct{ opt dynamic.Option }
+func SQS(opt Option) ServeOption { return opt }
 
-func (o dynamicServeOption) apply(b *serveOptionBag) {
-	if o.opt != nil {
-		b.dynamic = append(b.dynamic, o.opt)
-	}
-}
-
-func SQS(opt Option) ServeOption { return sqsServeOption{opt: opt} }
-
-func Dyn(opt dynamic.Option) ServeOption { return dynamicServeOption{opt: opt} }
+func Dyn(opt dynamic.Option) ServeOption { return opt }
