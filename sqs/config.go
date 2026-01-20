@@ -23,10 +23,6 @@ type yamlSQSConfig struct {
 	} `yaml:"prefixLink"`
 }
 
-type yamlConfig struct {
-	SQS yamlSQSConfig `yaml:"sqs"`
-}
-
 type yamlServeConfig struct {
 	SQS     yamlSQSConfig `yaml:"sqs"`
 	Dynamic any           `yaml:"dynamic"`
@@ -62,12 +58,12 @@ func optionFromSQSConfig(cfg yamlSQSConfig) Option {
 }
 
 func optionFromConfigBytes(b []byte) (Option, error) {
-	var cfg yamlConfig
+	var cfg yamlSQSConfig
 	if err := yaml.Unmarshal(b, &cfg); err != nil {
 		return nil, err
 	}
 
-	return optionFromSQSConfig(cfg.SQS), nil
+	return optionFromSQSConfig(cfg), nil
 }
 
 // WithConfig parses YAML bytes following sqs.yml structure and applies it to Options.

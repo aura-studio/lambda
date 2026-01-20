@@ -25,10 +25,6 @@ type yamlHTTPConfig struct {
 	} `yaml:"headerLinkKey"`
 }
 
-type yamlConfig struct {
-	HTTP yamlHTTPConfig `yaml:"http"`
-}
-
 type yamlServeConfig struct {
 	HTTP    yamlHTTPConfig `yaml:"http"`
 	Dynamic any            `yaml:"dynamic"`
@@ -71,12 +67,12 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 }
 
 func optionFromConfigBytes(b []byte) (Option, error) {
-	var cfg yamlConfig
+	var cfg yamlHTTPConfig
 	if err := yaml.Unmarshal(b, &cfg); err != nil {
 		return nil, err
 	}
 
-	return optionFromHTTPConfig(cfg.HTTP), nil
+	return optionFromHTTPConfig(cfg), nil
 }
 
 // WithConfig parses YAML bytes following http.yml structure and applies it to Options.
