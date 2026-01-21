@@ -61,17 +61,20 @@
 实现位于 [sqs/engine.go](sqs/engine.go)。
 
 - `Invoke` 逻辑：
-    - 若 `BatchMode` 为开启状态 → 调用 `HandleSQSMessagesWithResponse`（支持部分重试）。
-    - 否则 → 调用 `HandleSQSMessagesWithoutResponse`（失败时重试整个批次）。
+    - `strict` / `partial`: 调用 `HandleSQSMessagesWithResponse`（支持部分重试）。
+    - `batch` / `reentrant`: 调用 `HandleSQSMessagesWithoutResponse`（失败时重试整个批次）。
 
 - 每条 SQS record：
     1. base64 decode + proto unmarshal 得到 `Request`
     2. 创建 `Context{RawPath: request.Path, Path: request.Path, Request: string(request.Payload)}`
     3. router `dispatch`
     4. 若 `Context.Err != nil`：
-        - 若 `SuspendMode` 为开启状态 → 立即停止处理并返回错误（中断批次）
-        - 否则 → 记为 batch failure，继续处理下一条
-    5. 若 `request.ResponseSqsId != ""` 且 `ReplyMode` 为开启状态 → 需要响应：
+        - 根据 `RunMode` 决定后续行为：
+            - `strict`: 标记当前及后续所有消息为 batch failure，立即返回。
+            - `partial`: 标记当前消息为 batch failure，继续处理下一条。
+            - `batch`: 立即停止处理并返回错误（中断批次）。
+            - `reentrant`: 继续处理下一条，但最终返回错误。
+    5. 若 `request.ResponseSqsId != ""` 且 `ReplyMode` 为开启状态：
         - 要求 `request.RequestSqsId != ""`，否则记为 batch failure
         - 构造 `Response{RequestSqsId, ResponseSqsId, CorrelationId, Payload}`
         - 输出 `OutgoingMessage{QueueID: request.ResponseSqsId, Body: base64(proto(Response))}`

@@ -10,13 +10,21 @@ type OptionFunc func(*Options)
 
 func (f OptionFunc) Apply(o *Options) { f(o) }
 
+type RunMode string
+
+const (
+	RunModeStrict    RunMode = "strict"
+	RunModePartial   RunMode = "partial"
+	RunModeBatch     RunMode = "batch"
+	RunModeReentrant RunMode = "reentrant"
+)
+
 type Options struct {
 	// reserved for future sqs-specific options
 	StaticLinkMap map[string]string
 	PrefixLinkMap map[string]string
 	SQSClient     SQSClient
-	SuspendMode   bool
-	BatchMode     bool
+	RunMode       RunMode
 	ReplyMode     bool
 	DebugMode     bool
 }
@@ -25,8 +33,7 @@ var defaultOptions = &Options{
 	StaticLinkMap: map[string]string{},
 	PrefixLinkMap: map[string]string{},
 	SQSClient:     nil,
-	SuspendMode:   false,
-	BatchMode:     false,
+	RunMode:       RunModeBatch,
 	ReplyMode:     false,
 	DebugMode:     false,
 }
@@ -52,15 +59,14 @@ func WithSQSClient(client SQSClient) Option {
 	})
 }
 
-func WithSuspendMode(suspend bool) Option {
+func WithRunMode(mode RunMode) Option {
 	return OptionFunc(func(o *Options) {
-		o.SuspendMode = suspend
-	})
-}
-
-func WithBatchMode(batch bool) Option {
-	return OptionFunc(func(o *Options) {
-		o.BatchMode = batch
+		switch mode {
+		case RunModeStrict, RunModePartial, RunModeBatch, RunModeReentrant:
+			o.RunMode = mode
+		default:
+			panic("sqs: unrecognized run mode: " + string(mode))
+		}
 	})
 }
 

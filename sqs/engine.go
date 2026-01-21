@@ -96,15 +96,19 @@ func (e *Engine) HandleSQSMessagesWithResponse(ctx context.Context, ev events.SQ
 }
 
 func (e *Engine) Invoke(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, error) {
-	if e.BatchMode {
+	switch e.RunMode {
+	case RunModeStrict, RunModePartial:
 		return e.HandleSQSMessagesWithResponse(ctx, ev)
+	case RunModeBatch, RunModeReentrant:
+		return events.SQSEventResponse{}, e.HandleSQSMessagesWithoutResponse(ctx, ev)
+	default:
+		return events.SQSEventResponse{}, e.HandleSQSMessagesWithoutResponse(ctx, ev)
 	}
-	return events.SQSEventResponse{}, e.HandleSQSMessagesWithoutResponse(ctx, ev)
 }
 
 func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (resp events.SQSEventResponse, err error) {
 	_ = ctx
-	for _, msg := range ev.Records {
+	for i, msg := range ev.Records {
 		if e.running.Load() == 0 {
 			if e.DebugMode {
 				log.Printf("[SQS] Engine stopped, message %s failed", msg.MessageId)
@@ -113,22 +117,48 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			continue
 		}
 
-		b, err := base64.StdEncoding.DecodeString(msg.Body)
-		if err != nil {
+		b, decodeErr := base64.StdEncoding.DecodeString(msg.Body)
+		if decodeErr != nil {
 			if e.DebugMode {
-				log.Printf("[SQS] Decode message %s body error: %v", msg.MessageId, err)
+				log.Printf("[SQS] Decode message %s body error: %v", msg.MessageId, decodeErr)
 			}
-			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
-			continue
+			switch e.RunMode {
+			case RunModeStrict:
+				for j := i; j < len(ev.Records); j++ {
+					resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: ev.Records[j].MessageId})
+				}
+				return resp, nil
+			case RunModePartial:
+				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
+				continue
+			case RunModeBatch:
+				return resp, decodeErr
+			case RunModeReentrant:
+				err = decodeErr
+				continue
+			}
 		}
 
 		var request Request
-		if err := proto.Unmarshal(b, &request); err != nil {
+		if unmarshalErr := proto.Unmarshal(b, &request); unmarshalErr != nil {
 			if e.DebugMode {
-				log.Printf("[SQS] Unmarshal message %s body error: %v", msg.MessageId, err)
+				log.Printf("[SQS] Unmarshal message %s body error: %v", msg.MessageId, unmarshalErr)
 			}
-			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
-			continue
+			switch e.RunMode {
+			case RunModeStrict:
+				for j := i; j < len(ev.Records); j++ {
+					resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: ev.Records[j].MessageId})
+				}
+				return resp, nil
+			case RunModePartial:
+				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
+				continue
+			case RunModeBatch:
+				return resp, unmarshalErr
+			case RunModeReentrant:
+				err = unmarshalErr
+				continue
+			}
 		}
 
 		c := &Context{
@@ -142,20 +172,38 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			log.Printf("[SQS] Request: %s %s", c.Path, c.Request)
 		}
 
-		e.r.dispatch(c)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					c.Err = fmt.Errorf("panic: %v", r)
+				}
+			}()
+			e.r.dispatch(c)
+		}()
 
 		if e.DebugMode {
 			log.Printf("[SQS] Response: %s %s", c.Path, c.Response)
 		}
 		if c.Err != nil {
-			if e.SuspendMode {
-				return resp, c.Err
-			}
 			if e.DebugMode {
 				log.Printf("[SQS] Dispatch message %s error: %v", msg.MessageId, c.Err)
 			}
-			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
-			continue
+
+			switch e.RunMode {
+			case RunModeStrict:
+				for j := i; j < len(ev.Records); j++ {
+					resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: ev.Records[j].MessageId})
+				}
+				return resp, nil
+			case RunModePartial:
+				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
+				continue
+			case RunModeBatch:
+				return resp, c.Err
+			case RunModeReentrant:
+				err = c.Err
+				continue
+			}
 		}
 
 		// Response is produced only when ResponseSqsId is provided and ReplyMode is on.
@@ -187,13 +235,13 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 		}
 
 		if request.ResponseSqsId != "" {
-			_, err := e.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
+			_, sendErr := e.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 				MessageBody: aws.String(base64.StdEncoding.EncodeToString(b)),
 				QueueUrl:    &request.ResponseSqsId,
 			})
-			if err != nil {
+			if sendErr != nil {
 				if e.DebugMode {
-					log.Printf("[SQS] Send response for message %s error: %v", msg.MessageId, err)
+					log.Printf("[SQS] Send response for message %s error: %v", msg.MessageId, sendErr)
 				}
 				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 				continue
@@ -201,5 +249,5 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 		}
 	}
 
-	return resp, nil
+	return resp, err
 }

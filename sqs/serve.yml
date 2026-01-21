@@ -1,9 +1,8 @@
 sqs:
   mode:
     debug: false
+    run: batch
     reply: true
-    suspend: false
-    batch: false
   staticLink:
     - srcPath:
       dstPath:

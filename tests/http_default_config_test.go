@@ -59,11 +59,15 @@ func main() {
 	lambda.Start(engine.HandleSQSMessagesWithResponse)
 }`
 
+	mainFile := filepath.Join(tmp, "main.go")
+	if err := os.WriteFile(mainFile, []byte(mainContent), 0o644); err != nil {
+		t.Fatalf("Failed to write main.go: %v", err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "run", "-")
-	cmd.Stdin = bytes.NewBufferString(mainContent)
+	cmd := exec.CommandContext(ctx, "go", "run", mainFile)
 	cmd.Env = append(os.Environ(), "_LAMBDA_SERVER_PORT=8081")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

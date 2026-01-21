@@ -10,10 +10,9 @@ import (
 
 type yamlSQSConfig struct {
 	Mode struct {
-		Debug   bool `yaml:"debug"`
-		Reply   bool `yaml:"reply"`
-		Suspend bool `yaml:"suspend"`
-		Batch   bool `yaml:"batch"`
+		Debug bool    `yaml:"debug"`
+		Run   RunMode `yaml:"run"`
+		Reply bool    `yaml:"reply"`
 	} `yaml:"mode"`
 	StaticLink []struct {
 		SrcPath string `yaml:"srcPath"`
@@ -34,8 +33,14 @@ func optionFromSQSConfig(cfg yamlSQSConfig) Option {
 	return OptionFunc(func(o *Options) {
 		o.DebugMode = cfg.Mode.Debug
 		o.ReplyMode = cfg.Mode.Reply
-		o.SuspendMode = cfg.Mode.Suspend
-		o.BatchMode = cfg.Mode.Batch
+		if cfg.Mode.Run != "" {
+			switch cfg.Mode.Run {
+			case RunModeStrict, RunModePartial, RunModeBatch, RunModeReentrant:
+				o.RunMode = cfg.Mode.Run
+			default:
+				panic(fmt.Errorf("sqs: unrecognized run mode: %q", cfg.Mode.Run))
+			}
+		}
 
 		if o.StaticLinkMap == nil {
 			o.StaticLinkMap = make(map[string]string)
