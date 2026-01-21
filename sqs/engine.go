@@ -206,8 +206,8 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			}
 		}
 
-		// Response is produced only when ResponseSqsId is provided and ReplyMode is on.
-		if !e.ReplyMode || request.ResponseSqsId == "" {
+		// Response is produced only when ResponseSqsId is provided.
+		if request.ResponseSqsId == "" {
 			continue
 		}
 		// When a response is requested, RequestSqsId must be present.
@@ -234,7 +234,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			continue
 		}
 
-		if request.ResponseSqsId != "" {
+		if e.ReplyMode && request.ResponseSqsId != "" {
 			_, sendErr := e.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 				MessageBody: aws.String(base64.StdEncoding.EncodeToString(b)),
 				QueueUrl:    &request.ResponseSqsId,
