@@ -3,7 +3,7 @@ sqs:
     debug: false
     reply: true
     suspend: false
-    partial: false
+    batch: false
   staticLink:
     - srcPath:
       dstPath:

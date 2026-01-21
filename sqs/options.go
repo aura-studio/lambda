@@ -16,7 +16,7 @@ type Options struct {
 	PrefixLinkMap map[string]string
 	SQSClient     SQSClient
 	SuspendMode   bool
-	PartialMode   bool
+	BatchMode     bool
 	ReplyMode     bool
 	DebugMode     bool
 }
@@ -26,7 +26,7 @@ var defaultOptions = &Options{
 	PrefixLinkMap: map[string]string{},
 	SQSClient:     nil,
 	SuspendMode:   false,
-	PartialMode:   false,
+	BatchMode:     false,
 	ReplyMode:     false,
 	DebugMode:     false,
 }
@@ -58,9 +58,9 @@ func WithSuspendMode(suspend bool) Option {
 	})
 }
 
-func WithPartialMode(partial bool) Option {
+func WithBatchMode(batch bool) Option {
 	return OptionFunc(func(o *Options) {
-		o.PartialMode = partial
+		o.BatchMode = batch
 	})
 }
 

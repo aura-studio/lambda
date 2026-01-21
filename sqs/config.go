@@ -13,7 +13,7 @@ type yamlSQSConfig struct {
 		Debug   bool `yaml:"debug"`
 		Reply   bool `yaml:"reply"`
 		Suspend bool `yaml:"suspend"`
-		Partial bool `yaml:"partial"`
+		Batch   bool `yaml:"batch"`
 	} `yaml:"mode"`
 	StaticLink []struct {
 		SrcPath string `yaml:"srcPath"`
@@ -35,7 +35,7 @@ func optionFromSQSConfig(cfg yamlSQSConfig) Option {
 		o.DebugMode = cfg.Mode.Debug
 		o.ReplyMode = cfg.Mode.Reply
 		o.SuspendMode = cfg.Mode.Suspend
-		o.PartialMode = cfg.Mode.Partial
+		o.BatchMode = cfg.Mode.Batch
 
 		if o.StaticLinkMap == nil {
 			o.StaticLinkMap = make(map[string]string)

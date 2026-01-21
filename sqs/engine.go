@@ -96,7 +96,7 @@ func (e *Engine) HandleSQSMessagesWithResponse(ctx context.Context, ev events.SQ
 }
 
 func (e *Engine) Invoke(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, error) {
-	if e.PartialMode {
+	if e.BatchMode {
 		return e.HandleSQSMessagesWithResponse(ctx, ev)
 	}
 	return events.SQSEventResponse{}, e.HandleSQSMessagesWithoutResponse(ctx, ev)

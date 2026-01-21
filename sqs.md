@@ -60,6 +60,10 @@
 
 实现位于 [sqs/engine.go](sqs/engine.go)。
 
+- `Invoke` 逻辑：
+    - 若 `BatchMode` 为开启状态 → 调用 `HandleSQSMessagesWithResponse`（支持部分重试）。
+    - 否则 → 调用 `HandleSQSMessagesWithoutResponse`（失败时重试整个批次）。
+
 - 每条 SQS record：
     1. base64 decode + proto unmarshal 得到 `Request`
     2. 创建 `Context{RawPath: request.Path, Path: request.Path, Request: string(request.Payload)}`
