@@ -7,7 +7,7 @@ import (
 )
 
 func TestHTTPWithConfig(t *testing.T) {
-	yaml := []byte(`release: true
+	yaml := []byte(`debug: true
 cors: true
 staticLink:
   - srcPath: /a
@@ -21,8 +21,8 @@ headerLinkKey:
 `)
 
 	o := lambdahttp.NewOptions(lambdahttp.WithConfig(yaml))
-	if !o.ReleaseMode {
-		t.Fatalf("ReleaseMode = false")
+	if !o.DebugMode {
+		t.Fatalf("DebugMode = false")
 	}
 	if !o.CorsMode {
 		t.Fatalf("CorsMode = false")

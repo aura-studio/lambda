@@ -9,7 +9,7 @@ import (
 )
 
 type yamlSQSConfig struct {
-	Release        bool `yaml:"release"`
+	Debug          bool `yaml:"debug"`
 	ResponseSwitch bool `yaml:"responseSwitch"`
 	ErrorSuspend   bool `yaml:"errorSuspend"`
 	PartialRetry   bool `yaml:"partialRetry"`
@@ -30,7 +30,7 @@ type yamlServeConfig struct {
 
 func optionFromSQSConfig(cfg yamlSQSConfig) Option {
 	return OptionFunc(func(o *Options) {
-		o.Release = cfg.Release
+		o.DebugMode = cfg.Debug
 		o.ResponseSwitch = cfg.ResponseSwitch
 		o.ErrorSuspend = cfg.ErrorSuspend
 		o.PartialRetry = cfg.PartialRetry

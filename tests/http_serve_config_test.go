@@ -9,7 +9,7 @@ import (
 func TestHTTPWithServeConfig_EmbeddedDynamic(t *testing.T) {
 	yaml := []byte(
 		"http:\n" +
-			"  release: true\n" +
+			"  debug: true\n" +
 			"  cors: true\n" +
 			"\n" +
 			"dynamic:\n" +
@@ -31,8 +31,8 @@ func TestHTTPWithServeConfig_EmbeddedDynamic(t *testing.T) {
 	)
 
 	e := lambdahttp.NewEngine(lambdahttp.WithServeConfig(yaml))
-	if !e.ReleaseMode {
-		t.Fatalf("ReleaseMode = false")
+	if !e.DebugMode {
+		t.Fatalf("DebugMode = false")
 	}
 	if !e.CorsMode {
 		t.Fatalf("CorsMode = false")

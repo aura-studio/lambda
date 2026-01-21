@@ -18,7 +18,7 @@ type Options struct {
 	ErrorSuspend   bool
 	PartialRetry   bool
 	ResponseSwitch bool
-	Release        bool
+	DebugMode      bool
 }
 
 var defaultOptions = &Options{
@@ -28,7 +28,7 @@ var defaultOptions = &Options{
 	ErrorSuspend:   false,
 	PartialRetry:   false,
 	ResponseSwitch: false,
-	Release:        false,
+	DebugMode:      false,
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -70,9 +70,9 @@ func WithResponseSwitch(sw bool) Option {
 	})
 }
 
-func WithRelease(release bool) Option {
+func WithDebugMode(debug bool) Option {
 	return OptionFunc(func(o *Options) {
-		o.Release = release
+		o.DebugMode = debug
 	})
 }
 

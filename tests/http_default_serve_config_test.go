@@ -13,7 +13,7 @@ func TestHTTPWithDefaultServeConfigFile(t *testing.T) {
 	p := filepath.Join(tmp, "serve.yml")
 	if err := os.WriteFile(p, []byte(
 		"http:\n"+
-			"  release: true\n"+
+			"  debug: true\n"+
 			"  cors: true\n"+
 			"\n"+
 			"dynamic:\n"+
@@ -41,9 +41,9 @@ func TestHTTPWithDefaultServeConfigFile(t *testing.T) {
 	}
 
 	e := lambdahttp.NewEngine(lambdahttp.WithDefaultServeConfigFile())
-	if !e.ReleaseMode {
+	if !e.DebugMode {
 		t.Logf("Options: %+v", e.Options)
-		t.Fatalf("ReleaseMode = false")
+		t.Fatalf("DebugMode = false")
 	}
 	if e.Os != "ubuntu24.04" {
 		t.Fatalf("Os = %q", e.Os)

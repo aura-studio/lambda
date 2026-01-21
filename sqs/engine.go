@@ -106,18 +106,27 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 	_ = ctx
 	for _, msg := range ev.Records {
 		if e.running.Load() == 0 {
+			if e.DebugMode {
+				log.Printf("[SQS] Engine stopped, message %s failed", msg.MessageId)
+			}
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
 
 		b, err := base64.StdEncoding.DecodeString(msg.Body)
 		if err != nil {
+			if e.DebugMode {
+				log.Printf("[SQS] Decode message %s body error: %v", msg.MessageId, err)
+			}
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
 
 		var request Request
 		if err := proto.Unmarshal(b, &request); err != nil {
+			if e.DebugMode {
+				log.Printf("[SQS] Unmarshal message %s body error: %v", msg.MessageId, err)
+			}
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
@@ -129,18 +138,21 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			Request: string(request.Payload),
 		}
 
-		if e.Release {
+		if e.DebugMode {
 			log.Printf("[SQS] Request: %s %s", c.Path, c.Request)
 		}
 
 		e.r.dispatch(c)
 
-		if e.Release {
+		if e.DebugMode {
 			log.Printf("[SQS] Response: %s %s", c.Path, c.Response)
 		}
 		if c.Err != nil {
 			if e.ErrorSuspend {
 				return resp, c.Err
+			}
+			if e.DebugMode {
+				log.Printf("[SQS] Dispatch message %s error: %v", msg.MessageId, c.Err)
 			}
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
@@ -152,6 +164,9 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 		}
 		// When a response is requested, RequestSqsId must be present.
 		if request.RequestSqsId == "" {
+			if e.DebugMode {
+				log.Printf("[SQS] RequestSqsId is empty for message %s", msg.MessageId)
+			}
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
@@ -164,6 +179,9 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 		}
 		b, err = proto.Marshal(rsp)
 		if err != nil {
+			if e.DebugMode {
+				log.Printf("[SQS] Marshal response for message %s error: %v", msg.MessageId, err)
+			}
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
@@ -174,6 +192,9 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 				QueueUrl:    &request.ResponseSqsId,
 			})
 			if err != nil {
+				if e.DebugMode {
+					log.Printf("[SQS] Send response for message %s error: %v", msg.MessageId, err)
+				}
 				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 				continue
 			}

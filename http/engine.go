@@ -21,7 +21,7 @@ func NewEngine(opts ...ServeOption) *Engine {
 		Dynamic: dynamic.NewDynamic(bag.dynamic...),
 	}
 
-	if e.ReleaseMode {
+	if !e.DebugMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
 

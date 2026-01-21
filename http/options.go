@@ -14,7 +14,7 @@ func (f HttpOption) Apply(o *Options) { f(o) }
 
 type Options struct {
 	// Http Options
-	ReleaseMode   bool
+	DebugMode     bool
 	CorsMode      bool
 	StaticLinkMap map[string]string
 	PrefixLinkMap map[string]string
@@ -22,7 +22,7 @@ type Options struct {
 }
 
 var defaultOptions = &Options{
-	ReleaseMode:   false,
+	DebugMode:     false,
 	CorsMode:      false,
 	StaticLinkMap: map[string]string{},
 	PrefixLinkMap: map[string]string{},
@@ -44,9 +44,9 @@ func (o *Options) init(opts ...Option) {
 }
 
 // -------------- Http Options ----------------
-func WithReleaseMode() Option {
+func WithDebugMode() Option {
 	return HttpOption(func(o *Options) {
-		o.ReleaseMode = true
+		o.DebugMode = true
 	})
 }
 
