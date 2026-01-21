@@ -18,7 +18,7 @@ import (
 func TestHTTPWithDefaultConfigFile(t *testing.T) {
 	tmp := t.TempDir()
 	p := filepath.Join(tmp, "http.yml")
-	if err := os.WriteFile(p, []byte(`debug: true
+	if err := os.WriteFile(p, []byte(`debugMode: true
 cors: true
 staticLink: []
 prefixLink: []

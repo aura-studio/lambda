@@ -86,7 +86,7 @@ func (e *Engine) OK(c *Context) {
 }
 
 func (e *Engine) Debug(c *Context) {
-	c.Debug = true
+	c.DebugMode = true
 }
 
 func (e *Engine) API(c *Context) {
@@ -97,12 +97,12 @@ func (e *Engine) API(c *Context) {
 	rsp, err := e.handle(c.ParamPath, c.Request)
 	if err != nil {
 		c.Err = err
-		if c.Debug {
+		if c.DebugMode {
 			c.Response = e.formatDebug(c, "api")
 		}
 		return
 	}
-	if c.Debug {
+	if c.DebugMode {
 		c.Response = e.formatDebugWithResponse(c, "api", rsp)
 		return
 	}

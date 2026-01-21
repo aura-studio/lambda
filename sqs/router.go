@@ -22,7 +22,7 @@ type Context struct {
 	Response string
 	Err      error
 
-	Debug bool
+	DebugMode bool
 
 	aborted bool
 }

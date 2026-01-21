@@ -7,7 +7,7 @@ import (
 )
 
 func TestHTTPWithConfig(t *testing.T) {
-	yaml := []byte(`debug: true
+	yaml := []byte(`debugMode: true
 cors: true
 staticLink:
   - srcPath: /a

@@ -1,5 +1,5 @@
 sqs:
-  release: true
+  debugMode: false
   responseSwitch: true
   errorSuspend: false
   partialRetry: false

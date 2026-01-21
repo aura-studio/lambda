@@ -1,5 +1,5 @@
 http:
-  release: true
+  debugMode: false
   cors: true
   staticLink:
     - srcPath:
