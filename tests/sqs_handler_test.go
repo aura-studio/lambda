@@ -80,7 +80,7 @@ func TestSQSHandler_PartialFailures(t *testing.T) {
 
 func TestSQSHandler_ResponseRouting(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock), lambdasqs.WithResponseSwitch(true))
+	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock), lambdasqs.WithReplyMode(true))
 
 	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
 		invoke: func(route, req string) string {

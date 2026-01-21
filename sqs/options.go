@@ -12,23 +12,23 @@ func (f OptionFunc) Apply(o *Options) { f(o) }
 
 type Options struct {
 	// reserved for future sqs-specific options
-	StaticLinkMap  map[string]string
-	PrefixLinkMap  map[string]string
-	SQSClient      SQSClient
-	ErrorSuspend   bool
-	PartialRetry   bool
-	ResponseSwitch bool
-	DebugMode      bool
+	StaticLinkMap map[string]string
+	PrefixLinkMap map[string]string
+	SQSClient     SQSClient
+	SuspendMode   bool
+	PartialMode   bool
+	ReplyMode     bool
+	DebugMode     bool
 }
 
 var defaultOptions = &Options{
-	StaticLinkMap:  map[string]string{},
-	PrefixLinkMap:  map[string]string{},
-	SQSClient:      nil,
-	ErrorSuspend:   false,
-	PartialRetry:   false,
-	ResponseSwitch: false,
-	DebugMode:      false,
+	StaticLinkMap: map[string]string{},
+	PrefixLinkMap: map[string]string{},
+	SQSClient:     nil,
+	SuspendMode:   false,
+	PartialMode:   false,
+	ReplyMode:     false,
+	DebugMode:     false,
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -52,21 +52,21 @@ func WithSQSClient(client SQSClient) Option {
 	})
 }
 
-func WithErrorSuspend(suspend bool) Option {
+func WithSuspendMode(suspend bool) Option {
 	return OptionFunc(func(o *Options) {
-		o.ErrorSuspend = suspend
+		o.SuspendMode = suspend
 	})
 }
 
-func WithPartialRetry(partial bool) Option {
+func WithPartialMode(partial bool) Option {
 	return OptionFunc(func(o *Options) {
-		o.PartialRetry = partial
+		o.PartialMode = partial
 	})
 }
 
-func WithResponseSwitch(sw bool) Option {
+func WithReplyMode(reply bool) Option {
 	return OptionFunc(func(o *Options) {
-		o.ResponseSwitch = sw
+		o.ReplyMode = reply
 	})
 }
 

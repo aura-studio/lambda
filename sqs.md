@@ -64,8 +64,10 @@
     1. base64 decode + proto unmarshal 得到 `Request`
     2. 创建 `Context{RawPath: request.Path, Path: request.Path, Request: string(request.Payload)}`
     3. router `dispatch`
-    4. 若 `Context.Err != nil` → 记为 batch failure
-    5. 若 `request.ResponseSqsId != ""` 且 `ResponseSwitch` 为开启状态 → 需要响应：
+    4. 若 `Context.Err != nil`：
+        - 若 `SuspendMode` 为开启状态 → 立即停止处理并返回错误（中断批次）
+        - 否则 → 记为 batch failure，继续处理下一条
+    5. 若 `request.ResponseSqsId != ""` 且 `ReplyMode` 为开启状态 → 需要响应：
         - 要求 `request.RequestSqsId != ""`，否则记为 batch failure
         - 构造 `Response{RequestSqsId, ResponseSqsId, CorrelationId, Payload}`
         - 输出 `OutgoingMessage{QueueID: request.ResponseSqsId, Body: base64(proto(Response))}`

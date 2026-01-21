@@ -96,7 +96,7 @@ func (e *Engine) HandleSQSMessagesWithResponse(ctx context.Context, ev events.SQ
 }
 
 func (e *Engine) Invoke(ctx context.Context, ev events.SQSEvent) (events.SQSEventResponse, error) {
-	if e.PartialRetry {
+	if e.PartialMode {
 		return e.HandleSQSMessagesWithResponse(ctx, ev)
 	}
 	return events.SQSEventResponse{}, e.HandleSQSMessagesWithoutResponse(ctx, ev)
@@ -148,7 +148,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			log.Printf("[SQS] Response: %s %s", c.Path, c.Response)
 		}
 		if c.Err != nil {
-			if e.ErrorSuspend {
+			if e.SuspendMode {
 				return resp, c.Err
 			}
 			if e.DebugMode {
@@ -158,8 +158,8 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			continue
 		}
 
-		// Response is produced only when ResponseSqsId is provided and ResponseSwitch is on.
-		if !e.ResponseSwitch || request.ResponseSqsId == "" {
+		// Response is produced only when ResponseSqsId is provided and ReplyMode is on.
+		if !e.ReplyMode || request.ResponseSqsId == "" {
 			continue
 		}
 		// When a response is requested, RequestSqsId must be present.

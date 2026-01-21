@@ -10,10 +10,10 @@ import (
 
 type yamlSQSConfig struct {
 	Mode struct {
-		Debug          bool `yaml:"debug"`
-		ResponseSwitch bool `yaml:"responseSwitch"`
-		ErrorSuspend   bool `yaml:"errorSuspend"`
-		PartialRetry   bool `yaml:"partialRetry"`
+		Debug   bool `yaml:"debug"`
+		Reply   bool `yaml:"reply"`
+		Suspend bool `yaml:"suspend"`
+		Partial bool `yaml:"partial"`
 	} `yaml:"mode"`
 	StaticLink []struct {
 		SrcPath string `yaml:"srcPath"`
@@ -33,9 +33,9 @@ type yamlServeConfig struct {
 func optionFromSQSConfig(cfg yamlSQSConfig) Option {
 	return OptionFunc(func(o *Options) {
 		o.DebugMode = cfg.Mode.Debug
-		o.ResponseSwitch = cfg.Mode.ResponseSwitch
-		o.ErrorSuspend = cfg.Mode.ErrorSuspend
-		o.PartialRetry = cfg.Mode.PartialRetry
+		o.ReplyMode = cfg.Mode.Reply
+		o.SuspendMode = cfg.Mode.Suspend
+		o.PartialMode = cfg.Mode.Partial
 
 		if o.StaticLinkMap == nil {
 			o.StaticLinkMap = make(map[string]string)
