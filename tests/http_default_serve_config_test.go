@@ -13,8 +13,9 @@ func TestHTTPWithDefaultServeConfigFile(t *testing.T) {
 	p := filepath.Join(tmp, "serve.yml")
 	if err := os.WriteFile(p, []byte(
 		"http:\n"+
-			"  debugMode: true\n"+
-			"  cors: true\n"+
+			"  mode:\n"+
+			"    debug: true\n"+
+			"    cors: true\n"+
 			"\n"+
 			"dynamic:\n"+
 			"  environment:\n"+

@@ -1,6 +1,7 @@
 http:
-  debugMode: false
-  cors: true
+  mode:
+    debug: false
+    cors: true
   staticLink:
     - srcPath:
       dstPath:

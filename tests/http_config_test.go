@@ -7,8 +7,9 @@ import (
 )
 
 func TestHTTPWithConfig(t *testing.T) {
-	yaml := []byte(`debugMode: true
-cors: true
+	yaml := []byte(`mode:
+  debug: true
+  cors: true
 staticLink:
   - srcPath: /a
     dstPath: /b

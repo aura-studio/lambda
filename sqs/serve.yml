@@ -1,8 +1,9 @@
 sqs:
-  debugMode: false
-  responseSwitch: true
-  errorSuspend: false
-  partialRetry: false
+  mode:
+    debug: false
+    responseSwitch: true
+    errorSuspend: false
+    partialRetry: false
   staticLink:
     - srcPath:
       dstPath:

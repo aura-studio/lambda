@@ -9,8 +9,9 @@ import (
 func TestHTTPWithServeConfig_EmbeddedDynamic(t *testing.T) {
 	yaml := []byte(
 		"http:\n" +
-			"  debugMode: true\n" +
-			"  cors: true\n" +
+			"  mode:\n" +
+			"    debug: true\n" +
+			"    cors: true\n" +
 			"\n" +
 			"dynamic:\n" +
 			"  environment:\n" +
