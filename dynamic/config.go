@@ -64,7 +64,7 @@ func WithConfig(yamlBytes []byte) Option {
 	opt, err := optionFromConfigBytes(yamlBytes)
 	if err != nil {
 		return OptionFunc(func(*Options) {
-			   panic(fmt.Errorf("dynamic: WithConfig: %w", err))
+			panic(fmt.Errorf("dynamic: WithConfig: %w", err))
 		})
 	}
 	return opt
@@ -76,7 +76,7 @@ func WithConfigFile(path string) Option {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return OptionFunc(func(*Options) {
-			   panic(fmt.Errorf("dynamic: WithConfigFile(%s): %w", path, err))
+			panic(fmt.Errorf("dynamic: WithConfigFile(%s): %w", path, err))
 		})
 	}
 	return WithConfig(b)
