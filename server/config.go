@@ -38,13 +38,9 @@ type serveConfigOption struct {
 	httpOpt    http.Option
 	sqsOpt     sqs.Option
 	dynOpt     dynamic.Option
-	err        error
 }
 
 func (o serveConfigOption) Apply(opts *Options) {
-	if o.err != nil {
-		panic(fmt.Errorf("server.WithServeConfig: %w", o.err))
-	}
 	if o.serverType != "" {
 		opts.ServerType = o.serverType
 	}
@@ -63,14 +59,14 @@ func (o serveConfigOption) Apply(opts *Options) {
 func WithServeConfig(yamlBytes []byte) ServeOption {
 	var cfg yamlServerConfig
 	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
-		return serveConfigOption{err: err}
+		panic(fmt.Errorf("server.WithServeConfig: %w", err))
 	}
 
 	var httpOpt http.Option
 	if cfg.HTTP != nil {
 		b, err := yaml.Marshal(cfg.HTTP)
 		if err != nil {
-			return serveConfigOption{err: err}
+			panic(fmt.Errorf("server.WithServeConfig: %w", err))
 		}
 		httpOpt = http.WithConfig(b)
 	}
@@ -79,7 +75,7 @@ func WithServeConfig(yamlBytes []byte) ServeOption {
 	if cfg.SQS != nil {
 		b, err := yaml.Marshal(cfg.SQS)
 		if err != nil {
-			return serveConfigOption{err: err}
+			panic(fmt.Errorf("server.WithServeConfig: %w", err))
 		}
 		sqsOpt = sqs.WithConfig(b)
 	}
@@ -88,7 +84,7 @@ func WithServeConfig(yamlBytes []byte) ServeOption {
 	if cfg.Dynamic != nil {
 		b, err := yaml.Marshal(cfg.Dynamic)
 		if err != nil {
-			return serveConfigOption{err: err}
+			panic(fmt.Errorf("server.WithServeConfig: %w", err))
 		}
 		dynOpt = dynamic.WithConfig(b)
 	}
@@ -105,7 +101,7 @@ func WithServeConfig(yamlBytes []byte) ServeOption {
 func WithServeConfigFile(path string) ServeOption {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return serveConfigOption{err: fmt.Errorf("server.WithServeConfigFile(%s): %w", path, err)}
+		panic(fmt.Errorf("server.WithServeConfigFile(%s): %w", path, err))
 	}
 	return WithServeConfig(b)
 }
@@ -148,7 +144,7 @@ func FindDefaultServeConfigFile() (string, error) {
 func WithDefaultServeConfigFile() ServeOption {
 	p, err := FindDefaultServeConfigFile()
 	if err != nil {
-		return serveConfigOption{err: fmt.Errorf("server.WithDefaultServeConfigFile: %w", err)}
+		panic(fmt.Errorf("server.WithDefaultServeConfigFile: %w", err))
 	}
 	return WithServeConfigFile(p)
 }
