@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	lambdahttp "github.com/aura-studio/lambda/http"
+	"github.com/aura-studio/lambda/server"
 )
 
 func TestHTTPWithServeConfig_EmbeddedDynamic(t *testing.T) {
 	yaml := []byte(
-		"http:\n" +
+		"server: http\n" +
+			"http:\n" +
 			"  mode:\n" +
 			"    debug: true\n" +
 			"    cors: true\n" +
@@ -31,7 +33,10 @@ func TestHTTPWithServeConfig_EmbeddedDynamic(t *testing.T) {
 			"        version: v2\n",
 	)
 
-	e := lambdahttp.NewEngine(lambdahttp.WithServeConfig(yaml))
+	opt := server.WithServeConfig(yaml)
+	options := &server.Options{}
+	opt.Apply(options)
+	e := lambdahttp.NewEngine(options.Http, options.Dynamic)
 	if !e.DebugMode {
 		t.Fatalf("DebugMode = false")
 	}

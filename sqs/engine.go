@@ -30,18 +30,15 @@ type Engine struct {
 	sqsClient SQSClient
 }
 
-func NewEngine(opts ...ServeOption) *Engine {
-	bag := &serveOptionBag{}
-	bag.apply(opts...)
-
+func NewEngine(sqsOpts []Option, dynamicOpts []dynamic.Option) *Engine {
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
 	e := &Engine{
-		Options: NewOptions(bag.sqs...),
-		Dynamic: dynamic.NewDynamic(bag.dynamic...),
+		Options: NewOptions(sqsOpts...),
+		Dynamic: dynamic.NewDynamic(dynamicOpts...),
 	}
 	if e.Options.SQSClient != nil {
 		e.sqsClient = e.Options.SQSClient

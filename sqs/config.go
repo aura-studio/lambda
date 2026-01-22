@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aura-studio/lambda/dynamic"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -22,11 +21,6 @@ type yamlSQSConfig struct {
 		SrcPrefix string `yaml:"srcPrefix"`
 		DstPrefix string `yaml:"dstPrefix"`
 	} `yaml:"prefixLink"`
-}
-
-type yamlServeConfig struct {
-	SQS     yamlSQSConfig `yaml:"sqs"`
-	Dynamic any           `yaml:"dynamic"`
 }
 
 func optionFromSQSConfig(cfg yamlSQSConfig) Option {
@@ -95,56 +89,4 @@ func WithConfigFile(path string) Option {
 		})
 	}
 	return WithConfig(b)
-}
-
-type serveConfigOption struct {
-	sqsOpt Option
-	dynOpt dynamic.Option
-	err    error
-}
-
-func (o serveConfigOption) apply(b *serveOptionBag) {
-	if o.err != nil {
-		panic(fmt.Errorf("sqs.WithServeConfig: %w", o.err))
-	}
-	if o.sqsOpt != nil {
-		b.sqs = append(b.sqs, o.sqsOpt)
-	}
-	if o.dynOpt != nil {
-		b.dynamic = append(b.dynamic, o.dynOpt)
-	}
-}
-
-// WithServeConfig parses YAML bytes following sqs.yml structure, and also supports
-// embedding dynamic.yml content under top-level `dynamic:`.
-// It panics if the YAML is invalid.
-func WithServeConfig(yamlBytes []byte) ServeOption {
-	var cfg yamlServeConfig
-	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
-		return serveConfigOption{err: err}
-	}
-
-	sqsOpt := optionFromSQSConfig(cfg.SQS)
-
-	var dynOpt dynamic.Option
-	if cfg.Dynamic != nil {
-		b, err := yaml.Marshal(cfg.Dynamic)
-		if err != nil {
-			return serveConfigOption{err: err}
-		}
-		// cfg.Dynamic is expected to be a dynamic.yml document root (environment/package).
-		dynOpt = dynamic.WithConfig(b)
-	}
-
-	return serveConfigOption{sqsOpt: sqsOpt, dynOpt: dynOpt}
-}
-
-// WithServeConfigFile loads a YAML file and applies it as ServeOption.
-// It panics if the file cannot be read or YAML is invalid.
-func WithServeConfigFile(path string) ServeOption {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return serveConfigOption{err: fmt.Errorf("sqs.WithServeConfigFile(%s): %w", path, err)}
-	}
-	return WithServeConfig(b)
 }

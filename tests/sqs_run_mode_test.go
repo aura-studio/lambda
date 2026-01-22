@@ -27,7 +27,7 @@ func TestSQSRunMode(t *testing.T) {
 	}}
 
 	t.Run("Strict", func(t *testing.T) {
-		e := lambdasqs.NewEngine(lambdasqs.WithRunMode(lambdasqs.RunModeStrict))
+		e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithRunMode(lambdasqs.RunModeStrict)}, nil)
 		resp, err := e.Invoke(context.Background(), ev)
 		if err != nil {
 			t.Fatalf("Strict mode should not return error, got %v", err)
@@ -42,7 +42,7 @@ func TestSQSRunMode(t *testing.T) {
 	})
 
 	t.Run("Partial", func(t *testing.T) {
-		e := lambdasqs.NewEngine(lambdasqs.WithRunMode(lambdasqs.RunModePartial))
+		e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithRunMode(lambdasqs.RunModePartial)}, nil)
 		resp, err := e.Invoke(context.Background(), ev)
 		if err != nil {
 			t.Fatalf("Partial mode should not return error, got %v", err)
@@ -57,7 +57,7 @@ func TestSQSRunMode(t *testing.T) {
 	})
 
 	t.Run("Batch", func(t *testing.T) {
-		e := lambdasqs.NewEngine(lambdasqs.WithRunMode(lambdasqs.RunModeBatch))
+		e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithRunMode(lambdasqs.RunModeBatch)}, nil)
 		_, err := e.Invoke(context.Background(), ev)
 		if err == nil {
 			t.Fatal("Batch mode should return error on first failure")
@@ -68,7 +68,7 @@ func TestSQSRunMode(t *testing.T) {
 	})
 
 	t.Run("Reentrant", func(t *testing.T) {
-		e := lambdasqs.NewEngine(lambdasqs.WithRunMode(lambdasqs.RunModeReentrant))
+		e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithRunMode(lambdasqs.RunModeReentrant)}, nil)
 		_, err := e.Invoke(context.Background(), ev)
 		if err == nil {
 			t.Fatal("Reentrant mode should return error at the end")
@@ -84,6 +84,6 @@ func TestSQSRunMode(t *testing.T) {
 				t.Errorf("Expected panic for invalid run mode")
 			}
 		}()
-		lambdasqs.NewEngine(lambdasqs.WithRunMode(lambdasqs.RunMode("invalid")))
+		lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithRunMode(lambdasqs.RunMode("invalid"))}, nil)
 	})
 }

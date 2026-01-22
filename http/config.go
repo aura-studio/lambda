@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aura-studio/lambda/dynamic"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -25,11 +24,6 @@ type yamlHTTPConfig struct {
 		Key    string `yaml:"key"`
 		Prefix string `yaml:"prefix"`
 	} `yaml:"headerLinkKey"`
-}
-
-type yamlServeConfig struct {
-	HTTP    yamlHTTPConfig `yaml:"http"`
-	Dynamic any            `yaml:"dynamic"`
 }
 
 func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
@@ -99,56 +93,4 @@ func WithConfigFile(path string) Option {
 		})
 	}
 	return WithConfig(b)
-}
-
-type serveConfigOption struct {
-	httpOpt Option
-	dynOpt  dynamic.Option
-	err     error
-}
-
-func (o serveConfigOption) apply(b *serveOptionBag) {
-	if o.err != nil {
-		panic(fmt.Errorf("http.WithServeConfig: %w", o.err))
-	}
-	if o.httpOpt != nil {
-		b.http = append(b.http, o.httpOpt)
-	}
-	if o.dynOpt != nil {
-		b.dynamic = append(b.dynamic, o.dynOpt)
-	}
-}
-
-// WithServeConfig parses YAML bytes following http.yml structure, and also supports
-// embedding dynamic.yml content under top-level `dynamic:`.
-// It panics if the YAML is invalid.
-func WithServeConfig(yamlBytes []byte) ServeOption {
-	var cfg yamlServeConfig
-	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
-		return serveConfigOption{err: err}
-	}
-
-	httpOpt := optionFromHTTPConfig(cfg.HTTP)
-
-	var dynOpt dynamic.Option
-	if cfg.Dynamic != nil {
-		b, err := yaml.Marshal(cfg.Dynamic)
-		if err != nil {
-			return serveConfigOption{err: err}
-		}
-		// cfg.Dynamic is expected to be a dynamic.yml document root (environment/package).
-		dynOpt = dynamic.WithConfig(b)
-	}
-
-	return serveConfigOption{httpOpt: httpOpt, dynOpt: dynOpt}
-}
-
-// WithServeConfigFile loads a YAML file and applies it as ServeOption.
-// It panics if the file cannot be read or YAML is invalid.
-func WithServeConfigFile(path string) ServeOption {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return serveConfigOption{err: fmt.Errorf("http.WithServeConfigFile(%s): %w", path, err)}
-	}
-	return WithServeConfig(b)
 }

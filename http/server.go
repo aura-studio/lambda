@@ -4,14 +4,16 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"github.com/aura-studio/lambda/dynamic"
 )
 
 var srv *http.Server
 
-func Serve(addr string, opts ...ServeOption) error {
+func Serve(addr string, httpOpts []Option, dynamicOpts []dynamic.Option) error {
 	srv = &http.Server{
 		Addr:    addr,
-		Handler: NewEngine(opts...),
+		Handler: NewEngine(httpOpts, dynamicOpts),
 	}
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

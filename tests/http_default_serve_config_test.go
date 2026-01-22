@@ -6,13 +6,15 @@ import (
 	"testing"
 
 	lambdahttp "github.com/aura-studio/lambda/http"
+	"github.com/aura-studio/lambda/server"
 )
 
 func TestHTTPWithDefaultServeConfigFile(t *testing.T) {
 	tmp := t.TempDir()
-	p := filepath.Join(tmp, "serve.yml")
+	p := filepath.Join(tmp, "server.yml")
 	if err := os.WriteFile(p, []byte(
-		"http:\n"+
+		"server: http\n"+
+			"http:\n"+
 			"  mode:\n"+
 			"    debug: true\n"+
 			"    cors: true\n"+
@@ -41,7 +43,10 @@ func TestHTTPWithDefaultServeConfigFile(t *testing.T) {
 		t.Fatalf("chdir: %v", err)
 	}
 
-	e := lambdahttp.NewEngine(lambdahttp.WithDefaultServeConfigFile())
+	opt := server.WithDefaultServeConfigFile()
+	options := &server.Options{}
+	opt.Apply(options)
+	e := lambdahttp.NewEngine(options.Http, options.Dynamic)
 	if !e.DebugMode {
 		t.Logf("Options: %+v", e.Options)
 		t.Fatalf("DebugMode = false")

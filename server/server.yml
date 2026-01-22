@@ -1,0 +1,32 @@
+server: http # or sqs
+
+http:
+  mode:
+    debug: true
+    cors: true
+  staticLink:
+    - srcPath: "/static"
+      dstPath: "./public"
+  prefixLink:
+    - srcPrefix: "/api"
+      dstPrefix: "/v1"
+
+sqs:
+  mode:
+    debug: true
+    run: batch # strict, partial, batch, reentrant
+    reply: false
+
+dynamic:
+  environment:
+    toolchain:
+      os: linux
+      arch: amd64
+      compiler: go1.21
+      variant: generic
+  package:
+    namespace: aura
+    defaultVersion: v1
+    preload:
+      - package: example
+        version: v1

@@ -1,0 +1,12 @@
+mode:
+  debug: true
+  cors: true
+staticLink:
+  - srcPath: "/static"
+    dstPath: "./public"
+prefixLink:
+  - srcPrefix: "/api"
+    dstPrefix: "/v1"
+headerLinkKey:
+  - key: "X-Custom-Header"
+    prefix: "custom-"

@@ -1,12 +1,15 @@
 package sqs
 
-import "github.com/aws/aws-lambda-go/lambda"
+import (
+	"github.com/aura-studio/lambda/dynamic"
+	"github.com/aws/aws-lambda-go/lambda"
+)
 
 var engine *Engine
 
 // Serve runs the SQS Engine handler for AWS Lambda SQS events.
-func Serve(opts ...ServeOption) {
-	engine = NewEngine(opts...)
+func Serve(sqsOpts []Option, dynamicOpts []dynamic.Option) {
+	engine = NewEngine(sqsOpts, dynamicOpts)
 	lambda.Start(engine.Invoke)
 }
 

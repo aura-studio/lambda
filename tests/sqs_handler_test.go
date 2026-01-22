@@ -54,7 +54,7 @@ func (m *mockTunnel) Close() {
 }
 
 func TestSQSHandler_PartialFailures(t *testing.T) {
-	e := lambdasqs.NewEngine(lambdasqs.WithRunMode(lambdasqs.RunModePartial))
+	e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithRunMode(lambdasqs.RunModePartial)}, nil)
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "1", Body: "not-proto"}, // invalid protobuf -> fail
@@ -80,7 +80,7 @@ func TestSQSHandler_PartialFailures(t *testing.T) {
 
 func TestSQSHandler_ResponseRouting(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock), lambdasqs.WithRunMode(lambdasqs.RunModePartial), lambdasqs.WithReplyMode(true))
+	e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithSQSClient(mock), lambdasqs.WithRunMode(lambdasqs.RunModePartial), lambdasqs.WithReplyMode(true)}, nil)
 
 	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
 		invoke: func(route, req string) string {
@@ -127,7 +127,7 @@ func TestSQSHandler_ResponseRouting(t *testing.T) {
 
 func TestSQSHandler_NoResponse_AllowsEmptyClientSqsId(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock))
+	e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithSQSClient(mock)}, nil)
 
 	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
 		invoke: func(route, req string) string {
@@ -155,7 +155,7 @@ func TestSQSHandler_NoResponse_AllowsEmptyClientSqsId(t *testing.T) {
 
 func TestSQSHandler_HealthCheck_OK(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock))
+	e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithSQSClient(mock)}, nil)
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "h1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/health-check"})},
@@ -175,7 +175,7 @@ func TestSQSHandler_HealthCheck_OK(t *testing.T) {
 
 func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock))
+	e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithSQSClient(mock)}, nil)
 
 	var gotRoute string
 	dynamic.RegisterPackage("pkg", "version", &mockTunnel{
@@ -206,7 +206,7 @@ func TestSQSHandler_APIPrefix_StripsToWildcardPath(t *testing.T) {
 
 func TestSQSHandler_APIPath_RequiresPrefix(t *testing.T) {
 	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine(lambdasqs.WithSQSClient(mock), lambdasqs.WithRunMode(lambdasqs.RunModePartial))
+	e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithSQSClient(mock), lambdasqs.WithRunMode(lambdasqs.RunModePartial)}, nil)
 
 	ev := events.SQSEvent{Records: []events.SQSMessage{
 		{MessageId: "p1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/pkg/version/route", Payload: []byte(`{}`)})},

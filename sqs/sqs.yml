@@ -1,0 +1,10 @@
+mode:
+  debug: true
+  run: batch # strict, partial, batch, reentrant
+  reply: false
+staticLink:
+  - srcPath: "/static"
+    dstPath: "./public"
+prefixLink:
+  - srcPrefix: "/api"
+    dstPrefix: "/v1"

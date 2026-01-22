@@ -11,14 +11,11 @@ type Engine struct {
 	*dynamic.Dynamic
 }
 
-func NewEngine(opts ...ServeOption) *Engine {
-	bag := &serveOptionBag{}
-	bag.apply(opts...)
-
+func NewEngine(httpOpts []Option, dynamicOpts []dynamic.Option) *Engine {
 	e := &Engine{
-		Options: NewOptions(bag.http...),
+		Options: NewOptions(httpOpts...),
 		Engine:  gin.Default(),
-		Dynamic: dynamic.NewDynamic(bag.dynamic...),
+		Dynamic: dynamic.NewDynamic(dynamicOpts...),
 	}
 
 	if !e.DebugMode {
