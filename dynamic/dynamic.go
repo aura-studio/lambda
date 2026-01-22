@@ -56,7 +56,7 @@ func (e *Dynamic) InstallPackages() {
 
 	for _, p := range e.PreloadPackages {
 		if _, err := dynamic.GetPackage(p.Package, p.Version); err != nil {
-			log.Printf("preload package %s@%s failed: %v", p.Package, p.Version, err)
+			   log.Printf("[lambda] preload package %s_%s_%s failed: dynamic: %v", e.PackageNamespace, p.Package, p.Version, err)
 		}
 	}
 }

@@ -39,7 +39,7 @@ func FindDefaultConfigFile() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("dynamic config not found (expected %v)", candidates)
+	return "", fmt.Errorf("dynamic: config not found (expected %v)", candidates)
 }
 
 // WithDefaultConfigFile finds and loads the default dynamic config file.
@@ -48,7 +48,7 @@ func WithDefaultConfigFile() Option {
 	p, err := FindDefaultConfigFile()
 	if err != nil {
 		return OptionFunc(func(*Options) {
-			panic(fmt.Errorf("dynamic.WithDefaultConfigFile: %w", err))
+			   panic(fmt.Errorf("dynamic: WithDefaultConfigFile: %w", err))
 		})
 	}
 	return WithConfigFile(p)
