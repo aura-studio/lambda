@@ -1,4 +1,4 @@
-server: http # or sqs
+lambda: http # or sqs
 
 http:
   mode:

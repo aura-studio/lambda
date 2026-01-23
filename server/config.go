@@ -12,7 +12,7 @@ import (
 )
 
 type yamlServerConfig struct {
-	Server  string `yaml:"server"`
+	Lambda  string `yaml:"lambda"`
 	HTTP    any    `yaml:"http"`
 	SQS     any    `yaml:"sqs"`
 	Dynamic any    `yaml:"dynamic"`
@@ -23,10 +23,10 @@ type ServeOption interface {
 }
 
 type Options struct {
-	ServerType string
-	Http       []http.Option
-	Sqs        []sqs.Option
-	Dynamic    []dynamic.Option
+	Lambda  string
+	Http    []http.Option
+	Sqs     []sqs.Option
+	Dynamic []dynamic.Option
 }
 
 type serveOptionFunc func(*Options)
@@ -34,15 +34,15 @@ type serveOptionFunc func(*Options)
 func (f serveOptionFunc) Apply(o *Options) { f(o) }
 
 type serveConfigOption struct {
-	serverType string
-	httpOpt    http.Option
-	sqsOpt     sqs.Option
-	dynOpt     dynamic.Option
+	lambda  string
+	httpOpt http.Option
+	sqsOpt  sqs.Option
+	dynOpt  dynamic.Option
 }
 
 func (o serveConfigOption) Apply(opts *Options) {
-	if o.serverType != "" {
-		opts.ServerType = o.serverType
+	if o.lambda != "" {
+		opts.Lambda = o.lambda
 	}
 	if o.httpOpt != nil {
 		opts.Http = append(opts.Http, o.httpOpt)
@@ -90,10 +90,10 @@ func WithServeConfig(yamlBytes []byte) ServeOption {
 	}
 
 	return serveConfigOption{
-		serverType: cfg.Server,
-		httpOpt:    httpOpt,
-		sqsOpt:     sqsOpt,
-		dynOpt:     dynOpt,
+		lambda:  cfg.Lambda,
+		httpOpt: httpOpt,
+		sqsOpt:  sqsOpt,
+		dynOpt:  dynOpt,
 	}
 }
 

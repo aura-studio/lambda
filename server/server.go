@@ -13,7 +13,7 @@ func Serve(addr string, opts ...ServeOption) error {
 		}
 	}
 
-	switch options.ServerType {
+	switch options.Lambda {
 	case "sqs":
 		sqs.Serve(options.Sqs, options.Dynamic)
 		return nil
