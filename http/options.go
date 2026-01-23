@@ -14,6 +14,7 @@ func (f HttpOption) Apply(o *Options) { f(o) }
 
 type Options struct {
 	// Http Options
+	Address       string
 	DebugMode     bool
 	CorsMode      bool
 	StaticLinkMap map[string]string
@@ -22,6 +23,7 @@ type Options struct {
 }
 
 var defaultOptions = &Options{
+	Address:       ":8080",
 	DebugMode:     false,
 	CorsMode:      false,
 	StaticLinkMap: map[string]string{},
@@ -44,6 +46,12 @@ func (o *Options) init(opts ...Option) {
 }
 
 // -------------- Http Options ----------------
+func WithAddress(addr string) Option {
+	return HttpOption(func(o *Options) {
+		o.Address = addr
+	})
+}
+
 func WithDebugMode() Option {
 	return HttpOption(func(o *Options) {
 		o.DebugMode = true

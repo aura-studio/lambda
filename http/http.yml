@@ -1,3 +1,4 @@
+address: ":8080"
 mode:
   debug: true
   cors: true

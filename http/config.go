@@ -8,7 +8,8 @@ import (
 )
 
 type yamlHTTPConfig struct {
-	Mode struct {
+	Address string `yaml:"address"`
+	Mode    struct {
 		Debug bool `yaml:"debug"`
 		Cors  bool `yaml:"cors"`
 	} `yaml:"mode"`
@@ -28,6 +29,9 @@ type yamlHTTPConfig struct {
 
 func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 	return HttpOption(func(o *Options) {
+		if cfg.Address != "" {
+			o.Address = cfg.Address
+		}
 		o.DebugMode = cfg.Mode.Debug
 		o.CorsMode = cfg.Mode.Cors
 

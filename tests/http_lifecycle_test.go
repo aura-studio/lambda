@@ -12,7 +12,7 @@ func TestHTTPServeAndClose(t *testing.T) {
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- lambdahttp.Serve(addr, nil, nil)
+		errCh <- lambdahttp.Serve([]lambdahttp.Option{lambdahttp.WithAddress(addr)}, nil)
 	}()
 
 	waitHTTPReady(t, "http://"+addr, 3*time.Second)

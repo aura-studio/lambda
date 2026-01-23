@@ -10,9 +10,10 @@ import (
 
 var srv *http.Server
 
-func Serve(addr string, httpOpts []Option, dynamicOpts []dynamic.Option) error {
+func Serve(httpOpts []Option, dynamicOpts []dynamic.Option) error {
+	opts := NewOptions(httpOpts...)
 	srv = &http.Server{
-		Addr:    addr,
+		Addr:    opts.Address,
 		Handler: NewEngine(httpOpts, dynamicOpts),
 	}
 

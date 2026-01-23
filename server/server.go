@@ -5,7 +5,7 @@ import (
 	"github.com/aura-studio/lambda/sqs"
 )
 
-func Serve(addr string, opts ...ServeOption) error {
+func Serve(opts ...ServeOption) error {
 	options := &Options{}
 	for _, opt := range opts {
 		if opt != nil {
@@ -20,7 +20,7 @@ func Serve(addr string, opts ...ServeOption) error {
 	case "http":
 		fallthrough
 	default:
-		return http.Serve(addr, options.Http, options.Dynamic)
+		return http.Serve(options.Http, options.Dynamic)
 	}
 }
 
