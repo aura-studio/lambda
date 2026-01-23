@@ -110,8 +110,16 @@ func WithServeConfigFile(path string) ServeOption {
 // when searching for a default server config.
 func DefaultServeConfigCandidates() []string {
 	return []string{
+		"lambda.yaml",
+		"lambda.yml",
 		"server.yaml",
 		"server.yml",
+		"bootstrap.yaml",
+		"bootstrap.yml",
+		"app.yaml",
+		"app.yml",
+		"config.yaml",
+		"config.yml",
 	}
 }
 
