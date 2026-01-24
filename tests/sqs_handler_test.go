@@ -43,6 +43,10 @@ type mockTunnel struct {
 	invoke func(string, string) string
 }
 
+func (m *mockTunnel) Meta() string {
+	return ""
+}
+
 func (m *mockTunnel) Invoke(route string, req string) string {
 	return m.invoke(route, req)
 }
