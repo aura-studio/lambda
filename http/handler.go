@@ -55,6 +55,8 @@ func (e *Engine) InstallHandlers() {
 	e.HandleAllMethods("/_/api/*path", e.Debug, e.API)
 	e.HandleAllMethods("/wapi/*path", e.WAPI)
 	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
+	e.HandleAllMethods("/meta/*path", e.Meta)
+	e.HandleAllMethods("/_/meta/*path", e.Debug, e.Meta)
 	e.NoRoute(e.PageNotFound)
 	e.NoMethod(e.MethodNotAllowed)
 }
@@ -244,6 +246,46 @@ func (e *Engine) WAPI(c *gin.Context) {
 	}
 }
 
+func (e *Engine) Meta(c *gin.Context) {
+	// path
+	c.Set(PathContext, c.Param("path"))
+
+	// processor
+	if c.GetBool(DebugContext) {
+		c.Set(ProcessorContext, e.debugMetaProcessor)
+	} else {
+		c.Set(ProcessorContext, e.safeMetaProcessor)
+	}
+
+	// handle
+	if v, ok := c.Get(ProcessorContext); ok {
+		v.(Proccessor)(c, e.handle)
+	} else {
+		c.String(http.StatusInternalServerError, "No processor")
+		c.Abort()
+		return
+	}
+
+	// response
+	if c.GetBool(DebugContext) {
+		c.String(http.StatusOK, e.formatDebug(c))
+		c.Abort()
+		return
+	} else if v, ok := c.Get(PanicContext); ok && v != nil {
+		c.String(http.StatusInternalServerError, v.(error).Error())
+		c.Abort()
+		return
+	} else if v, ok := c.Get(ErrorContext); ok && v != nil {
+		c.String(http.StatusInternalServerError, v.(error).Error())
+		c.Abort()
+		return
+	} else {
+		c.String(http.StatusOK, c.GetString(ResponseContext))
+		c.Abort()
+		return
+	}
+}
+
 func (e *Engine) PageNotFound(c *gin.Context) {
 	c.String(404, "404 page not found")
 	c.Abort()
@@ -377,6 +419,28 @@ func (e *Engine) debugProcessor(c *gin.Context, f LocalHandler) {
 	c.Set(PanicContext, panicErr)
 }
 
+func (e *Engine) doMetaProcessor(c *gin.Context) {
+	path := c.GetString(PathContext)
+	rsp, err := e.meta(path)
+	c.Set(ResponseContext, rsp)
+	c.Set(ErrorContext, err)
+}
+
+func (e *Engine) safeMetaProcessor(c *gin.Context, f LocalHandler) {
+	c.Set(PanicContext, e.doSafe(func() {
+		e.doMetaProcessor(c)
+	}))
+}
+
+func (e *Engine) debugMetaProcessor(c *gin.Context, f LocalHandler) {
+	stdout, stderr, panicErr := e.doDebug(func() {
+		e.doMetaProcessor(c)
+	})
+	c.Set(StdoutContext, stdout)
+	c.Set(StderrContext, stderr)
+	c.Set(PanicContext, panicErr)
+}
+
 func (e *Engine) handle(path string, req string) (string, error) {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) < 2 {
@@ -392,6 +456,22 @@ func (e *Engine) handle(path string, req string) (string, error) {
 
 	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
 	return tunnel.Invoke(route, req), nil
+}
+
+func (e *Engine) meta(path string) (string, error) {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid path: %q", path)
+	}
+	pkg := parts[0]
+	version := parts[1]
+
+	tunnel, err := e.GetPackage(pkg, version)
+	if err != nil {
+		return "", err
+	}
+
+	return tunnel.Meta(), nil
 }
 
 func (e *Engine) formatDebug(c *gin.Context) string {

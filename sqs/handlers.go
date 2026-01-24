@@ -19,7 +19,8 @@ func (e *Engine) InstallHandlers() {
 	e.HandleAllMethods("/_/api/*path", e.Debug, e.API)
 	e.HandleAllMethods("/wapi/*path", e.WAPI)
 	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
-
+	e.HandleAllMethods("/meta/*path", e.Meta)
+	e.HandleAllMethods("/_/meta/*path", e.Debug, e.Meta)
 	e.r.NoRoute(e.PageNotFound)
 	e.r.NoMethod(e.MethodNotAllowed)
 }
@@ -115,6 +116,26 @@ func (e *Engine) WAPI(c *Context) {
 	e.API(c)
 }
 
+func (e *Engine) Meta(c *Context) {
+	if c.ParamPath == "" {
+		c.Err = fmt.Errorf("missing meta path")
+		return
+	}
+	rsp, err := e.meta(c.ParamPath)
+	if err != nil {
+		c.Err = err
+		if c.DebugMode {
+			c.Response = e.formatDebug(c, "meta")
+		}
+		return
+	}
+	if c.DebugMode {
+		c.Response = e.formatDebugWithResponse(c, "meta", rsp)
+		return
+	}
+	c.Response = rsp
+}
+
 func (e *Engine) PageNotFound(c *Context) {
 	c.Err = fmt.Errorf("404 page not found: %s", c.Path)
 }
@@ -153,4 +174,37 @@ func errString(err error) string {
 		return ""
 	}
 	return err.Error()
+}
+
+func (e *Engine) handle(path string, req string) (string, error) {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid path: %q", path)
+	}
+	pkg := parts[0]
+	version := parts[1]
+
+	tunnel, err := e.GetPackage(pkg, version)
+	if err != nil {
+		return "", err
+	}
+
+	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
+	return tunnel.Invoke(route, req), nil
+}
+
+func (e *Engine) meta(path string) (string, error) {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid path: %q", path)
+	}
+	pkg := parts[0]
+	version := parts[1]
+
+	tunnel, err := e.GetPackage(pkg, version)
+	if err != nil {
+		return "", err
+	}
+
+	return tunnel.Meta(), nil
 }

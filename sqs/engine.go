@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"strings"
 	"sync/atomic"
 
 	"github.com/aura-studio/lambda/dynamic"
@@ -56,23 +55,6 @@ func (e *Engine) Start() {
 
 func (e *Engine) Stop() {
 	e.running.Store(0)
-}
-
-func (e *Engine) handle(path string, req string) (string, error) {
-	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid path: %q", path)
-	}
-	pkg := parts[0]
-	version := parts[1]
-
-	tunnel, err := e.GetPackage(pkg, version)
-	if err != nil {
-		return "", err
-	}
-
-	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
-	return tunnel.Invoke(route, req), nil
 }
 
 // HandleSQSMessagesWithoutResponse 重试全部数据
