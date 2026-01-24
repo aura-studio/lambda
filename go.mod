@@ -5,7 +5,7 @@ go 1.23
 toolchain go1.24.1
 
 require (
-	github.com/aura-studio/dynamic v1.6.15
+	github.com/aura-studio/dynamic v1.6.16
 	github.com/aws/aws-lambda-go v1.48.0
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.4
