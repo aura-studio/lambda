@@ -14,23 +14,6 @@ var (
 	lambdaBuilt   string
 )
 
-// InitLambdaInfo 从 debug.ReadBuildInfo 初始化 Lambda 构建信息
-// 应在 main 程序初始化时调用: dynamic.InitLambdaInfo()
-func InitLambdaInfo() {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return
-	}
-	lambdaModule = info.Main.Path
-	lambdaVersion = info.Main.Version
-	for _, s := range info.Settings {
-		if s.Key == "vcs.time" {
-			lambdaBuilt = s.Value
-			break
-		}
-	}
-}
-
 // ServiceInfo 服务信息，从 AWS_LAMBDA_FUNCTION_NAME 解析
 type ServiceInfo struct {
 	Business  string `json:"business"`
@@ -68,9 +51,26 @@ type MetaGenerator struct {
 
 // NewMetaGenerator 创建 meta 生成器
 func NewMetaGenerator(localWarehouse, remoteWarehouse string) *MetaGenerator {
+	initLambdaInfo()
 	return &MetaGenerator{
 		localWarehouse:  localWarehouse,
 		remoteWarehouse: remoteWarehouse,
+	}
+}
+
+// initLambdaInfo 从 debug.ReadBuildInfo 初始化 Lambda 构建信息
+func initLambdaInfo() {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return
+	}
+	lambdaModule = info.Main.Path
+	lambdaVersion = info.Main.Version
+	for _, s := range info.Settings {
+		if s.Key == "vcs.time" {
+			lambdaBuilt = s.Value
+			break
+		}
 	}
 }
 
