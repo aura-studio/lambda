@@ -194,17 +194,17 @@ func (e *Engine) handle(path string, req string) (string, error) {
 }
 
 func (e *Engine) meta(path string) (string, error) {
+	// 获取 tunnel 的 meta 信息（如果路径有效）
+	var tunnelMeta string
 	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid path: %q", path)
-	}
-	pkg := parts[0]
-	version := parts[1]
-
-	tunnel, err := e.GetPackage(pkg, version)
-	if err != nil {
-		return "", err
+	if len(parts) >= 2 {
+		pkg := parts[0]
+		version := parts[1]
+		if tunnel, err := e.GetPackage(pkg, version); err == nil {
+			tunnelMeta = tunnel.Meta()
+		}
 	}
 
-	return tunnel.Meta(), nil
+	// 使用 MetaGenerator 生成完整的 meta 信息
+	return e.MetaGenerator.Generate(tunnelMeta), nil
 }

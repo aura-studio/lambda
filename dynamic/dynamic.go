@@ -14,6 +14,7 @@ type Package struct {
 
 type Dynamic struct {
 	*Options
+	MetaGenerator *MetaGenerator
 }
 
 func NewDynamic(opts ...Option) *Dynamic {
@@ -22,6 +23,7 @@ func NewDynamic(opts ...Option) *Dynamic {
 	}
 
 	d.InstallPackages()
+	d.MetaGenerator = NewMetaGenerator(d.LocalWarehouse, d.RemoteWarehouse)
 
 	return d
 }
