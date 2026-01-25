@@ -3,24 +3,32 @@ package dynamic
 import (
 	"encoding/json"
 	"os"
+	"runtime/debug"
 	"strings"
 )
 
-// 全局变量，由 main 程序通过 SetLambdaInfo 注入
+// 全局变量，存储 Lambda 构建信息
 var (
 	lambdaModule  string
 	lambdaVersion string
 	lambdaBuilt   string
 )
 
-// SetLambdaInfo 设置 Lambda 构建信息，应在 main 程序初始化时调用
-// module: debug.ReadBuildInfo().Main.Path
-// version: debug.ReadBuildInfo().Main.Version
-// built: vcs.time from debug.ReadBuildInfo().Settings，RFC3339 格式
-func SetLambdaInfo(module, version, built string) {
-	lambdaModule = module
-	lambdaVersion = version
-	lambdaBuilt = built
+// InitLambdaInfo 从 debug.ReadBuildInfo 初始化 Lambda 构建信息
+// 应在 main 程序初始化时调用: dynamic.InitLambdaInfo()
+func InitLambdaInfo() {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return
+	}
+	lambdaModule = info.Main.Path
+	lambdaVersion = info.Main.Version
+	for _, s := range info.Settings {
+		if s.Key == "vcs.time" {
+			lambdaBuilt = s.Value
+			break
+		}
+	}
 }
 
 // ServiceInfo 服务信息，从 AWS_LAMBDA_FUNCTION_NAME 解析
