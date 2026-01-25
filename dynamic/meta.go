@@ -88,9 +88,10 @@ func parseLambdaInfo() LambdaInfo {
 	info.Module = buildInfo.Main.Path
 	info.Version = buildInfo.Main.Version
 
-	// 查找 BuildTime 设置
+	// 查找 BuildTime 设置，vcs.time 已经是 RFC3339 格式
 	for _, setting := range buildInfo.Settings {
 		if setting.Key == "vcs.time" {
+			// vcs.time 格式为 RFC3339 (如 2006-01-02T15:04:05Z)
 			info.Built = setting.Value
 			break
 		}
