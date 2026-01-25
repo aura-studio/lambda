@@ -3,9 +3,25 @@ package dynamic
 import (
 	"encoding/json"
 	"os"
-	"runtime/debug"
 	"strings"
 )
+
+// 全局变量，由 main 程序通过 SetLambdaInfo 注入
+var (
+	lambdaModule  string
+	lambdaVersion string
+	lambdaBuilt   string
+)
+
+// SetLambdaInfo 设置 Lambda 构建信息，应在 main 程序初始化时调用
+// module: debug.ReadBuildInfo().Main.Path
+// version: debug.ReadBuildInfo().Main.Version
+// built: vcs.time from debug.ReadBuildInfo().Settings，RFC3339 格式
+func SetLambdaInfo(module, version, built string) {
+	lambdaModule = module
+	lambdaVersion = version
+	lambdaBuilt = built
+}
 
 // ServiceInfo 服务信息，从 AWS_LAMBDA_FUNCTION_NAME 解析
 type ServiceInfo struct {
@@ -76,35 +92,20 @@ func parseServiceInfo() ServiceInfo {
 	return info
 }
 
-// parseLambdaInfo 从 debug.ReadBuildInfo 获取构建信息
-func parseLambdaInfo() LambdaInfo {
-	info := LambdaInfo{}
-
-	buildInfo, ok := debug.ReadBuildInfo()
-	if !ok {
-		return info
+// getLambdaInfo 获取 Lambda 构建信息
+func getLambdaInfo() LambdaInfo {
+	return LambdaInfo{
+		Module:  lambdaModule,
+		Version: lambdaVersion,
+		Built:   lambdaBuilt,
 	}
-
-	info.Module = buildInfo.Main.Path
-	info.Version = buildInfo.Main.Version
-
-	// 查找 BuildTime 设置，vcs.time 已经是 RFC3339 格式
-	for _, setting := range buildInfo.Settings {
-		if setting.Key == "vcs.time" {
-			// vcs.time 格式为 RFC3339 (如 2006-01-02T15:04:05Z)
-			info.Built = setting.Value
-			break
-		}
-	}
-
-	return info
 }
 
 // Generate 生成 meta 信息，合并 tunnel 的 Meta
 func (g *MetaGenerator) Generate(tunnelMeta string) string {
 	meta := Meta{
 		Service: parseServiceInfo(),
-		Lambda:  parseLambdaInfo(),
+		Lambda:  getLambdaInfo(),
 		Warehouse: WarehouseInfo{
 			Local:  g.localWarehouse,
 			Remote: g.remoteWarehouse,
@@ -112,7 +113,7 @@ func (g *MetaGenerator) Generate(tunnelMeta string) string {
 	}
 
 	// 先序列化基础 meta
-	result, err := json.Marshal(meta)
+	result, err := json.MarshalIndent(meta, "", "  ")
 	if err != nil {
 		return "{}"
 	}
@@ -141,7 +142,7 @@ func (g *MetaGenerator) Generate(tunnelMeta string) string {
 		}
 	}
 
-	merged, err := json.Marshal(baseMap)
+	merged, err := json.MarshalIndent(baseMap, "", "  ")
 	if err != nil {
 		return string(result)
 	}
