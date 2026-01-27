@@ -1,0 +1,22 @@
+# Event Module Configuration
+# This is an example configuration file for the Event Lambda Handler module.
+
+mode:
+  # Enable debug mode for verbose logging
+  debug: false
+  # Run mode for error handling: strict, partial, batch, reentrant
+  # - strict: Stop processing on first error
+  # - partial: Continue processing, record failures, return nil
+  # - batch: Fail entire batch on any error (default)
+  # - reentrant: Continue processing, return last error
+  run: batch
+
+# Static path mappings (exact path rewriting)
+# staticLink:
+#   - srcPath: "/old-path"
+#     dstPath: "/new-path"
+
+# Prefix path mappings (prefix-based rewriting)
+# prefixLink:
+#   - srcPrefix: "/v1"
+#     dstPrefix: "/v2"
