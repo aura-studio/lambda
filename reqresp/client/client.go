@@ -1,4 +1,4 @@
-package reqrespcli
+package client
 
 import (
 	"context"

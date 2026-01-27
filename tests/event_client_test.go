@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/aura-studio/lambda/event"
-	"github.com/aura-studio/lambda/event/eventcli"
+	"github.com/aura-studio/lambda/event/client"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/leanovate/gopter"
@@ -78,20 +78,20 @@ func genClientPayload() gopter.Gen {
 	return gen.SliceOf(gen.UInt8())
 }
 
-// genClientItem generates a random eventcli.Item
+// genClientItem generates a random client.Item
 func genClientItem() gopter.Gen {
 	return gopter.CombineGens(
 		genClientPath(),
 		genClientPayload(),
-	).Map(func(values []interface{}) eventcli.Item {
-		return eventcli.Item{
+	).Map(func(values []interface{}) client.Item {
+		return client.Item{
 			Path:    values[0].(string),
 			Payload: values[1].([]byte),
 		}
 	})
 }
 
-// genClientItems generates a non-empty slice of eventcli.Item (1 to 10 items)
+// genClientItems generates a non-empty slice of client.Item (1 to 10 items)
 func genClientItems() gopter.Gen {
 	// Generate a size between 1 and 10, then generate that many items
 	return gen.IntRange(1, 10).FlatMap(func(size interface{}) gopter.Gen {
@@ -100,14 +100,14 @@ func genClientItems() gopter.Gen {
 		for i := 0; i < n; i++ {
 			gens[i] = genClientItem()
 		}
-		return gopter.CombineGens(gens...).Map(func(values []interface{}) []eventcli.Item {
-			items := make([]eventcli.Item, len(values))
+		return gopter.CombineGens(gens...).Map(func(values []interface{}) []client.Item {
+			items := make([]client.Item, len(values))
 			for i, v := range values {
-				items[i] = v.(eventcli.Item)
+				items[i] = v.(client.Item)
 			}
 			return items
 		})
-	}, reflect.TypeOf([]eventcli.Item{}))
+	}, reflect.TypeOf([]client.Item{}))
 }
 
 // TestEventClientProtobufSerialization tests Property 11: Client Protobuf Serialization
@@ -119,9 +119,9 @@ func TestEventClientProtobufSerialization(t *testing.T) {
 	properties := gopter.NewProperties(parameters)
 
 	mock := &mockLambdaClient{}
-	client := eventcli.NewClient(
-		eventcli.WithLambdaClient(mock),
-		eventcli.WithFunctionName("test-function"),
+	cli := client.NewClient(
+		client.WithLambdaClient(mock),
+		client.WithFunctionName("test-function"),
 	)
 
 	// Test Send() method - single item
@@ -129,7 +129,7 @@ func TestEventClientProtobufSerialization(t *testing.T) {
 		func(path string, payload []byte) bool {
 			mock.reset()
 
-			err := client.Send(context.Background(), path, payload)
+			err := cli.Send(context.Background(), path, payload)
 			if err != nil {
 				t.Logf("Send failed: %v", err)
 				return false
@@ -182,16 +182,16 @@ func TestEventClientBatchSending(t *testing.T) {
 	properties := gopter.NewProperties(parameters)
 
 	mock := &mockLambdaClient{}
-	client := eventcli.NewClient(
-		eventcli.WithLambdaClient(mock),
-		eventcli.WithFunctionName("test-function"),
+	cli := client.NewClient(
+		client.WithLambdaClient(mock),
+		client.WithFunctionName("test-function"),
 	)
 
 	properties.Property("SendBatch: all items included in single Event_Request", prop.ForAll(
-		func(items []eventcli.Item) bool {
+		func(items []client.Item) bool {
 			mock.reset()
 
-			err := client.SendBatch(context.Background(), items)
+			err := cli.SendBatch(context.Background(), items)
 			if err != nil {
 				t.Logf("SendBatch failed: %v", err)
 				return false
@@ -239,12 +239,12 @@ func TestEventClientBatchSending(t *testing.T) {
 // TestEventClientSendUsesEventInvocationType verifies that Send uses Event invocation type
 func TestEventClientSendUsesEventInvocationType(t *testing.T) {
 	mock := &mockLambdaClient{}
-	client := eventcli.NewClient(
-		eventcli.WithLambdaClient(mock),
-		eventcli.WithFunctionName("test-function"),
+	cli := client.NewClient(
+		client.WithLambdaClient(mock),
+		client.WithFunctionName("test-function"),
 	)
 
-	err := client.Send(context.Background(), "/api/test/v1/route", []byte("payload"))
+	err := cli.Send(context.Background(), "/api/test/v1/route", []byte("payload"))
 	if err != nil {
 		t.Fatalf("Send failed: %v", err)
 	}
@@ -263,17 +263,17 @@ func TestEventClientSendUsesEventInvocationType(t *testing.T) {
 // TestEventClientSendBatchUsesEventInvocationType verifies that SendBatch uses Event invocation type
 func TestEventClientSendBatchUsesEventInvocationType(t *testing.T) {
 	mock := &mockLambdaClient{}
-	client := eventcli.NewClient(
-		eventcli.WithLambdaClient(mock),
-		eventcli.WithFunctionName("test-function"),
+	cli := client.NewClient(
+		client.WithLambdaClient(mock),
+		client.WithFunctionName("test-function"),
 	)
 
-	items := []eventcli.Item{
+	items := []client.Item{
 		{Path: "/api/pkg1/v1/route1", Payload: []byte("payload1")},
 		{Path: "/api/pkg2/v2/route2", Payload: []byte("payload2")},
 	}
 
-	err := client.SendBatch(context.Background(), items)
+	err := cli.SendBatch(context.Background(), items)
 	if err != nil {
 		t.Fatalf("SendBatch failed: %v", err)
 	}
@@ -293,12 +293,12 @@ func TestEventClientSendBatchUsesEventInvocationType(t *testing.T) {
 func TestEventClientFunctionName(t *testing.T) {
 	mock := &mockLambdaClient{}
 	functionName := "my-lambda-function"
-	client := eventcli.NewClient(
-		eventcli.WithLambdaClient(mock),
-		eventcli.WithFunctionName(functionName),
+	cli := client.NewClient(
+		client.WithLambdaClient(mock),
+		client.WithFunctionName(functionName),
 	)
 
-	err := client.Send(context.Background(), "/api/test/v1/route", []byte("payload"))
+	err := cli.Send(context.Background(), "/api/test/v1/route", []byte("payload"))
 	if err != nil {
 		t.Fatalf("Send failed: %v", err)
 	}
@@ -317,12 +317,12 @@ func TestEventClientFunctionName(t *testing.T) {
 // TestEventClientSendBatchWithEmptyItems tests SendBatch with empty items slice
 func TestEventClientSendBatchWithEmptyItems(t *testing.T) {
 	mock := &mockLambdaClient{}
-	client := eventcli.NewClient(
-		eventcli.WithLambdaClient(mock),
-		eventcli.WithFunctionName("test-function"),
+	cli := client.NewClient(
+		client.WithLambdaClient(mock),
+		client.WithFunctionName("test-function"),
 	)
 
-	err := client.SendBatch(context.Background(), []eventcli.Item{})
+	err := cli.SendBatch(context.Background(), []client.Item{})
 	if err != nil {
 		t.Fatalf("SendBatch with empty items failed: %v", err)
 	}
@@ -346,12 +346,12 @@ func TestEventClientSendBatchWithEmptyItems(t *testing.T) {
 // TestEventClientSendWithNilPayload tests Send with nil payload
 func TestEventClientSendWithNilPayload(t *testing.T) {
 	mock := &mockLambdaClient{}
-	client := eventcli.NewClient(
-		eventcli.WithLambdaClient(mock),
-		eventcli.WithFunctionName("test-function"),
+	cli := client.NewClient(
+		client.WithLambdaClient(mock),
+		client.WithFunctionName("test-function"),
 	)
 
-	err := client.Send(context.Background(), "/api/test/v1/route", nil)
+	err := cli.Send(context.Background(), "/api/test/v1/route", nil)
 	if err != nil {
 		t.Fatalf("Send with nil payload failed: %v", err)
 	}
@@ -383,9 +383,9 @@ func TestEventClientSendWithNilPayload(t *testing.T) {
 // TestEventClientSendBatchWithLargePayload tests SendBatch with large payloads
 func TestEventClientSendBatchWithLargePayload(t *testing.T) {
 	mock := &mockLambdaClient{}
-	client := eventcli.NewClient(
-		eventcli.WithLambdaClient(mock),
-		eventcli.WithFunctionName("test-function"),
+	cli := client.NewClient(
+		client.WithLambdaClient(mock),
+		client.WithFunctionName("test-function"),
 	)
 
 	// Create a large payload (100KB)
@@ -394,12 +394,12 @@ func TestEventClientSendBatchWithLargePayload(t *testing.T) {
 		largePayload[i] = byte(i % 256)
 	}
 
-	items := []eventcli.Item{
+	items := []client.Item{
 		{Path: "/api/pkg1/v1/upload", Payload: largePayload},
 		{Path: "/api/pkg2/v2/upload", Payload: largePayload},
 	}
 
-	err := client.SendBatch(context.Background(), items)
+	err := cli.SendBatch(context.Background(), items)
 	if err != nil {
 		t.Fatalf("SendBatch with large payload failed: %v", err)
 	}

@@ -1,4 +1,4 @@
-package eventcli
+package client
 
 import (
 	"context"

@@ -1,14 +1,14 @@
-package reqrespcli
+package client
 
 import (
 	"context"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/mohae/deepcopy"
 )
 
 // LambdaClient Lambda 客户端接口
+// Requirement 4.6: THE Event_Client SHALL support configurable Lambda client injection for testing
 type LambdaClient interface {
 	Invoke(ctx context.Context, params *lambda.InvokeInput,
 		optFns ...func(*lambda.Options)) (*lambda.InvokeOutput, error)
@@ -16,9 +16,8 @@ type LambdaClient interface {
 
 // Options 客户端配置选项
 type Options struct {
-	LambdaClient   LambdaClient
-	FunctionName   string
-	DefaultTimeout time.Duration
+	LambdaClient LambdaClient
+	FunctionName string
 }
 
 // Option 配置选项接口
@@ -32,9 +31,7 @@ type OptionFunc func(*Options)
 // Apply 实现 Option 接口
 func (f OptionFunc) Apply(o *Options) { f(o) }
 
-var defaultOptions = &Options{
-	DefaultTimeout: 30 * time.Second,
-}
+var defaultOptions = &Options{}
 
 // NewOptions 创建新的配置选项
 func NewOptions(opts ...Option) *Options {
@@ -48,6 +45,7 @@ func NewOptions(opts ...Option) *Options {
 }
 
 // WithLambdaClient 设置 Lambda 客户端
+// Requirement 4.6: THE Event_Client SHALL support configurable Lambda client injection for testing
 func WithLambdaClient(client LambdaClient) Option {
 	return OptionFunc(func(o *Options) {
 		o.LambdaClient = client
@@ -55,15 +53,9 @@ func WithLambdaClient(client LambdaClient) Option {
 }
 
 // WithFunctionName 设置目标 Lambda 函数名称
+// Requirement 4.5: THE Event_Client SHALL support configurable target function name
 func WithFunctionName(name string) Option {
 	return OptionFunc(func(o *Options) {
 		o.FunctionName = name
-	})
-}
-
-// WithDefaultTimeout 设置默认调用超时时间
-func WithDefaultTimeout(timeout time.Duration) Option {
-	return OptionFunc(func(o *Options) {
-		o.DefaultTimeout = timeout
 	})
 }

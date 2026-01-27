@@ -1,4 +1,4 @@
-package sqscli
+package tests
 
 import (
 	"context"
@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/aura-studio/lambda/sqs"
+	"github.com/aura-studio/lambda/sqs/client"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awssqs "github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"google.golang.org/protobuf/proto"
 )
 
-type mockSQSClient struct {
+type mockSQSClientForTest struct {
 	sqs.SQSClient
 	sentMessages     []*awssqs.SendMessageInput
 	receivedMessages []*awssqs.ReceiveMessageInput
@@ -23,14 +24,14 @@ type mockSQSClient struct {
 	responseChan     chan types.Message
 }
 
-func (m *mockSQSClient) SendMessage(ctx context.Context, params *awssqs.SendMessageInput, optFns ...func(*awssqs.Options)) (*awssqs.SendMessageOutput, error) {
+func (m *mockSQSClientForTest) SendMessage(ctx context.Context, params *awssqs.SendMessageInput, optFns ...func(*awssqs.Options)) (*awssqs.SendMessageOutput, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.sentMessages = append(m.sentMessages, params)
 	return &awssqs.SendMessageOutput{}, nil
 }
 
-func (m *mockSQSClient) ReceiveMessage(ctx context.Context, params *awssqs.ReceiveMessageInput, optFns ...func(*awssqs.Options)) (*awssqs.ReceiveMessageOutput, error) {
+func (m *mockSQSClientForTest) ReceiveMessage(ctx context.Context, params *awssqs.ReceiveMessageInput, optFns ...func(*awssqs.Options)) (*awssqs.ReceiveMessageOutput, error) {
 	m.mu.Lock()
 	m.receivedMessages = append(m.receivedMessages, params)
 	m.mu.Unlock()
@@ -47,24 +48,25 @@ func (m *mockSQSClient) ReceiveMessage(ctx context.Context, params *awssqs.Recei
 	}
 }
 
-func (m *mockSQSClient) DeleteMessage(ctx context.Context, params *awssqs.DeleteMessageInput, optFns ...func(*awssqs.Options)) (*awssqs.DeleteMessageOutput, error) {
+func (m *mockSQSClientForTest) DeleteMessage(ctx context.Context, params *awssqs.DeleteMessageInput, optFns ...func(*awssqs.Options)) (*awssqs.DeleteMessageOutput, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.deletedMessages = append(m.deletedMessages, params)
 	return &awssqs.DeleteMessageOutput{}, nil
 }
 
-func TestClient_Call(t *testing.T) {
-	mock := &mockSQSClient{
+
+func TestSQSClient_Call(t *testing.T) {
+	mock := &mockSQSClientForTest{
 		responseChan: make(chan types.Message, 1),
 	}
-	client := NewClient(
-		WithSQSClient(mock),
-		WithRequestSqsId("req-queue"),
-		WithResponseSqsId("resp-queue"),
-		WithDefaultTimeout(2*time.Second),
+	cli := client.NewClient(
+		client.WithSQSClient(mock),
+		client.WithRequestSqsId("req-queue"),
+		client.WithResponseSqsId("resp-queue"),
+		client.WithDefaultTimeout(2*time.Second),
 	)
-	defer client.Close()
+	defer cli.Close()
 
 	// Simulate server response in a goroutine
 	go func() {
@@ -97,7 +99,7 @@ func TestClient_Call(t *testing.T) {
 		}
 	}()
 
-	resp, err := client.Call(context.Background(), "/test", []byte("hello"))
+	resp, err := cli.Call(context.Background(), "/test", []byte("hello"))
 	if err != nil {
 		t.Fatalf("Call failed: %v", err)
 	}
@@ -106,19 +108,19 @@ func TestClient_Call(t *testing.T) {
 	}
 }
 
-func TestClient_CallTimeout(t *testing.T) {
-	mock := &mockSQSClient{
+func TestSQSClient_CallTimeout(t *testing.T) {
+	mock := &mockSQSClientForTest{
 		responseChan: make(chan types.Message, 1),
 	}
-	client := NewClient(
-		WithSQSClient(mock),
-		WithRequestSqsId("req-queue"),
-		WithResponseSqsId("resp-queue"),
-		WithDefaultTimeout(100*time.Millisecond),
+	cli := client.NewClient(
+		client.WithSQSClient(mock),
+		client.WithRequestSqsId("req-queue"),
+		client.WithResponseSqsId("resp-queue"),
+		client.WithDefaultTimeout(100*time.Millisecond),
 	)
-	defer client.Close()
+	defer cli.Close()
 
-	_, err := client.Call(context.Background(), "/test", []byte("hello"))
+	_, err := cli.Call(context.Background(), "/test", []byte("hello"))
 	if err == nil || err.Error() != "request timeout" {
 		t.Fatalf("Expected timeout error, got %v", err)
 	}

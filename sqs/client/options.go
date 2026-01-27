@@ -1,4 +1,4 @@
-package sqscli
+package client
 
 import (
 	"time"

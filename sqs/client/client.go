@@ -1,4 +1,4 @@
-package sqscli
+package client
 
 import (
 	"context"
@@ -68,6 +68,7 @@ func (c *Client) listener() {
 		}
 	}
 }
+
 
 func (c *Client) handleIncomingMessage(msg types.Message) {
 	if msg.Body == nil {
