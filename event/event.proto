@@ -1,0 +1,14 @@
+syntax = "proto3";
+package event;
+option go_package = "github.com/aura-studio/lambda/event";
+
+// Item 单个请求项
+message Item {
+    string path = 1;    // 请求路径
+    bytes payload = 2;  // 请求数据
+}
+
+// Request 批量请求
+message Request {
+    repeated Item items = 1;  // 请求项列表
+}
