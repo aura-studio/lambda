@@ -67,9 +67,8 @@ func TestReqRespExample_BasicUsage(t *testing.T) {
 
 	// 4. 构建请求
 	request := &reqresp.Request{
-		CorrelationId: "req-001",
-		Path:          "/api/user-service/v1/users/123",
-		Payload:       []byte(`{"action":"get_user","id":123}`),
+		Path:    "/api/user-service/v1/users/123",
+		Payload: []byte(`{"action":"get_user","id":123}`),
 	}
 	payload, _ := proto.Marshal(request)
 
@@ -84,9 +83,6 @@ func TestReqRespExample_BasicUsage(t *testing.T) {
 	proto.Unmarshal(respBytes, &response)
 
 	// 7. 验证结果
-	if response.CorrelationId != "req-001" {
-		t.Errorf("CorrelationId = %q, want 'req-001'", response.CorrelationId)
-	}
 	if response.Error != "" {
 		t.Errorf("Unexpected error: %s", response.Error)
 	}
@@ -99,8 +95,7 @@ func TestReqRespExample_HealthCheck(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
 	request := &reqresp.Request{
-		CorrelationId: "health-001",
-		Path:          "/health-check",
+		Path: "/health-check",
 	}
 	payload, _ := proto.Marshal(request)
 

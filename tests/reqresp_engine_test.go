@@ -66,9 +66,8 @@ func TestEngineInvokeWhenStopped(t *testing.T) {
 	engine.Stop()
 
 	req := &reqresp.Request{
-		CorrelationId: "test-123",
-		Path:          "/health-check",
-		Payload:       []byte("test"),
+		Path:    "/health-check",
+		Payload: []byte("test"),
 	}
 	payload, _ := proto.Marshal(req)
 
@@ -91,15 +90,13 @@ func TestEngineInvokeWhenStopped(t *testing.T) {
 	}
 }
 
-
 // TestEngineInvokeHealthCheck tests the health check endpoint
 func TestEngineInvokeHealthCheck(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
 	req := &reqresp.Request{
-		CorrelationId: "test-123",
-		Path:          "/health-check",
-		Payload:       nil,
+		Path:    "/health-check",
+		Payload: nil,
 	}
 	payload, _ := proto.Marshal(req)
 
@@ -111,10 +108,6 @@ func TestEngineInvokeHealthCheck(t *testing.T) {
 	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
-
-	if resp.CorrelationId != "test-123" {
-		t.Errorf("CorrelationId = %q, want 'test-123'", resp.CorrelationId)
 	}
 
 	if string(resp.Payload) != "OK" {
@@ -131,9 +124,8 @@ func TestEngineInvokeRootPath(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
 	req := &reqresp.Request{
-		CorrelationId: "test-456",
-		Path:          "/",
-		Payload:       nil,
+		Path:    "/",
+		Payload: nil,
 	}
 	payload, _ := proto.Marshal(req)
 
@@ -157,9 +149,8 @@ func TestEngineInvokePageNotFound(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
 	req := &reqresp.Request{
-		CorrelationId: "test-789",
-		Path:          "/nonexistent/path",
-		Payload:       nil,
+		Path:    "/nonexistent/path",
+		Payload: nil,
 	}
 	payload, _ := proto.Marshal(req)
 
@@ -175,10 +166,6 @@ func TestEngineInvokePageNotFound(t *testing.T) {
 
 	if resp.Error == "" {
 		t.Error("Expected error for nonexistent path")
-	}
-
-	if resp.CorrelationId != "test-789" {
-		t.Errorf("CorrelationId = %q, want 'test-789'", resp.CorrelationId)
 	}
 }
 
@@ -209,9 +196,8 @@ func TestEngineInvokeStaticLink(t *testing.T) {
 	}, nil)
 
 	req := &reqresp.Request{
-		CorrelationId: "test-static",
-		Path:          "/custom-health",
-		Payload:       nil,
+		Path:    "/custom-health",
+		Payload: nil,
 	}
 	payload, _ := proto.Marshal(req)
 
@@ -235,9 +221,8 @@ func TestEngineInvokeAPIPathMissingPackage(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
 	req := &reqresp.Request{
-		CorrelationId: "test-api",
-		Path:          "/api/nonexistent-pkg/v1/route",
-		Payload:       []byte("{}"),
+		Path:    "/api/nonexistent-pkg/v1/route",
+		Payload: []byte("{}"),
 	}
 	payload, _ := proto.Marshal(req)
 
@@ -262,9 +247,8 @@ func TestEngineInvokeAPIPathInvalid(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
 	req := &reqresp.Request{
-		CorrelationId: "test-api-invalid",
-		Path:          "/api/", // Missing package and version
-		Payload:       []byte("{}"),
+		Path:    "/api/", // Missing package and version
+		Payload: []byte("{}"),
 	}
 	payload, _ := proto.Marshal(req)
 
@@ -291,9 +275,8 @@ func TestEngineInvokeDebugMode(t *testing.T) {
 	}, nil)
 
 	req := &reqresp.Request{
-		CorrelationId: "test-debug",
-		Path:          "/_/api/nonexistent/v1/route",
-		Payload:       []byte("test-request"),
+		Path:    "/_/api/nonexistent/v1/route",
+		Payload: []byte("test-request"),
 	}
 	payload, _ := proto.Marshal(req)
 

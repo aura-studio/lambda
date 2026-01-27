@@ -13,7 +13,6 @@ import (
 )
 
 // reqresp_handler_test.go - Integration tests for reqresp handlers
-// **Validates: Requirements 5.1, 5.2, 5.4, 5.5**
 
 // mockReqRespTunnel implements dynamic.Tunnel for testing
 type mockReqRespTunnel struct {
@@ -36,12 +35,11 @@ func (m *mockReqRespTunnel) Meta() string {
 func (m *mockReqRespTunnel) Close() {}
 
 // Helper function to create and marshal a request
-func createReqRespRequest(t *testing.T, correlationId, path string, payload []byte) []byte {
+func createReqRespRequest(t *testing.T, path string, payload []byte) []byte {
 	t.Helper()
 	req := &reqresp.Request{
-		CorrelationId: correlationId,
-		Path:          path,
-		Payload:       payload,
+		Path:    path,
+		Payload: payload,
 	}
 	data, err := proto.Marshal(req)
 	if err != nil {
@@ -63,24 +61,19 @@ func unmarshalReqRespResponse(t *testing.T, data []byte) *reqresp.Response {
 
 // =============================================================================
 // Health Check Route Tests
-// **Validates: Requirements 5.1**
 // =============================================================================
 
 // TestReqRespHandler_HealthCheck_ReturnsOK tests that /health-check returns "OK"
 func TestReqRespHandler_HealthCheck_ReturnsOK(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "health-1", "/health-check", nil)
+	payload := createReqRespRequest(t, "/health-check", nil)
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
 	resp := unmarshalReqRespResponse(t, respBytes)
-
-	if resp.CorrelationId != "health-1" {
-		t.Errorf("CorrelationId = %q, want 'health-1'", resp.CorrelationId)
-	}
 
 	if string(resp.Payload) != "OK" {
 		t.Errorf("Payload = %q, want 'OK'", string(resp.Payload))
@@ -95,7 +88,7 @@ func TestReqRespHandler_HealthCheck_ReturnsOK(t *testing.T) {
 func TestReqRespHandler_HealthCheck_WithPayload(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "health-2", "/health-check", []byte("ignored-payload"))
+	payload := createReqRespRequest(t, "/health-check", []byte("ignored-payload"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -116,7 +109,7 @@ func TestReqRespHandler_HealthCheck_WithPayload(t *testing.T) {
 func TestReqRespHandler_RootPath_ReturnsOK(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "root-1", "/", nil)
+	payload := createReqRespRequest(t, "/", nil)
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -135,7 +128,6 @@ func TestReqRespHandler_RootPath_ReturnsOK(t *testing.T) {
 
 // =============================================================================
 // API Route Tests
-// **Validates: Requirements 5.2**
 // =============================================================================
 
 // TestReqRespHandler_API_CallsDynamic tests that /api/* calls Dynamic and returns response
@@ -160,17 +152,13 @@ func TestReqRespHandler_API_CallsDynamic(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "api-1", "/api/testpkg/v1/myroute", []byte("request-data"))
+	payload := createReqRespRequest(t, "/api/testpkg/v1/myroute", []byte("request-data"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
 	resp := unmarshalReqRespResponse(t, respBytes)
-
-	if resp.CorrelationId != "api-1" {
-		t.Errorf("CorrelationId = %q, want 'api-1'", resp.CorrelationId)
-	}
 
 	if resp.Error != "" {
 		t.Errorf("Error = %q, want empty", resp.Error)
@@ -209,7 +197,7 @@ func TestReqRespHandler_API_MultipleRouteSegments(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "api-2", "/api/multipkg/v2/users/123/profile", []byte("{}"))
+	payload := createReqRespRequest(t, "/api/multipkg/v2/users/123/profile", []byte("{}"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -246,7 +234,7 @@ func TestReqRespHandler_API_NoRouteSegment(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "api-3", "/api/noroutepkg/v1", []byte("{}"))
+	payload := createReqRespRequest(t, "/api/noroutepkg/v1", []byte("{}"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -264,11 +252,11 @@ func TestReqRespHandler_API_NoRouteSegment(t *testing.T) {
 	}
 }
 
-// TestReqRespHandler_API_PackageNotFound tests API with non-existent package
+// TestReqRespHandler_API_PackageNotFound tests non-existent package
 func TestReqRespHandler_API_PackageNotFound(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "api-notfound", "/api/nonexistent/v1/route", []byte("{}"))
+	payload := createReqRespRequest(t, "/api/nonexistent/v1/route", []byte("{}"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -301,7 +289,7 @@ func TestReqRespHandler_WAPI_CallsDynamic(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "wapi-1", "/wapi/wapipkg/v1/myroute", []byte("{}"))
+	payload := createReqRespRequest(t, "/wapi/wapipkg/v1/myroute", []byte("{}"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -325,7 +313,6 @@ func TestReqRespHandler_WAPI_CallsDynamic(t *testing.T) {
 
 // =============================================================================
 // Debug Mode Tests
-// **Validates: Requirements 5.4**
 // =============================================================================
 
 // TestReqRespHandler_DebugMode_ReturnsDebugJSON tests that /_/api/* returns debug JSON format
@@ -348,7 +335,7 @@ func TestReqRespHandler_DebugMode_ReturnsDebugJSON(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "debug-1", "/_/api/debugpkg/v1/route", []byte("debug-request"))
+	payload := createReqRespRequest(t, "/_/api/debugpkg/v1/route", []byte("debug-request"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -392,7 +379,7 @@ func TestReqRespHandler_DebugMode_ReturnsDebugJSON(t *testing.T) {
 	}
 
 	// Verify response contains the actual response
-	if response, ok := debugInfo["response"].(string); !ok || response != "debug-api-response" {
+	if debugInfo["response"] != "debug-api-response" {
 		t.Errorf("Debug response = %v, want 'debug-api-response'", debugInfo["response"])
 	}
 }
@@ -404,7 +391,7 @@ func TestReqRespHandler_DebugMode_WithError(t *testing.T) {
 	}, nil)
 
 	// Use non-existent package to trigger error
-	payload := createReqRespRequest(t, "debug-err", "/_/api/nonexistent/v1/route", []byte("{}"))
+	payload := createReqRespRequest(t, "/_/api/nonexistent/v1/route", []byte("{}"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -420,7 +407,7 @@ func TestReqRespHandler_DebugMode_WithError(t *testing.T) {
 
 	// Check error field is present and non-empty
 	if errField, ok := debugInfo["error"].(string); !ok || errField == "" {
-		t.Error("Debug response should have non-empty 'error' field for failed request")
+		t.Error("Debug response should contain error for failed request")
 	}
 }
 
@@ -444,7 +431,7 @@ func TestReqRespHandler_DebugMode_WAPI(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "debug-wapi", "/_/wapi/debugwapi/v1/route", []byte("{}"))
+	payload := createReqRespRequest(t, "/_/wapi/debugwapi/v1/route", []byte("{}"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -470,14 +457,13 @@ func TestReqRespHandler_DebugMode_WAPI(t *testing.T) {
 
 // =============================================================================
 // Unmatched Route Tests (404)
-// **Validates: Requirements 5.5**
 // =============================================================================
 
 // TestReqRespHandler_UnmatchedRoute_Returns404 tests that unmatched routes return 404 error
 func TestReqRespHandler_UnmatchedRoute_Returns404(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "404-1", "/nonexistent/path", nil)
+	payload := createReqRespRequest(t, "/nonexistent/path", nil)
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -491,23 +477,6 @@ func TestReqRespHandler_UnmatchedRoute_Returns404(t *testing.T) {
 
 	if !strings.Contains(resp.Error, "404") {
 		t.Errorf("Error = %q, expected to contain '404'", resp.Error)
-	}
-}
-
-// TestReqRespHandler_UnmatchedRoute_PreservesCorrelationId tests correlation ID is preserved
-func TestReqRespHandler_UnmatchedRoute_PreservesCorrelationId(t *testing.T) {
-	engine := reqresp.NewEngine(nil, nil)
-
-	payload := createReqRespRequest(t, "corr-404", "/unknown/route", nil)
-	respBytes, err := engine.Invoke(context.Background(), payload)
-	if err != nil {
-		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
-
-	if resp.CorrelationId != "corr-404" {
-		t.Errorf("CorrelationId = %q, want 'corr-404'", resp.CorrelationId)
 	}
 }
 
@@ -528,7 +497,7 @@ func TestReqRespHandler_UnmatchedRoute_VariousPaths(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			payload := createReqRespRequest(t, "test-"+tc.name, tc.path, nil)
+			payload := createReqRespRequest(t, tc.path, nil)
 			respBytes, err := engine.Invoke(context.Background(), payload)
 			if err != nil {
 				t.Fatalf("Invoke returned error: %v", err)
@@ -542,6 +511,7 @@ func TestReqRespHandler_UnmatchedRoute_VariousPaths(t *testing.T) {
 		})
 	}
 }
+
 
 // =============================================================================
 // Additional Integration Tests
@@ -572,7 +542,7 @@ func TestReqRespHandler_EngineStopped(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 	engine.Stop()
 
-	payload := createReqRespRequest(t, "stopped-1", "/health-check", nil)
+	payload := createReqRespRequest(t, "/health-check", nil)
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -595,7 +565,7 @@ func TestReqRespHandler_StaticLink(t *testing.T) {
 		reqresp.WithStaticLink("/custom-health", "/health-check"),
 	}, nil)
 
-	payload := createReqRespRequest(t, "static-1", "/custom-health", nil)
+	payload := createReqRespRequest(t, "/custom-health", nil)
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
@@ -633,7 +603,7 @@ func TestReqRespHandler_PrefixLink(t *testing.T) {
 	})
 
 	// /v1/prefixpkg/v1/route should be mapped to /api/prefixpkg/v1/route
-	payload := createReqRespRequest(t, "prefix-1", "/v1/prefixpkg/v1/route", []byte("{}"))
+	payload := createReqRespRequest(t, "/v1/prefixpkg/v1/route", []byte("{}"))
 	respBytes, err := engine.Invoke(context.Background(), payload)
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)

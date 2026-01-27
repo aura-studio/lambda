@@ -97,8 +97,7 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 
 	// 构建响应
 	resp := &Response{
-		CorrelationId: request.CorrelationId,
-		Payload:       []byte(c.Response),
+		Payload: []byte(c.Response),
 	}
 	if c.Err != nil {
 		resp.Error = c.Err.Error()

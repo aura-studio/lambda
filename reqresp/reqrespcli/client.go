@@ -8,7 +8,6 @@ import (
 	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -26,14 +25,10 @@ func NewClient(opts ...Option) *Client {
 
 // Call 同步调用 Lambda 函数
 func (c *Client) Call(ctx context.Context, path string, payload []byte) (*reqresp.Response, error) {
-	// 生成 correlation_id
-	correlationId := uuid.New().String()
-
 	// 创建 Request protobuf
 	request := &reqresp.Request{
-		CorrelationId: correlationId,
-		Path:          path,
-		Payload:       payload,
+		Path:    path,
+		Payload: payload,
 	}
 
 	// 序列化请求
@@ -66,8 +61,7 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*reqres
 	// 检查 Lambda 函数错误
 	if output.FunctionError != nil {
 		return &reqresp.Response{
-			CorrelationId: correlationId,
-			Error:         *output.FunctionError,
+			Error: *output.FunctionError,
 		}, nil
 	}
 

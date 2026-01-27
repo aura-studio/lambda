@@ -3,13 +3,11 @@ package reqresp;
 option go_package = "github.com/aura-studio/lambda/reqresp";
 
 message Request {
-  string correlation_id = 1;  // 请求追踪 ID (Requirement 4.3)
-  string path = 2;            // 请求路径 (Requirement 4.1)
-  bytes payload = 3;          // 请求数据 (Requirement 4.2)
+  string path = 1;            // 请求路径
+  bytes payload = 2;          // 请求数据
 }
 
 message Response {
-  string correlation_id = 1;  // 请求追踪 ID (Requirement 4.6)
-  bytes payload = 2;          // 响应数据 (Requirement 4.4)
-  string error = 3;           // 错误信息 (Requirement 4.5)
+  bytes payload = 1;          // 响应数据
+  string error = 2;           // 错误信息
 }
