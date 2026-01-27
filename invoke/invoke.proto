@@ -1,0 +1,15 @@
+syntax = "proto3";
+package invoke;
+option go_package = "github.com/aura-studio/lambda/invoke";
+
+message Request {
+  string correlation_id = 1;  // 请求追踪 ID (Requirement 4.3)
+  string path = 2;            // 请求路径 (Requirement 4.1)
+  bytes payload = 3;          // 请求数据 (Requirement 4.2)
+}
+
+message Response {
+  string correlation_id = 1;  // 请求追踪 ID (Requirement 4.6)
+  bytes payload = 2;          // 响应数据 (Requirement 4.4)
+  string error = 3;           // 错误信息 (Requirement 4.5)
+}
