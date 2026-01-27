@@ -1,6 +1,6 @@
 syntax = "proto3";
-package invoke;
-option go_package = "github.com/aura-studio/lambda/invoke";
+package reqresp;
+option go_package = "github.com/aura-studio/lambda/reqresp";
 
 message Request {
   string correlation_id = 1;  // 请求追踪 ID (Requirement 4.3)

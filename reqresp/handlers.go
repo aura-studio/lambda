@@ -1,4 +1,4 @@
-package invoke
+package reqresp
 
 import (
 	"encoding/json"
@@ -7,7 +7,6 @@ import (
 )
 
 // InstallHandlers 注册默认路由处理器
-// Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 2.5, 2.6
 func (e *Engine) InstallHandlers() {
 	if e.r == nil {
 		e.r = NewRouter()
@@ -64,11 +63,10 @@ func (e *Engine) NoMethod(handlers ...HandlerFunc) {
 
 // HeaderLink 头部链接中间件（预留）
 func (e *Engine) HeaderLink(c *Context) {
-	// Invoke request currently has no headers. Reserved for future.
+	// ReqResp request currently has no headers. Reserved for future.
 }
 
 // StaticLink 静态路径映射中间件
-// Requirements: 2.5 - 支持 StaticLink 静态路径映射功能
 func (e *Engine) StaticLink(c *Context) {
 	if e.StaticLinkMap == nil {
 		return
@@ -79,7 +77,6 @@ func (e *Engine) StaticLink(c *Context) {
 }
 
 // PrefixLink 前缀路径映射中间件
-// Requirements: 2.6 - 支持 PrefixLink 前缀路径映射功能
 func (e *Engine) PrefixLink(c *Context) {
 	if e.PrefixLinkMap == nil {
 		return
@@ -93,20 +90,16 @@ func (e *Engine) PrefixLink(c *Context) {
 }
 
 // OK 健康检查处理器
-// Requirements: 5.1 - 提供 OK 处理器用于健康检查
 func (e *Engine) OK(c *Context) {
 	c.Response = "OK"
 }
 
 // Debug 调试模式处理器
-// Requirements: 5.4 - 提供 Debug 处理器用于启用调试模式
 func (e *Engine) Debug(c *Context) {
 	c.DebugMode = true
 }
 
 // API 处理器用于调用 Dynamic 业务包
-// Requirements: 5.2 - 提供 API 处理器用于调用 Dynamic 业务包
-// Requirements: 1.3 - 通过 Dynamic 组件获取对应的业务包并调用
 func (e *Engine) API(c *Context) {
 	if c.ParamPath == "" {
 		c.Err = fmt.Errorf("missing api path")
@@ -128,13 +121,11 @@ func (e *Engine) API(c *Context) {
 }
 
 // WAPI 处理器作为 API 的别名
-// Requirements: 5.3 - 提供 WAPI 处理器作为 API 的别名
 func (e *Engine) WAPI(c *Context) {
 	e.API(c)
 }
 
 // PageNotFound 处理器用于处理未匹配路由
-// Requirements: 5.5 - 提供 PageNotFound 处理器用于处理未匹配路由
 func (e *Engine) PageNotFound(c *Context) {
 	c.Err = fmt.Errorf("404 page not found: %s", c.Path)
 }
@@ -145,7 +136,6 @@ func (e *Engine) MethodNotAllowed(c *Context) {
 }
 
 // FormatDebug 格式化调试信息
-// Requirements: 5.6 - 当 DebugMode 启用时，在响应中包含详细的调试信息
 func (e *Engine) FormatDebug(c *Context, mode string) string {
 	data, _ := json.Marshal(map[string]any{
 		"mode":     mode,
@@ -178,4 +168,3 @@ func errString(err error) string {
 	}
 	return err.Error()
 }
-

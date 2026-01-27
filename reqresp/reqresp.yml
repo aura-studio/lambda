@@ -1,17 +1,14 @@
-# Invoke 模块示例配置文件
-# Requirements: 3.1
+# ReqResp 模块示例配置文件
 
 mode:
   debug: false
 
 # 静态路径映射配置
-# Requirements: 3.3
 staticLink:
   - srcPath: "/custom-health"
     dstPath: "/health-check"
 
 # 前缀路径映射配置
-# Requirements: 3.4
 prefixLink:
   - srcPrefix: "/v2/api"
     dstPrefix: "/api"

@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/aura-studio/lambda/invoke"
+	"github.com/aura-studio/lambda/reqresp"
 )
 
-// TestInvokeWithConfig tests YAML configuration loading from bytes
+// TestReqRespWithConfig tests YAML configuration loading from bytes
 // **Validates: Requirements 3.1**
-func TestInvokeWithConfig(t *testing.T) {
+func TestReqRespWithConfig(t *testing.T) {
 	yaml := []byte(`mode:
   debug: true
 staticLink:
@@ -21,7 +21,7 @@ prefixLink:
     dstPrefix: /v1
 `)
 
-	o := invoke.NewOptions(invoke.WithConfig(yaml))
+	o := reqresp.NewOptions(reqresp.WithConfig(yaml))
 	if !o.DebugMode {
 		t.Fatalf("DebugMode = false, expected true")
 	}
@@ -33,25 +33,25 @@ prefixLink:
 	}
 }
 
-// TestInvokeWithConfigDebugFalse tests YAML configuration with debug mode disabled
+// TestReqRespWithConfigDebugFalse tests YAML configuration with debug mode disabled
 // **Validates: Requirements 3.1**
-func TestInvokeWithConfigDebugFalse(t *testing.T) {
+func TestReqRespWithConfigDebugFalse(t *testing.T) {
 	yaml := []byte(`mode:
   debug: false
 `)
 
-	o := invoke.NewOptions(invoke.WithConfig(yaml))
+	o := reqresp.NewOptions(reqresp.WithConfig(yaml))
 	if o.DebugMode {
 		t.Fatalf("DebugMode = true, expected false")
 	}
 }
 
-// TestInvokeWithConfigEmptyYAML tests that empty YAML produces default options
+// TestReqRespWithConfigEmptyYAML tests that empty YAML produces default options
 // **Validates: Requirements 3.1**
-func TestInvokeWithConfigEmptyYAML(t *testing.T) {
+func TestReqRespWithConfigEmptyYAML(t *testing.T) {
 	yaml := []byte(``)
 
-	o := invoke.NewOptions(invoke.WithConfig(yaml))
+	o := reqresp.NewOptions(reqresp.WithConfig(yaml))
 	if o.DebugMode {
 		t.Fatalf("DebugMode = true, expected false for empty config")
 	}
@@ -63,9 +63,10 @@ func TestInvokeWithConfigEmptyYAML(t *testing.T) {
 	}
 }
 
-// TestInvokeWithConfigMultipleLinks tests YAML configuration with multiple link entries
+
+// TestReqRespWithConfigMultipleLinks tests YAML configuration with multiple link entries
 // **Validates: Requirements 3.1**
-func TestInvokeWithConfigMultipleLinks(t *testing.T) {
+func TestReqRespWithConfigMultipleLinks(t *testing.T) {
 	yaml := []byte(`mode:
   debug: true
 staticLink:
@@ -82,7 +83,7 @@ prefixLink:
     dstPrefix: /v2
 `)
 
-	o := invoke.NewOptions(invoke.WithConfig(yaml))
+	o := reqresp.NewOptions(reqresp.WithConfig(yaml))
 
 	// Verify all static links
 	expectedStatic := map[string]string{
@@ -108,9 +109,9 @@ prefixLink:
 	}
 }
 
-// TestInvokeWithConfigSkipsEmptyPaths tests that empty paths in config are skipped
+// TestReqRespWithConfigSkipsEmptyPaths tests that empty paths in config are skipped
 // **Validates: Requirements 3.1**
-func TestInvokeWithConfigSkipsEmptyPaths(t *testing.T) {
+func TestReqRespWithConfigSkipsEmptyPaths(t *testing.T) {
 	yaml := []byte(`staticLink:
   - srcPath: ""
     dstPath: /dest
@@ -127,7 +128,7 @@ prefixLink:
     dstPrefix: /valid-prefix-dest
 `)
 
-	o := invoke.NewOptions(invoke.WithConfig(yaml))
+	o := reqresp.NewOptions(reqresp.WithConfig(yaml))
 
 	// Only valid entries should be present
 	if len(o.StaticLinkMap) != 1 {
@@ -145,12 +146,12 @@ prefixLink:
 	}
 }
 
-// TestInvokeWithConfigFile tests YAML configuration loading from file
+// TestReqRespWithConfigFile tests YAML configuration loading from file
 // **Validates: Requirements 3.1**
-func TestInvokeWithConfigFile(t *testing.T) {
+func TestReqRespWithConfigFile(t *testing.T) {
 	// Create a temporary config file
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "invoke.yml")
+	configPath := filepath.Join(tmpDir, "reqresp.yml")
 
 	yaml := []byte(`mode:
   debug: true
@@ -166,7 +167,7 @@ prefixLink:
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
-	o := invoke.NewOptions(invoke.WithConfigFile(configPath))
+	o := reqresp.NewOptions(reqresp.WithConfigFile(configPath))
 	if !o.DebugMode {
 		t.Fatalf("DebugMode = false, expected true")
 	}
@@ -178,22 +179,22 @@ prefixLink:
 	}
 }
 
-// TestInvokeWithConfigFileNotFound tests that WithConfigFile panics for non-existent file
+// TestReqRespWithConfigFileNotFound tests that WithConfigFile panics for non-existent file
 // **Validates: Requirements 3.1**
-func TestInvokeWithConfigFileNotFound(t *testing.T) {
+func TestReqRespWithConfigFileNotFound(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("Expected panic for non-existent config file")
 		}
 	}()
 
-	_ = invoke.NewOptions(invoke.WithConfigFile("/non/existent/path/invoke.yml"))
+	_ = reqresp.NewOptions(reqresp.WithConfigFile("/non/existent/path/reqresp.yml"))
 }
 
 // TestDefaultConfigCandidates tests that DefaultConfigCandidates returns expected paths
 // **Validates: Requirements 3.5**
 func TestDefaultConfigCandidates(t *testing.T) {
-	candidates := invoke.DefaultConfigCandidates()
+	candidates := reqresp.DefaultConfigCandidates()
 
 	if len(candidates) != 4 {
 		t.Fatalf("Expected 4 candidates, got %d", len(candidates))
@@ -201,10 +202,10 @@ func TestDefaultConfigCandidates(t *testing.T) {
 
 	// Check expected candidates (order matters)
 	expected := []string{
-		"invoke.yaml",
-		"invoke.yml",
-		filepath.FromSlash("invoke/invoke.yaml"),
-		filepath.FromSlash("invoke/invoke.yml"),
+		"reqresp.yaml",
+		"reqresp.yml",
+		filepath.FromSlash("reqresp/reqresp.yaml"),
+		filepath.FromSlash("reqresp/reqresp.yml"),
 	}
 
 	for i, exp := range expected {
@@ -226,7 +227,7 @@ func TestFindDefaultConfigFileFound(t *testing.T) {
 
 	// Create a temporary directory with a config file
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "invoke.yml")
+	configPath := filepath.Join(tmpDir, "reqresp.yml")
 
 	yaml := []byte(`mode:
   debug: true
@@ -241,13 +242,13 @@ func TestFindDefaultConfigFileFound(t *testing.T) {
 	}
 
 	// FindDefaultConfigFile should find the config
-	foundPath, err := invoke.FindDefaultConfigFile()
+	foundPath, err := reqresp.FindDefaultConfigFile()
 	if err != nil {
 		t.Fatalf("FindDefaultConfigFile failed: %v", err)
 	}
 
-	if foundPath != "invoke.yml" {
-		t.Fatalf("FindDefaultConfigFile returned %q, expected 'invoke.yml'", foundPath)
+	if foundPath != "reqresp.yml" {
+		t.Fatalf("FindDefaultConfigFile returned %q, expected 'reqresp.yml'", foundPath)
 	}
 }
 
@@ -270,13 +271,13 @@ func TestFindDefaultConfigFileNotFound(t *testing.T) {
 	}
 
 	// FindDefaultConfigFile should return an error
-	_, err = invoke.FindDefaultConfigFile()
+	_, err = reqresp.FindDefaultConfigFile()
 	if err == nil {
 		t.Fatalf("FindDefaultConfigFile should return error when no config exists")
 	}
 }
 
-// TestFindDefaultConfigFileInSubdirectory tests that FindDefaultConfigFile finds config in invoke/ subdirectory
+// TestFindDefaultConfigFileInSubdirectory tests that FindDefaultConfigFile finds config in reqresp/ subdirectory
 // **Validates: Requirements 3.5**
 func TestFindDefaultConfigFileInSubdirectory(t *testing.T) {
 	// Save current directory
@@ -286,14 +287,14 @@ func TestFindDefaultConfigFileInSubdirectory(t *testing.T) {
 	}
 	defer os.Chdir(origDir)
 
-	// Create a temporary directory with invoke/ subdirectory
+	// Create a temporary directory with reqresp/ subdirectory
 	tmpDir := t.TempDir()
-	invokeDir := filepath.Join(tmpDir, "invoke")
-	if err := os.MkdirAll(invokeDir, 0755); err != nil {
-		t.Fatalf("Failed to create invoke directory: %v", err)
+	reqrespDir := filepath.Join(tmpDir, "reqresp")
+	if err := os.MkdirAll(reqrespDir, 0755); err != nil {
+		t.Fatalf("Failed to create reqresp directory: %v", err)
 	}
 
-	configPath := filepath.Join(invokeDir, "invoke.yaml")
+	configPath := filepath.Join(reqrespDir, "reqresp.yaml")
 	yaml := []byte(`mode:
   debug: true
 `)
@@ -307,12 +308,12 @@ func TestFindDefaultConfigFileInSubdirectory(t *testing.T) {
 	}
 
 	// FindDefaultConfigFile should find the config in subdirectory
-	foundPath, err := invoke.FindDefaultConfigFile()
+	foundPath, err := reqresp.FindDefaultConfigFile()
 	if err != nil {
 		t.Fatalf("FindDefaultConfigFile failed: %v", err)
 	}
 
-	expected := filepath.FromSlash("invoke/invoke.yaml")
+	expected := filepath.FromSlash("reqresp/reqresp.yaml")
 	if foundPath != expected {
 		t.Fatalf("FindDefaultConfigFile returned %q, expected %q", foundPath, expected)
 	}
@@ -331,17 +332,17 @@ func TestFindDefaultConfigFilePriority(t *testing.T) {
 	// Create a temporary directory with multiple config files
 	tmpDir := t.TempDir()
 
-	// Create invoke/invoke.yml (lower priority)
-	invokeDir := filepath.Join(tmpDir, "invoke")
-	if err := os.MkdirAll(invokeDir, 0755); err != nil {
-		t.Fatalf("Failed to create invoke directory: %v", err)
+	// Create reqresp/reqresp.yml (lower priority)
+	reqrespDir := filepath.Join(tmpDir, "reqresp")
+	if err := os.MkdirAll(reqrespDir, 0755); err != nil {
+		t.Fatalf("Failed to create reqresp directory: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(invokeDir, "invoke.yml"), []byte(`mode:\n  debug: false`), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(reqrespDir, "reqresp.yml"), []byte(`mode:\n  debug: false`), 0644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
-	// Create invoke.yaml (higher priority)
-	if err := os.WriteFile(filepath.Join(tmpDir, "invoke.yaml"), []byte(`mode:\n  debug: true`), 0644); err != nil {
+	// Create reqresp.yaml (higher priority)
+	if err := os.WriteFile(filepath.Join(tmpDir, "reqresp.yaml"), []byte(`mode:\n  debug: true`), 0644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
@@ -350,14 +351,14 @@ func TestFindDefaultConfigFilePriority(t *testing.T) {
 		t.Fatalf("Failed to change directory: %v", err)
 	}
 
-	// FindDefaultConfigFile should find invoke.yaml first (higher priority)
-	foundPath, err := invoke.FindDefaultConfigFile()
+	// FindDefaultConfigFile should find reqresp.yaml first (higher priority)
+	foundPath, err := reqresp.FindDefaultConfigFile()
 	if err != nil {
 		t.Fatalf("FindDefaultConfigFile failed: %v", err)
 	}
 
-	if foundPath != "invoke.yaml" {
-		t.Fatalf("FindDefaultConfigFile returned %q, expected 'invoke.yaml' (higher priority)", foundPath)
+	if foundPath != "reqresp.yaml" {
+		t.Fatalf("FindDefaultConfigFile returned %q, expected 'reqresp.yaml' (higher priority)", foundPath)
 	}
 }
 
@@ -385,7 +386,7 @@ func TestWithDefaultConfigFilePanicsWhenNotFound(t *testing.T) {
 		}
 	}()
 
-	_ = invoke.NewOptions(invoke.WithDefaultConfigFile())
+	_ = reqresp.NewOptions(reqresp.WithDefaultConfigFile())
 }
 
 // TestWithDefaultConfigFileLoadsConfig tests that WithDefaultConfigFile loads config correctly
@@ -400,7 +401,7 @@ func TestWithDefaultConfigFileLoadsConfig(t *testing.T) {
 
 	// Create a temporary directory with a config file
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "invoke.yml")
+	configPath := filepath.Join(tmpDir, "reqresp.yml")
 
 	yaml := []byte(`mode:
   debug: true
@@ -417,7 +418,7 @@ staticLink:
 		t.Fatalf("Failed to change directory: %v", err)
 	}
 
-	o := invoke.NewOptions(invoke.WithDefaultConfigFile())
+	o := reqresp.NewOptions(reqresp.WithDefaultConfigFile())
 	if !o.DebugMode {
 		t.Fatalf("DebugMode = false, expected true")
 	}

@@ -1,4 +1,4 @@
-package invoke
+package reqresp
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// yamlInvokeConfig represents the YAML configuration structure for invoke module
-type yamlInvokeConfig struct {
+// yamlReqRespConfig represents the YAML configuration structure for reqresp module
+type yamlReqRespConfig struct {
 	Mode struct {
 		Debug bool `yaml:"debug"`
 	} `yaml:"mode"`
@@ -22,7 +22,7 @@ type yamlInvokeConfig struct {
 	} `yaml:"prefixLink"`
 }
 
-func optionFromInvokeConfig(cfg yamlInvokeConfig) Option {
+func optionFromReqRespConfig(cfg yamlReqRespConfig) Option {
 	return OptionFunc(func(o *Options) {
 		o.DebugMode = cfg.Mode.Debug
 
@@ -51,21 +51,21 @@ func optionFromInvokeConfig(cfg yamlInvokeConfig) Option {
 // optionFromConfigBytes parses YAML bytes and returns an Option.
 // Returns an error if the YAML is invalid.
 func optionFromConfigBytes(b []byte) (Option, error) {
-	var cfg yamlInvokeConfig
+	var cfg yamlReqRespConfig
 	if err := yaml.Unmarshal(b, &cfg); err != nil {
 		return nil, err
 	}
 
-	return optionFromInvokeConfig(cfg), nil
+	return optionFromReqRespConfig(cfg), nil
 }
 
-// WithConfig parses YAML bytes following invoke.yml structure and applies it to Options.
+// WithConfig parses YAML bytes following reqresp.yml structure and applies it to Options.
 // It panics if the YAML is invalid.
 func WithConfig(yamlBytes []byte) Option {
 	opt, err := optionFromConfigBytes(yamlBytes)
 	if err != nil {
 		return OptionFunc(func(*Options) {
-			panic(fmt.Errorf("invoke.WithConfig: %w", err))
+			panic(fmt.Errorf("reqresp.WithConfig: %w", err))
 		})
 	}
 	return opt
@@ -77,7 +77,7 @@ func WithConfigFile(path string) Option {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return OptionFunc(func(*Options) {
-			panic(fmt.Errorf("invoke.WithConfigFile(%s): %w", path, err))
+			panic(fmt.Errorf("reqresp.WithConfigFile(%s): %w", path, err))
 		})
 	}
 	return WithConfig(b)

@@ -1,4 +1,4 @@
-package invoke
+package reqresp
 
 import (
 	"fmt"
@@ -7,17 +7,17 @@ import (
 )
 
 // DefaultConfigCandidates returns relative paths that will be checked (in order)
-// when searching for a default invoke config.
+// when searching for a default reqresp config.
 func DefaultConfigCandidates() []string {
 	return []string{
-		"invoke.yaml",
-		"invoke.yml",
-		filepath.FromSlash("invoke/invoke.yaml"),
-		filepath.FromSlash("invoke/invoke.yml"),
+		"reqresp.yaml",
+		"reqresp.yml",
+		filepath.FromSlash("reqresp/reqresp.yaml"),
+		filepath.FromSlash("reqresp/reqresp.yml"),
 	}
 }
 
-// FindDefaultConfigFile searches for an invoke config file in a small set of
+// FindDefaultConfigFile searches for a reqresp config file in a small set of
 // well-known locations (CWD then executable directory).
 func FindDefaultConfigFile() (string, error) {
 	candidates := DefaultConfigCandidates()
@@ -39,16 +39,16 @@ func FindDefaultConfigFile() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("invoke config not found (expected %v)", candidates)
+	return "", fmt.Errorf("reqresp config not found (expected %v)", candidates)
 }
 
-// WithDefaultConfigFile finds and loads the default invoke config file.
+// WithDefaultConfigFile finds and loads the default reqresp config file.
 // It panics if the file cannot be found or read.
 func WithDefaultConfigFile() Option {
 	p, err := FindDefaultConfigFile()
 	if err != nil {
 		return OptionFunc(func(*Options) {
-			panic(fmt.Errorf("invoke.WithDefaultConfigFile: %w", err))
+			panic(fmt.Errorf("reqresp.WithDefaultConfigFile: %w", err))
 		})
 	}
 	return WithConfigFile(p)

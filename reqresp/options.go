@@ -1,4 +1,4 @@
-package invoke
+package reqresp
 
 import "github.com/mohae/deepcopy"
 
@@ -13,7 +13,7 @@ type OptionFunc func(*Options)
 // Apply implements the Option interface
 func (f OptionFunc) Apply(o *Options) { f(o) }
 
-// Options holds the configuration for the invoke engine
+// Options holds the configuration for the reqresp engine
 type Options struct {
 	StaticLinkMap map[string]string // 静态路径映射
 	PrefixLinkMap map[string]string // 前缀路径映射
@@ -41,9 +41,9 @@ func (o *Options) init(opts ...Option) {
 	}
 }
 
-// -------------- Invoke Options ----------------
+// -------------- ReqResp Options ----------------
 
-// WithDebugMode sets the debug mode for the invoke engine
+// WithDebugMode sets the debug mode for the reqresp engine
 func WithDebugMode(debug bool) Option {
 	return OptionFunc(func(o *Options) {
 		o.DebugMode = debug

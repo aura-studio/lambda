@@ -1,18 +1,18 @@
-package invokecli
+package reqrespcli
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/aura-studio/lambda/invoke"
+	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 )
 
-// Client invoke 客户端
+// Client reqresp 客户端
 type Client struct {
 	*Options
 }
@@ -25,13 +25,12 @@ func NewClient(opts ...Option) *Client {
 }
 
 // Call 同步调用 Lambda 函数
-// Requirements: 7.1, 7.5, 7.6
-func (c *Client) Call(ctx context.Context, path string, payload []byte) (*invoke.Response, error) {
+func (c *Client) Call(ctx context.Context, path string, payload []byte) (*reqresp.Response, error) {
 	// 生成 correlation_id
 	correlationId := uuid.New().String()
 
 	// 创建 Request protobuf
-	request := &invoke.Request{
+	request := &reqresp.Request{
 		CorrelationId: correlationId,
 		Path:          path,
 		Payload:       payload,
@@ -66,14 +65,14 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*invoke
 
 	// 检查 Lambda 函数错误
 	if output.FunctionError != nil {
-		return &invoke.Response{
+		return &reqresp.Response{
 			CorrelationId: correlationId,
 			Error:         *output.FunctionError,
 		}, nil
 	}
 
 	// 解析 Response protobuf
-	response := &invoke.Response{}
+	response := &reqresp.Response{}
 	if err := proto.Unmarshal(output.Payload, response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
@@ -82,8 +81,7 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*invoke
 }
 
 // CallAsync 异步调用 Lambda 函数
-// Requirements: 7.2, 7.5, 7.6
-func (c *Client) CallAsync(ctx context.Context, path string, payload []byte, callback func(*invoke.Response, error)) {
+func (c *Client) CallAsync(ctx context.Context, path string, payload []byte, callback func(*reqresp.Response, error)) {
 	go func() {
 		resp, err := c.Call(ctx, path, payload)
 		if callback != nil {

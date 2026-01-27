@@ -1,4 +1,4 @@
-package invoke
+package reqresp
 
 import (
 	"context"
@@ -11,8 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// Engine 是 invoke 模块的核心引擎
-// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 8.1, 8.2, 8.3, 8.4
+// Engine 是 reqresp 模块的核心引擎
 type Engine struct {
 	*Options
 	*dynamic.Dynamic
@@ -21,11 +20,9 @@ type Engine struct {
 }
 
 // NewEngine 创建新的引擎实例
-// Requirements: 1.1 - 接受 invokeOpts 和 dynamicOpts 两组配置选项
-// Requirements: 8.1 - 初始化 Dynamic 组件
-func NewEngine(invokeOpts []Option, dynamicOpts []dynamic.Option) *Engine {
+func NewEngine(reqrespOpts []Option, dynamicOpts []dynamic.Option) *Engine {
 	e := &Engine{
-		Options: NewOptions(invokeOpts...),
+		Options: NewOptions(reqrespOpts...),
 		Dynamic: dynamic.NewDynamic(dynamicOpts...),
 	}
 	e.running.Store(1)
@@ -34,13 +31,11 @@ func NewEngine(invokeOpts []Option, dynamicOpts []dynamic.Option) *Engine {
 }
 
 // Start 启动引擎
-// Requirements: 1.6 - 提供 Start 方法来控制引擎运行状态
 func (e *Engine) Start() {
 	e.running.Store(1)
 }
 
 // Stop 停止引擎
-// Requirements: 1.6 - 提供 Stop 方法来控制引擎运行状态
 func (e *Engine) Stop() {
 	e.running.Store(0)
 }
@@ -51,9 +46,6 @@ func (e *Engine) IsRunning() bool {
 }
 
 // Invoke 处理 Lambda 调用请求
-// Requirements: 1.2 - 解析请求并路由到对应的处理器
-// Requirements: 1.4 - 返回包含响应数据的 Response 结构
-// Requirements: 1.5 - 如果请求处理过程中发生错误，在 Response 中包含错误信息
 func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 	_ = ctx // reserved for future use
 
@@ -69,7 +61,7 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 	var request Request
 	if err := proto.Unmarshal(payload, &request); err != nil {
 		if e.DebugMode {
-			log.Printf("[Invoke] Unmarshal request error: %v", err)
+			log.Printf("[ReqResp] Unmarshal request error: %v", err)
 		}
 		resp := &Response{
 			Error: fmt.Sprintf("unmarshal request error: %v", err),
@@ -86,7 +78,7 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 	}
 
 	if e.DebugMode {
-		log.Printf("[Invoke] Request: %s %s", c.Path, c.Request)
+		log.Printf("[ReqResp] Request: %s %s", c.Path, c.Request)
 	}
 
 	// 分发请求到路由器，捕获 panic
@@ -100,7 +92,7 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 	}()
 
 	if e.DebugMode {
-		log.Printf("[Invoke] Response: %s %s", c.Path, c.Response)
+		log.Printf("[ReqResp] Response: %s %s", c.Path, c.Response)
 	}
 
 	// 构建响应
@@ -111,7 +103,7 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 	if c.Err != nil {
 		resp.Error = c.Err.Error()
 		if e.DebugMode {
-			log.Printf("[Invoke] Error: %v", c.Err)
+			log.Printf("[ReqResp] Error: %v", c.Err)
 		}
 	}
 
@@ -119,9 +111,6 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 }
 
 // handle 解析路径并调用 Dynamic.GetPackage
-// Requirements: 8.2 - 从路径中解析包名和版本号
-// Requirements: 8.3 - 通过 Dynamic.GetPackage 获取对应的 Tunnel
-// Requirements: 8.4 - 如果业务包不存在，返回包含错误信息的响应
 func (e *Engine) handle(path string, req string) (string, error) {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) < 2 {
@@ -138,4 +127,3 @@ func (e *Engine) handle(path string, req string) (string, error) {
 	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
 	return tunnel.Invoke(route, req), nil
 }
-

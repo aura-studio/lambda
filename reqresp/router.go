@@ -1,4 +1,4 @@
-package invoke
+package reqresp
 
 import (
 	"fmt"
@@ -119,8 +119,6 @@ func (r *Router) match(path string) (bool, []HandlerFunc) {
 
 // withParam 包装处理器链，在第一个处理器前设置 ParamPath
 func withParam(handlers []HandlerFunc, param string) []HandlerFunc {
-	// Param is set on ctx by the first handler invocation in this chain.
-	// We achieve this by wrapping the first handler.
 	if len(handlers) == 0 {
 		return handlers
 	}
@@ -138,7 +136,6 @@ func withParam(handlers []HandlerFunc, param string) []HandlerFunc {
 func MatchPattern(pattern, path string) (param string, ok bool) {
 	if strings.Contains(pattern, "*path") {
 		prefix := strings.TrimSuffix(pattern, "*path")
-		// pattern like "/api/*path" => prefix "/api/"
 		if !strings.HasSuffix(prefix, "/") {
 			prefix += "/"
 		}

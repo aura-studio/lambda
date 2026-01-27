@@ -5,20 +5,20 @@ import (
 	"testing"
 
 	"github.com/aura-studio/lambda/dynamic"
-	"github.com/aura-studio/lambda/invoke"
+	"github.com/aura-studio/lambda/reqresp"
 	"google.golang.org/protobuf/proto"
 )
 
 // TestEngineCreation tests that NewEngine creates an engine with correct options
 func TestEngineCreation(t *testing.T) {
-	invokeOpts := []invoke.Option{
-		invoke.WithDebugMode(true),
-		invoke.WithStaticLink("/static", "/public"),
-		invoke.WithPrefixLink("/api", "/v1"),
+	reqrespOpts := []reqresp.Option{
+		reqresp.WithDebugMode(true),
+		reqresp.WithStaticLink("/static", "/public"),
+		reqresp.WithPrefixLink("/api", "/v1"),
 	}
 	dynamicOpts := []dynamic.Option{}
 
-	engine := invoke.NewEngine(invokeOpts, dynamicOpts)
+	engine := reqresp.NewEngine(reqrespOpts, dynamicOpts)
 
 	if engine == nil {
 		t.Fatal("NewEngine returned nil")
@@ -43,7 +43,7 @@ func TestEngineCreation(t *testing.T) {
 
 // TestEngineStartStop tests the Start and Stop methods
 func TestEngineStartStop(t *testing.T) {
-	engine := invoke.NewEngine(nil, nil)
+	engine := reqresp.NewEngine(nil, nil)
 
 	if !engine.IsRunning() {
 		t.Error("Engine should be running after creation")
@@ -62,10 +62,10 @@ func TestEngineStartStop(t *testing.T) {
 
 // TestEngineInvokeWhenStopped tests that Invoke returns error when engine is stopped
 func TestEngineInvokeWhenStopped(t *testing.T) {
-	engine := invoke.NewEngine(nil, nil)
+	engine := reqresp.NewEngine(nil, nil)
 	engine.Stop()
 
-	req := &invoke.Request{
+	req := &reqresp.Request{
 		CorrelationId: "test-123",
 		Path:          "/health-check",
 		Payload:       []byte("test"),
@@ -77,7 +77,7 @@ func TestEngineInvokeWhenStopped(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -91,11 +91,12 @@ func TestEngineInvokeWhenStopped(t *testing.T) {
 	}
 }
 
+
 // TestEngineInvokeHealthCheck tests the health check endpoint
 func TestEngineInvokeHealthCheck(t *testing.T) {
-	engine := invoke.NewEngine(nil, nil)
+	engine := reqresp.NewEngine(nil, nil)
 
-	req := &invoke.Request{
+	req := &reqresp.Request{
 		CorrelationId: "test-123",
 		Path:          "/health-check",
 		Payload:       nil,
@@ -107,7 +108,7 @@ func TestEngineInvokeHealthCheck(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -127,9 +128,9 @@ func TestEngineInvokeHealthCheck(t *testing.T) {
 
 // TestEngineInvokeRootPath tests the root path endpoint
 func TestEngineInvokeRootPath(t *testing.T) {
-	engine := invoke.NewEngine(nil, nil)
+	engine := reqresp.NewEngine(nil, nil)
 
-	req := &invoke.Request{
+	req := &reqresp.Request{
 		CorrelationId: "test-456",
 		Path:          "/",
 		Payload:       nil,
@@ -141,7 +142,7 @@ func TestEngineInvokeRootPath(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -153,9 +154,9 @@ func TestEngineInvokeRootPath(t *testing.T) {
 
 // TestEngineInvokePageNotFound tests the 404 handler
 func TestEngineInvokePageNotFound(t *testing.T) {
-	engine := invoke.NewEngine(nil, nil)
+	engine := reqresp.NewEngine(nil, nil)
 
-	req := &invoke.Request{
+	req := &reqresp.Request{
 		CorrelationId: "test-789",
 		Path:          "/nonexistent/path",
 		Payload:       nil,
@@ -167,7 +168,7 @@ func TestEngineInvokePageNotFound(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -183,7 +184,7 @@ func TestEngineInvokePageNotFound(t *testing.T) {
 
 // TestEngineInvokeInvalidPayload tests handling of invalid protobuf payload
 func TestEngineInvokeInvalidPayload(t *testing.T) {
-	engine := invoke.NewEngine(nil, nil)
+	engine := reqresp.NewEngine(nil, nil)
 
 	// Send invalid protobuf data
 	respBytes, err := engine.Invoke(context.Background(), []byte("invalid protobuf"))
@@ -191,7 +192,7 @@ func TestEngineInvokeInvalidPayload(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -203,11 +204,11 @@ func TestEngineInvokeInvalidPayload(t *testing.T) {
 
 // TestEngineInvokeStaticLink tests static link path mapping
 func TestEngineInvokeStaticLink(t *testing.T) {
-	engine := invoke.NewEngine([]invoke.Option{
-		invoke.WithStaticLink("/custom-health", "/health-check"),
+	engine := reqresp.NewEngine([]reqresp.Option{
+		reqresp.WithStaticLink("/custom-health", "/health-check"),
 	}, nil)
 
-	req := &invoke.Request{
+	req := &reqresp.Request{
 		CorrelationId: "test-static",
 		Path:          "/custom-health",
 		Payload:       nil,
@@ -219,7 +220,7 @@ func TestEngineInvokeStaticLink(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -231,9 +232,9 @@ func TestEngineInvokeStaticLink(t *testing.T) {
 
 // TestEngineInvokeAPIPathMissingPackage tests API path with missing package
 func TestEngineInvokeAPIPathMissingPackage(t *testing.T) {
-	engine := invoke.NewEngine(nil, nil)
+	engine := reqresp.NewEngine(nil, nil)
 
-	req := &invoke.Request{
+	req := &reqresp.Request{
 		CorrelationId: "test-api",
 		Path:          "/api/nonexistent-pkg/v1/route",
 		Payload:       []byte("{}"),
@@ -245,7 +246,7 @@ func TestEngineInvokeAPIPathMissingPackage(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -258,9 +259,9 @@ func TestEngineInvokeAPIPathMissingPackage(t *testing.T) {
 
 // TestEngineInvokeAPIPathInvalid tests API path with invalid format
 func TestEngineInvokeAPIPathInvalid(t *testing.T) {
-	engine := invoke.NewEngine(nil, nil)
+	engine := reqresp.NewEngine(nil, nil)
 
-	req := &invoke.Request{
+	req := &reqresp.Request{
 		CorrelationId: "test-api-invalid",
 		Path:          "/api/", // Missing package and version
 		Payload:       []byte("{}"),
@@ -272,7 +273,7 @@ func TestEngineInvokeAPIPathInvalid(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -285,11 +286,11 @@ func TestEngineInvokeAPIPathInvalid(t *testing.T) {
 
 // TestEngineInvokeDebugMode tests debug mode response format
 func TestEngineInvokeDebugMode(t *testing.T) {
-	engine := invoke.NewEngine([]invoke.Option{
-		invoke.WithDebugMode(true),
+	engine := reqresp.NewEngine([]reqresp.Option{
+		reqresp.WithDebugMode(true),
 	}, nil)
 
-	req := &invoke.Request{
+	req := &reqresp.Request{
 		CorrelationId: "test-debug",
 		Path:          "/_/api/nonexistent/v1/route",
 		Payload:       []byte("test-request"),
@@ -301,7 +302,7 @@ func TestEngineInvokeDebugMode(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp invoke.Response
+	var resp reqresp.Response
 	if err := proto.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
@@ -312,4 +313,3 @@ func TestEngineInvokeDebugMode(t *testing.T) {
 		t.Error("Expected either payload or error in debug mode response")
 	}
 }
-

@@ -1,4 +1,4 @@
-package invokecli
+package reqrespcli
 
 import (
 	"context"
