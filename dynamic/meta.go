@@ -18,6 +18,7 @@ var (
 type ServiceInfo struct {
 	Business  string `json:"business"`
 	Framework string `json:"framework"`
+	Component string `json:"component"`
 	Runtime   string `json:"runtime"`
 	Resource  string `json:"resource"`
 	Instance  string `json:"instance"`
@@ -62,10 +63,10 @@ func initLambdaInfo() {
 }
 
 // parseServiceInfo 从 AWS_LAMBDA_FUNCTION_NAME 解析服务信息
-// 格式: business-framework-runtime-resource-instance
+// 格式: business-framework-component-runtime-resource-instance
 func parseServiceInfo() ServiceInfo {
 	funcName := os.Getenv("AWS_LAMBDA_FUNCTION_NAME")
-	parts := strings.SplitN(funcName, "-", 5)
+	parts := strings.SplitN(funcName, "-", 6)
 
 	info := ServiceInfo{}
 	if len(parts) > 0 {
@@ -75,13 +76,16 @@ func parseServiceInfo() ServiceInfo {
 		info.Framework = parts[1]
 	}
 	if len(parts) > 2 {
-		info.Runtime = parts[2]
+		info.Component = parts[2]
 	}
 	if len(parts) > 3 {
-		info.Resource = parts[3]
+		info.Runtime = parts[3]
 	}
 	if len(parts) > 4 {
-		info.Instance = parts[4]
+		info.Resource = parts[4]
+	}
+	if len(parts) > 5 {
+		info.Instance = parts[5]
 	}
 
 	return info
