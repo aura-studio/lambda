@@ -30,32 +30,19 @@ type LambdaInfo struct {
 	Built   string `json:"built"`
 }
 
-// WarehouseInfo 仓库配置信息
-type WarehouseInfo struct {
-	Local  string `json:"local"`
-	Remote string `json:"remote"`
-}
-
 // Meta 完整的 meta 信息结构
 type Meta struct {
-	Service   ServiceInfo   `json:"service"`
-	Lambda    LambdaInfo    `json:"lambda"`
-	Warehouse WarehouseInfo `json:"warehouse"`
+	Service ServiceInfo `json:"service"`
+	Lambda  LambdaInfo  `json:"lambda"`
 }
 
 // MetaGenerator meta 信息生成器
-type MetaGenerator struct {
-	localWarehouse  string
-	remoteWarehouse string
-}
+type MetaGenerator struct{}
 
 // NewMetaGenerator 创建 meta 生成器
-func NewMetaGenerator(localWarehouse, remoteWarehouse string) *MetaGenerator {
+func NewMetaGenerator() *MetaGenerator {
 	initLambdaInfo()
-	return &MetaGenerator{
-		localWarehouse:  localWarehouse,
-		remoteWarehouse: remoteWarehouse,
-	}
+	return &MetaGenerator{}
 }
 
 // initLambdaInfo 从 debug.ReadBuildInfo 初始化 Lambda 构建信息
@@ -114,10 +101,6 @@ func (g *MetaGenerator) Generate(tunnelMeta string) string {
 	meta := Meta{
 		Service: parseServiceInfo(),
 		Lambda:  getLambdaInfo(),
-		Warehouse: WarehouseInfo{
-			Local:  g.localWarehouse,
-			Remote: g.remoteWarehouse,
-		},
 	}
 
 	// 先序列化基础 meta

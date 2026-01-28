@@ -23,7 +23,7 @@ func NewDynamic(opts ...Option) *Dynamic {
 	}
 
 	d.InstallPackages()
-	d.MetaGenerator = NewMetaGenerator(d.LocalWarehouse, d.RemoteWarehouse)
+	d.MetaGenerator = NewMetaGenerator()
 
 	return d
 }

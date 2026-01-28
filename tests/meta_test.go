@@ -9,7 +9,7 @@ import (
 
 func TestInitLambdaInfo(t *testing.T) {
 	// 生成 meta（NewMetaGenerator 内部会调用 initLambdaInfo）
-	gen := dynamic.NewMetaGenerator("test-local", "test-remote")
+	gen := dynamic.NewMetaGenerator()
 	result := gen.Generate("")
 
 	t.Logf("Meta output:\n%s", result)
