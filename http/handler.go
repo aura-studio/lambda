@@ -45,7 +45,9 @@ const (
 )
 
 const (
-	RspMetaETag = "etag"
+	RspMetaETag        = "etag"
+	RspMetaContentType = "content_type"
+	RspMetaContent     = "content"
 )
 
 type (
@@ -185,8 +187,8 @@ func (e *Engine) API(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
-		e.applyRspMeta(c)
-		c.String(http.StatusOK, c.GetString(ResponseContext))
+		contentType, rspBody := e.parseRspMeta(c)
+		c.Data(http.StatusOK, contentType, []byte(rspBody))
 		c.Abort()
 		return
 	}
@@ -393,8 +395,6 @@ func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
 		return
 	}
 	rsp = string(data)
-
-	return
 }
 
 func (e *Engine) safeWireProcessor(c *gin.Context, f LocalHandler) {
@@ -649,14 +649,34 @@ func (e *Engine) doDebug(f func()) (stdout string, stderr string, err error) {
 	return stdoutBuf.String(), stderrBuf.String(), nil
 }
 
-func (e *Engine) applyRspMeta(c *gin.Context) {
+// parseRspMeta applies response meta and sends the response
+// Rules:
+// - If content_type is empty: default to application/json
+// - If content_type has value but content is empty: only override Content-Type header
+// - If content has value: override the response body with content
+func (e *Engine) parseRspMeta(c *gin.Context) (string, string) {
 	respMeta := c.GetStringMap(ResponseMetaContext)
-	if respMeta == nil {
-		return
+	rspBody := c.GetString(ResponseContext)
+
+	// Default content type
+	contentType := "application/json"
+
+	if respMeta != nil {
+		// Apply ETag header
+		if etag, ok := respMeta[RspMetaETag]; ok && etag != nil && etag != "" {
+			c.Header("ETag", fmt.Sprintf("%v", etag))
+		}
+
+		// Check content_type
+		if ct, ok := respMeta[RspMetaContentType]; ok && ct != nil && ct != "" {
+			contentType = fmt.Sprintf("%v", ct)
+		}
+
+		// Check content - if has value, override response body
+		if content, ok := respMeta[RspMetaContent]; ok && content != nil && content != "" {
+			rspBody = fmt.Sprintf("%v", content)
+		}
 	}
 
-	// ETag
-	if etag, ok := respMeta[RspMetaETag]; ok && etag != nil && etag != "" {
-		c.Header("ETag", fmt.Sprintf("%v", etag))
-	}
+	return contentType, rspBody
 }
