@@ -18,7 +18,7 @@ type yamlServerConfig struct {
 	Dynamic any    `yaml:"dynamic"`
 }
 
-type ServeOption interface {
+type Option interface {
 	Apply(*Options)
 }
 
@@ -56,7 +56,7 @@ func (o serveConfigOption) Apply(opts *Options) {
 }
 
 // WithServeConfig parses YAML bytes following server.yml structure.
-func WithServeConfig(yamlBytes []byte) ServeOption {
+func WithServeConfig(yamlBytes []byte) Option {
 	var cfg yamlServerConfig
 	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
 		panic(fmt.Errorf("server.WithServeConfig: %w", err))
@@ -98,7 +98,7 @@ func WithServeConfig(yamlBytes []byte) ServeOption {
 }
 
 // WithServeConfigFile loads a YAML file and applies it as ServeOption.
-func WithServeConfigFile(path string) ServeOption {
+func WithServeConfigFile(path string) Option {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		panic(fmt.Errorf("server.WithServeConfigFile(%s): %w", path, err))
@@ -149,7 +149,7 @@ func FindDefaultServeConfigFile() (string, error) {
 }
 
 // WithDefaultServeConfigFile finds and loads the default server config file as a ServeOption.
-func WithDefaultServeConfigFile() ServeOption {
+func WithDefaultServeConfigFile() Option {
 	p, err := FindDefaultServeConfigFile()
 	if err != nil {
 		panic(fmt.Errorf("server.WithDefaultServeConfigFile: %w", err))

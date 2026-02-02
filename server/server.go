@@ -5,7 +5,7 @@ import (
 	"github.com/aura-studio/lambda/sqs"
 )
 
-func Serve(opts ...ServeOption) error {
+func Serve(opts ...Option) error {
 	options := &Options{}
 	for _, opt := range opts {
 		if opt != nil {
