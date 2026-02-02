@@ -33,10 +33,14 @@ const (
 )
 
 const (
-	MetaRemoteAddr      = "remote_addr"
-	MetaXForwardedFor   = "x_forwarded_for"
-	MetaXForwardedPort  = "x_forwarded_port"
-	MetaXForwardedProto = "x_forwarded_proto"
+	MetaRemoteAddr          = "remote_addr"
+	MetaXForwardedFor       = "x_forwarded_for"
+	MetaXForwardedPort      = "x_forwarded_port"
+	MetaXForwardedProto     = "x_forwarded_proto"
+	MetaCloudFrontPolicy    = "cloudfront_policy"
+	MetaCloudFrontSignature = "cloudfront_signature"
+	MetaCloudFrontKeyPairId = "cloudfront_key_pair_id"
+	MetaHost                = "host"
 )
 
 type (
@@ -303,6 +307,10 @@ func (e *Engine) genMeta(c *gin.Context) map[string]interface{} {
 	meta[MetaXForwardedPort] = c.Request.Header.Get("X-Forwarded-Port")
 	meta[MetaXForwardedProto] = c.Request.Header.Get("X-Forwarded-Proto")
 	meta[MetaRemoteAddr] = c.Request.RemoteAddr
+	meta[MetaCloudFrontPolicy] = c.Request.Header.Get("CloudFront-Policy")
+	meta[MetaCloudFrontSignature] = c.Request.Header.Get("CloudFront-Signature")
+	meta[MetaCloudFrontKeyPairId] = c.Request.Header.Get("CloudFront-Key-Pair-Id")
+	meta[MetaHost] = c.Request.Header.Get("Host")
 
 	return meta
 }
