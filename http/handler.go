@@ -21,7 +21,8 @@ const (
 	PathContext         = "path"
 	RequestContext      = "request"
 	ResponseContext     = "response"
-	MetaContext         = "meta"
+	RequestMetaContext  = "request_meta"
+	ResponseMetaContext = "response_meta"
 	WireRequestContext  = "wire_request"
 	WireResponseContext = "wire_response"
 	ErrorContext        = "error"
@@ -33,14 +34,18 @@ const (
 )
 
 const (
-	MetaRemoteAddr          = "remote_addr"
-	MetaXForwardedFor       = "x_forwarded_for"
-	MetaXForwardedPort      = "x_forwarded_port"
-	MetaXForwardedProto     = "x_forwarded_proto"
-	MetaCloudFrontPolicy    = "cloudfront_policy"
-	MetaCloudFrontSignature = "cloudfront_signature"
-	MetaCloudFrontKeyPairId = "cloudfront_key_pair_id"
-	MetaHost                = "host"
+	ReqMetaRemoteAddr          = "remote_addr"
+	ReqMetaXForwardedFor       = "x_forwarded_for"
+	ReqMetaXForwardedPort      = "x_forwarded_port"
+	ReqMetaXForwardedProto     = "x_forwarded_proto"
+	ReqMetaCloudFrontPolicy    = "cloudfront_policy"
+	ReqMetaCloudFrontSignature = "cloudfront_signature"
+	ReqMetaCloudFrontKeyPairId = "cloudfront_key_pair_id"
+	ReqMetaHost                = "host"
+)
+
+const (
+	RspMetaETag = "etag"
 )
 
 type (
@@ -121,7 +126,7 @@ func (e *Engine) API(c *gin.Context) {
 	c.Set(HeaderContext, c.Request.Header)
 
 	// meta
-	c.Set(MetaContext, e.genMeta(c))
+	c.Set(RequestMetaContext, e.genReqMeta(c))
 
 	// request
 	switch c.Request.Method {
@@ -180,6 +185,7 @@ func (e *Engine) API(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
+		e.applyRspMeta(c)
 		c.String(http.StatusOK, c.GetString(ResponseContext))
 		c.Abort()
 		return
@@ -306,23 +312,23 @@ func (e *Engine) MethodNotAllowed(c *gin.Context) {
 	c.Abort()
 }
 
-func (e *Engine) genMeta(c *gin.Context) map[string]interface{} {
-	meta := map[string]interface{}{}
+func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
+	meta := map[string]any{}
 
-	meta[MetaXForwardedFor] = c.Request.Header.Get("X-Forwarded-For")
-	meta[MetaXForwardedPort] = c.Request.Header.Get("X-Forwarded-Port")
-	meta[MetaXForwardedProto] = c.Request.Header.Get("X-Forwarded-Proto")
-	meta[MetaRemoteAddr] = c.Request.RemoteAddr
-	meta[MetaCloudFrontPolicy] = c.Request.Header.Get("CloudFront-Policy")
-	meta[MetaCloudFrontSignature] = c.Request.Header.Get("CloudFront-Signature")
-	meta[MetaCloudFrontKeyPairId] = c.Request.Header.Get("CloudFront-Key-Pair-Id")
-	meta[MetaHost] = c.Request.Header.Get("Host")
+	meta[ReqMetaXForwardedFor] = c.Request.Header.Get("X-Forwarded-For")
+	meta[ReqMetaXForwardedPort] = c.Request.Header.Get("X-Forwarded-Port")
+	meta[ReqMetaXForwardedProto] = c.Request.Header.Get("X-Forwarded-Proto")
+	meta[ReqMetaRemoteAddr] = c.Request.RemoteAddr
+	meta[ReqMetaCloudFrontPolicy] = c.Request.Header.Get("CloudFront-Policy")
+	meta[ReqMetaCloudFrontSignature] = c.Request.Header.Get("CloudFront-Signature")
+	meta[ReqMetaCloudFrontKeyPairId] = c.Request.Header.Get("CloudFront-Key-Pair-Id")
+	meta[ReqMetaHost] = c.Request.Header.Get("Host")
 
 	return meta
 }
 
 func (e *Engine) genGetReq(c *gin.Context) string {
-	dataMap := map[string]interface{}{}
+	dataMap := map[string]any{}
 	for k, v := range c.Request.URL.Query() {
 		dataMap[k] = v[0]
 	}
@@ -409,11 +415,20 @@ func (e *Engine) debugWireProcessor(c *gin.Context, f LocalHandler) {
 func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 	path := c.GetString(PathContext)
 	req := c.GetString(RequestContext)
-	meta := c.GetStringMap(MetaContext)
-	if gjson.ValidBytes([]byte(req)) && !gjson.Get(req, "__meta__").Exists() {
-		req, _ = sjson.Set(req, "__meta__", meta)
+	reqMeta := c.GetStringMap(RequestMetaContext)
+	if gjson.Valid(req) && !gjson.Get(req, "__meta__").Exists() {
+		req, _ = sjson.Set(req, "__meta__", reqMeta)
 	}
 	rsp, err := f(path, req)
+	if gjson.Valid(rsp) && gjson.Get(rsp, "__meta__").Exists() {
+		rspMeta := make(map[string]any)
+		gjson.Get(rsp, "__meta__").ForEach(func(key, value gjson.Result) bool {
+			rspMeta[key.String()] = value.Value()
+			return true
+		})
+		c.Set(ResponseMetaContext, rspMeta)
+		rsp, _ = sjson.Delete(rsp, "__meta__")
+	}
 	c.Set(ResponseContext, rsp)
 	c.Set(ErrorContext, err)
 }
@@ -506,9 +521,13 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	headerBytes, _ := json.Marshal(c.GetString(HeaderContext))
 	buf.WriteString(string(headerBytes))
 	buf.WriteString("\n")
-	buf.WriteString(`Meta: `)
-	metaBytes, _ := json.Marshal(c.GetString(MetaContext))
-	buf.WriteString(string(metaBytes))
+	buf.WriteString(`Request Meta: `)
+	reqMetaBytes, _ := json.Marshal(c.GetString(RequestMetaContext))
+	buf.WriteString(string(reqMetaBytes))
+	buf.WriteString("\n")
+	buf.WriteString(`Response Meta: `)
+	rspMetaBytes, _ := json.Marshal(c.GetStringMap(ResponseMetaContext))
+	buf.WriteString(string(rspMetaBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Stdout: `)
 	buf.WriteString(c.GetString(StdoutContext))
@@ -628,4 +647,16 @@ func (e *Engine) doDebug(f func()) (stdout string, stderr string, err error) {
 	}
 
 	return stdoutBuf.String(), stderrBuf.String(), nil
+}
+
+func (e *Engine) applyRspMeta(c *gin.Context) {
+	respMeta := c.GetStringMap(ResponseMetaContext)
+	if respMeta == nil {
+		return
+	}
+
+	// ETag
+	if etag, ok := respMeta[RspMetaETag]; ok && etag != nil && etag != "" {
+		c.Header("ETag", fmt.Sprintf("%v", etag))
+	}
 }

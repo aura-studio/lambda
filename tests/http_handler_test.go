@@ -561,3 +561,109 @@ func TestHTTPHandler_NotFoundPath_Empty(t *testing.T) {
 		t.Errorf("Body = %q, want '404 page not found'", string(body))
 	}
 }
+
+
+// =============================================================================
+// Response Meta Tests
+// =============================================================================
+
+// TestHTTPHandler_ResponseMeta_ETag tests that ETag from response __meta__ is set as header
+func TestHTTPHandler_ResponseMeta_ETag(t *testing.T) {
+	dynamic.RegisterPackage("handler-respmeta-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"data":"test","__meta__":{"etag":"\"abc123\""}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-respmeta-pkg/v1/resource", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	// Check ETag header is set
+	etag := resp.Header.Get("ETag")
+	if etag != `"abc123"` {
+		t.Errorf("ETag header = %q, want %q", etag, `"abc123"`)
+	}
+
+	// Check __meta__ is stripped from response body
+	bodyStr := string(body)
+	if strings.Contains(bodyStr, "__meta__") {
+		t.Errorf("Response body should not contain __meta__, got %q", bodyStr)
+	}
+
+	if !strings.Contains(bodyStr, "data") {
+		t.Errorf("Response body should contain data field, got %q", bodyStr)
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_NoMeta tests response without __meta__ works normally
+func TestHTTPHandler_ResponseMeta_NoMeta(t *testing.T) {
+	dynamic.RegisterPackage("handler-nometa-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"data":"test"}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-nometa-pkg/v1/resource", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	// No ETag header should be set
+	etag := resp.Header.Get("ETag")
+	if etag != "" {
+		t.Errorf("ETag header = %q, want empty", etag)
+	}
+
+	// Response body should be unchanged
+	if string(body) != `{"data":"test"}` {
+		t.Errorf("Body = %q, want '{\"data\":\"test\"}'", string(body))
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_NonJSON tests non-JSON response works normally
+func TestHTTPHandler_ResponseMeta_NonJSON(t *testing.T) {
+	dynamic.RegisterPackage("handler-nonjson-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return "plain text response"
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-nonjson-pkg/v1/resource", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	// Response body should be unchanged
+	if string(body) != "plain text response" {
+		t.Errorf("Body = %q, want 'plain text response'", string(body))
+	}
+}
