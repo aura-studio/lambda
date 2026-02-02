@@ -60,7 +60,7 @@ func WithDebugMode() Option {
 	})
 }
 
-func WithCors() Option {
+func WithCorsMode() Option {
 	return HttpOption(func(o *Options) {
 		o.CorsMode = true
 	})

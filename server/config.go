@@ -55,6 +55,34 @@ func (o serveConfigOption) Apply(opts *Options) {
 	}
 }
 
+// WithLambdaType sets the Lambda type (e.g., "http", "sqs").
+func WithLambdaType(lambdaType string) Option {
+	return serveOptionFunc(func(o *Options) {
+		o.Lambda = lambdaType
+	})
+}
+
+// WithHttpOptions adds HTTP options.
+func WithHttpOptions(opts ...http.Option) Option {
+	return serveOptionFunc(func(o *Options) {
+		o.Http = append(o.Http, opts...)
+	})
+}
+
+// WithSqsOptions adds SQS options.
+func WithSqsOptions(opts ...sqs.Option) Option {
+	return serveOptionFunc(func(o *Options) {
+		o.Sqs = append(o.Sqs, opts...)
+	})
+}
+
+// WithDynamicOptions adds Dynamic options.
+func WithDynamicOptions(opts ...dynamic.Option) Option {
+	return serveOptionFunc(func(o *Options) {
+		o.Dynamic = append(o.Dynamic, opts...)
+	})
+}
+
 // WithServeConfig parses YAML bytes following server.yml structure.
 func WithServeConfig(yamlBytes []byte) Option {
 	var cfg yamlServerConfig

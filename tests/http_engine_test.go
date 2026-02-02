@@ -37,7 +37,7 @@ func TestHTTPEngineCreation(t *testing.T) {
 	e := lambdahttp.NewEngine([]lambdahttp.Option{
 		lambdahttp.WithAddress(":9090"),
 		lambdahttp.WithDebugMode(),
-		lambdahttp.WithCors(),
+		lambdahttp.WithCorsMode(),
 		lambdahttp.WithStaticLink("/static", "/public"),
 		lambdahttp.WithPrefixLink("/api", "/v1"),
 		lambdahttp.WithHeaderLinkKey("X-Route", "/route"),
@@ -318,7 +318,7 @@ func TestHTTPEngineWAPI(t *testing.T) {
 // TestHTTPEngineCORS tests CORS middleware
 func TestHTTPEngineCORS(t *testing.T) {
 	e := lambdahttp.NewEngine([]lambdahttp.Option{
-		lambdahttp.WithCors(),
+		lambdahttp.WithCorsMode(),
 	}, nil)
 
 	req := httptest.NewRequest(http.MethodOptions, "/health-check", nil)
