@@ -291,6 +291,12 @@ func (e *Engine) Meta(c *gin.Context) {
 }
 
 func (e *Engine) PageNotFound(c *gin.Context) {
+	if e.PageNotFoundPath != "" {
+		c.Request.URL.Path = e.PageNotFoundPath
+		e.HandleContext(c)
+		c.Abort()
+		return
+	}
 	c.String(404, "404 page not found")
 	c.Abort()
 }

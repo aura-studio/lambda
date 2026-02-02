@@ -14,21 +14,23 @@ func (f HttpOption) Apply(o *Options) { f(o) }
 
 type Options struct {
 	// Http Options
-	Address       string
-	DebugMode     bool
-	CorsMode      bool
-	StaticLinkMap map[string]string
-	PrefixLinkMap map[string]string
-	HeaderLinkMap map[string]string
+	Address          string
+	DebugMode        bool
+	CorsMode         bool
+	StaticLinkMap    map[string]string
+	PrefixLinkMap    map[string]string
+	HeaderLinkMap    map[string]string
+	PageNotFoundPath string
 }
 
 var defaultOptions = &Options{
-	Address:       ":8080",
-	DebugMode:     false,
-	CorsMode:      false,
-	StaticLinkMap: map[string]string{},
-	PrefixLinkMap: map[string]string{},
-	HeaderLinkMap: map[string]string{},
+	Address:          ":8080",
+	DebugMode:        false,
+	CorsMode:         false,
+	StaticLinkMap:    map[string]string{},
+	PrefixLinkMap:    map[string]string{},
+	HeaderLinkMap:    map[string]string{},
+	PageNotFoundPath: "",
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -79,5 +81,11 @@ func WithPrefixLink(srcPrefix string, dstPrefix string) Option {
 func WithHeaderLinkKey(key string, prefix string) Option {
 	return HttpOption(func(o *Options) {
 		o.HeaderLinkMap[key] = prefix
+	})
+}
+
+func WithPageNotFoundPath(path string) Option {
+	return HttpOption(func(o *Options) {
+		o.PageNotFoundPath = path
 	})
 }

@@ -482,3 +482,82 @@ func TestHTTPHandler_PanicRecovery(t *testing.T) {
 		t.Errorf("StatusCode = %d, want %d for panic", resp.StatusCode, http.StatusInternalServerError)
 	}
 }
+
+
+// =============================================================================
+// NotFoundPath Tests
+// =============================================================================
+
+// TestHTTPHandler_NotFoundPath_Redirect tests that NotFoundPath redirects to specified path
+func TestHTTPHandler_NotFoundPath_Redirect(t *testing.T) {
+	dynamic.RegisterPackage("handler-notfound-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return "notfound-handler-response"
+		},
+	})
+
+	e := lambdahttp.NewEngine([]lambdahttp.Option{
+		lambdahttp.WithPageNotFoundPath("/api/handler-notfound-pkg/v1/fallback"),
+	}, nil)
+
+	// Request a non-existent path
+	req := httptest.NewRequest(http.MethodGet, "/some/random/path", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	if string(body) != "notfound-handler-response" {
+		t.Errorf("Body = %q, want 'notfound-handler-response'", string(body))
+	}
+}
+
+// TestHTTPHandler_NotFoundPath_ToHealthCheck tests NotFoundPath redirecting to health-check
+func TestHTTPHandler_NotFoundPath_ToHealthCheck(t *testing.T) {
+	e := lambdahttp.NewEngine([]lambdahttp.Option{
+		lambdahttp.WithPageNotFoundPath("/health-check"),
+	}, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent/path", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	if string(body) != "OK" {
+		t.Errorf("Body = %q, want 'OK'", string(body))
+	}
+}
+
+// TestHTTPHandler_NotFoundPath_Empty tests default 404 behavior when NotFoundPath is empty
+func TestHTTPHandler_NotFoundPath_Empty(t *testing.T) {
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent/path", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+
+	if string(body) != "404 page not found" {
+		t.Errorf("Body = %q, want '404 page not found'", string(body))
+	}
+}
