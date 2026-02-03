@@ -25,6 +25,7 @@ type yamlHTTPConfig struct {
 		Key    string `yaml:"key"`
 		Prefix string `yaml:"prefix"`
 	} `yaml:"headerLinkKey"`
+	PageNotFoundPath string `yaml:"pageNotFoundPath"`
 }
 
 func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
@@ -62,6 +63,9 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 				continue
 			}
 			o.HeaderLinkMap[link.Key] = link.Prefix
+		}
+		if cfg.PageNotFoundPath != "" {
+			o.PageNotFoundPath = cfg.PageNotFoundPath
 		}
 	})
 }

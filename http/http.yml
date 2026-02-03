@@ -11,3 +11,4 @@ prefixLink:
 headerLinkKey:
   - key: "X-Custom-Header"
     prefix: "custom-"
+pageNotFoundPath: ""
