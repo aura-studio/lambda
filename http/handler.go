@@ -34,14 +34,15 @@ const (
 )
 
 const (
-	ReqMetaRemoteAddr          = "remote_addr"
-	ReqMetaXForwardedFor       = "x_forwarded_for"
-	ReqMetaXForwardedPort      = "x_forwarded_port"
-	ReqMetaXForwardedProto     = "x_forwarded_proto"
-	ReqMetaCloudFrontPolicy    = "cloudfront_policy"
-	ReqMetaCloudFrontSignature = "cloudfront_signature"
-	ReqMetaCloudFrontKeyPairId = "cloudfront_key_pair_id"
-	ReqMetaHost                = "host"
+	ReqMetaRemoteAddr              = "remote_addr"
+	ReqMetaXForwardedFor           = "x_forwarded_for"
+	ReqMetaXForwardedPort          = "x_forwarded_port"
+	ReqMetaXForwardedProto         = "x_forwarded_proto"
+	ReqMetaCloudFrontPolicy        = "cloudfront_policy"
+	ReqMetaCloudFrontSignature     = "cloudfront_signature"
+	ReqMetaCloudFrontKeyPairId     = "cloudfront_key_pair_id"
+	ReqMetaCloudFrontViewerAddress = "cloudfront_viewer_address"
+	ReqMetaHost                    = "host"
 )
 
 const (
@@ -324,6 +325,7 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	meta[ReqMetaCloudFrontPolicy] = c.Request.Header.Get("CloudFront-Policy")
 	meta[ReqMetaCloudFrontSignature] = c.Request.Header.Get("CloudFront-Signature")
 	meta[ReqMetaCloudFrontKeyPairId] = c.Request.Header.Get("CloudFront-Key-Pair-Id")
+	meta[ReqMetaCloudFrontViewerAddress] = c.Request.Header.Get("CloudFront-Viewer-Address")
 	meta[ReqMetaHost] = c.Request.Header.Get("Host")
 
 	return meta
