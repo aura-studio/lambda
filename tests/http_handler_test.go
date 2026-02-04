@@ -483,7 +483,6 @@ func TestHTTPHandler_PanicRecovery(t *testing.T) {
 	}
 }
 
-
 // =============================================================================
 // NotFoundPath Tests
 // =============================================================================
@@ -561,7 +560,6 @@ func TestHTTPHandler_NotFoundPath_Empty(t *testing.T) {
 		t.Errorf("Body = %q, want '404 page not found'", string(body))
 	}
 }
-
 
 // =============================================================================
 // Response Meta Tests
@@ -665,5 +663,253 @@ func TestHTTPHandler_ResponseMeta_NonJSON(t *testing.T) {
 	// Response body should be unchanged
 	if string(body) != "plain text response" {
 		t.Errorf("Body = %q, want 'plain text response'", string(body))
+	}
+}
+
+// =============================================================================
+// Response Meta URL Tests
+// =============================================================================
+
+// TestHTTPHandler_ResponseMeta_URL_Redirect tests url meta with http/https scheme triggers 307 redirect
+func TestHTTPHandler_ResponseMeta_URL_Redirect(t *testing.T) {
+	dynamic.RegisterPackage("handler-url-redirect-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"__meta__":{"url":"https://example.com/target"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-url-redirect-pkg/v1/redirect", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusTemporaryRedirect {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusTemporaryRedirect)
+	}
+
+	location := resp.Header.Get("Location")
+	if location != "https://example.com/target" {
+		t.Errorf("Location = %q, want 'https://example.com/target'", location)
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_URL_Path tests url meta with path:// scheme triggers internal route rewrite
+func TestHTTPHandler_ResponseMeta_URL_Path(t *testing.T) {
+	dynamic.RegisterPackage("handler-url-path-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"__meta__":{"url":"path://health-check"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-url-path-pkg/v1/rewrite", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	if string(body) != "OK" {
+		t.Errorf("Body = %q, want 'OK'", string(body))
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_URL_Error tests url meta with error:// scheme triggers 500 error
+func TestHTTPHandler_ResponseMeta_URL_Error(t *testing.T) {
+	dynamic.RegisterPackage("handler-url-error-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"__meta__":{"url":"error://something went wrong"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-url-error-pkg/v1/fail", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusInternalServerError)
+	}
+
+	if string(body) != "something went wrong" {
+		t.Errorf("Body = %q, want 'something went wrong'", string(body))
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_Redirect tests redirect meta triggers 307 redirect
+func TestHTTPHandler_ResponseMeta_Redirect(t *testing.T) {
+	dynamic.RegisterPackage("handler-redirect-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"__meta__":{"redirect":"https://example.com/redirect-target"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-redirect-pkg/v1/redirect", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusTemporaryRedirect {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusTemporaryRedirect)
+	}
+
+	location := resp.Header.Get("Location")
+	if location != "https://example.com/redirect-target" {
+		t.Errorf("Location = %q, want 'https://example.com/redirect-target'", location)
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_Path tests path meta triggers internal route rewrite
+func TestHTTPHandler_ResponseMeta_Path(t *testing.T) {
+	dynamic.RegisterPackage("handler-path-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"__meta__":{"path":"health-check"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-path-pkg/v1/rewrite", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	if string(body) != "OK" {
+		t.Errorf("Body = %q, want 'OK'", string(body))
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_Error tests error meta triggers 500 error
+func TestHTTPHandler_ResponseMeta_Error(t *testing.T) {
+	dynamic.RegisterPackage("handler-error-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"__meta__":{"error":"custom error message"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-error-pkg/v1/fail", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusInternalServerError)
+	}
+
+	if string(body) != "custom error message" {
+		t.Errorf("Body = %q, want 'custom error message'", string(body))
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_ContentType tests content_type meta overrides Content-Type header
+func TestHTTPHandler_ResponseMeta_ContentType(t *testing.T) {
+	dynamic.RegisterPackage("handler-contenttype-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"data":"test","__meta__":{"content_type":"text/plain"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-contenttype-pkg/v1/resource", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType != "text/plain" {
+		t.Errorf("Content-Type = %q, want 'text/plain'", contentType)
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_Content tests content meta overrides response body
+func TestHTTPHandler_ResponseMeta_Content(t *testing.T) {
+	dynamic.RegisterPackage("handler-content-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			return `{"data":"original","__meta__":{"content":"overridden content"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-content-pkg/v1/resource", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	if string(body) != "overridden content" {
+		t.Errorf("Body = %q, want 'overridden content'", string(body))
+	}
+}
+
+// TestHTTPHandler_ResponseMeta_URL_Priority tests url meta has highest priority
+func TestHTTPHandler_ResponseMeta_URL_Priority(t *testing.T) {
+	dynamic.RegisterPackage("handler-url-priority-pkg", "v1", &mockHTTPTunnel{
+		invokeFunc: func(route, req string) string {
+			// url should take priority over redirect
+			return `{"__meta__":{"url":"https://url-target.com","redirect":"https://redirect-target.com"}}`
+		},
+	})
+
+	e := lambdahttp.NewEngine(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/handler-url-priority-pkg/v1/test", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusTemporaryRedirect {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusTemporaryRedirect)
+	}
+
+	location := resp.Header.Get("Location")
+	if location != "https://url-target.com" {
+		t.Errorf("Location = %q, want 'https://url-target.com' (url should have priority)", location)
 	}
 }

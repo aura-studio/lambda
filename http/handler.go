@@ -38,17 +38,23 @@ const (
 	ReqMetaXForwardedFor           = "x_forwarded_for"
 	ReqMetaXForwardedPort          = "x_forwarded_port"
 	ReqMetaXForwardedProto         = "x_forwarded_proto"
+	ReqMetaXForwardedHost          = "x_forwarded_host"
 	ReqMetaCloudFrontPolicy        = "cloudfront_policy"
 	ReqMetaCloudFrontSignature     = "cloudfront_signature"
 	ReqMetaCloudFrontKeyPairId     = "cloudfront_key_pair_id"
 	ReqMetaCloudFrontViewerAddress = "cloudfront_viewer_address"
 	ReqMetaHost                    = "host"
+	ReqMetaRawHost                 = "raw_host"
 )
 
 const (
 	RspMetaETag        = "etag"
 	RspMetaContentType = "content_type"
 	RspMetaContent     = "content"
+	RspMetaRedirect    = "redirect"
+	RspMetaPath        = "path"
+	RspMetaError       = "error"
+	RspMetaURL         = "url"
 )
 
 type (
@@ -165,23 +171,6 @@ func (e *Engine) API(c *gin.Context) {
 		return
 	}
 
-	// redirect
-	rsp := c.GetString(ResponseContext)
-	if strings.HasPrefix(rsp, "http://") || strings.HasPrefix(rsp, "https://") {
-		c.Redirect(http.StatusTemporaryRedirect, rsp)
-		c.Abort()
-		return
-	} else if strings.HasPrefix(rsp, "path://") {
-		c.Request.URL.Path = "/" + strings.TrimPrefix(rsp, "path://")
-		e.HandleContext(c)
-		c.Abort()
-		return
-	} else if strings.HasPrefix(rsp, "error://") {
-		c.String(http.StatusInternalServerError, strings.TrimPrefix(rsp, "error://"))
-		c.Abort()
-		return
-	}
-
 	// response
 	if c.GetBool(DebugContext) {
 		c.String(http.StatusOK, e.formatDebug(c))
@@ -196,7 +185,56 @@ func (e *Engine) API(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
-		contentType, rspBody := e.parseRspMeta(c)
+		rspMeta := c.GetStringMap(ResponseMetaContext)
+		rspBody := c.GetString(ResponseContext)
+		contentType := "application/json"
+
+		if rspMeta != nil {
+			// url meta: parse scheme to determine action
+			if u, ok := rspMeta[RspMetaURL]; ok && u != nil && u != "" {
+				url := fmt.Sprintf("%v", u)
+				if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+					c.Redirect(http.StatusTemporaryRedirect, url)
+					c.Abort()
+					return
+				} else if after, found := strings.CutPrefix(url, "path://"); found {
+					c.Request.URL.Path = "/" + strings.TrimLeft(after, "/")
+					e.HandleContext(c)
+					c.Abort()
+					return
+				} else if after, found := strings.CutPrefix(url, "error://"); found {
+					c.String(http.StatusInternalServerError, after)
+					c.Abort()
+					return
+				}
+			}
+			if r, ok := rspMeta[RspMetaRedirect]; ok && r != nil && r != "" {
+				c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%v", r))
+				c.Abort()
+				return
+			}
+			if p, ok := rspMeta[RspMetaPath]; ok && p != nil && p != "" {
+				c.Request.URL.Path = "/" + strings.TrimLeft(fmt.Sprintf("%v", p), "/")
+				e.HandleContext(c)
+				c.Abort()
+				return
+			}
+			if e, ok := rspMeta[RspMetaError]; ok && e != nil && e != "" {
+				c.String(http.StatusInternalServerError, fmt.Sprintf("%v", e))
+				c.Abort()
+				return
+			}
+			if etag, ok := rspMeta[RspMetaETag]; ok && etag != nil && etag != "" {
+				c.Header("ETag", fmt.Sprintf("%v", etag))
+			}
+			if ct, ok := rspMeta[RspMetaContentType]; ok && ct != nil && ct != "" {
+				contentType = fmt.Sprintf("%v", ct)
+			}
+			if content, ok := rspMeta[RspMetaContent]; ok && content != nil && content != "" {
+				rspBody = fmt.Sprintf("%v", content)
+			}
+		}
+
 		c.Data(http.StatusOK, contentType, []byte(rspBody))
 		c.Abort()
 		return
@@ -342,12 +380,14 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	meta[ReqMetaXForwardedFor] = c.Request.Header.Get("X-Forwarded-For")
 	meta[ReqMetaXForwardedPort] = c.Request.Header.Get("X-Forwarded-Port")
 	meta[ReqMetaXForwardedProto] = c.Request.Header.Get("X-Forwarded-Proto")
+	meta[ReqMetaXForwardedHost] = c.Request.Header.Get("X-Forwarded-Host")
 	meta[ReqMetaRemoteAddr] = c.Request.RemoteAddr
 	meta[ReqMetaCloudFrontPolicy] = c.Request.Header.Get("CloudFront-Policy")
 	meta[ReqMetaCloudFrontSignature] = c.Request.Header.Get("CloudFront-Signature")
 	meta[ReqMetaCloudFrontKeyPairId] = c.Request.Header.Get("CloudFront-Key-Pair-Id")
 	meta[ReqMetaCloudFrontViewerAddress] = c.Request.Header.Get("CloudFront-Viewer-Address")
-	meta[ReqMetaHost] = c.Request.Header.Get("Host")
+	meta[ReqMetaHost] = c.Request.Host
+	meta[ReqMetaRawHost] = c.Request.Header.Get("Host")
 
 	return meta
 }
@@ -670,36 +710,4 @@ func (e *Engine) doDebug(f func()) (stdout string, stderr string, err error) {
 	}
 
 	return stdoutBuf.String(), stderrBuf.String(), nil
-}
-
-// parseRspMeta applies response meta and sends the response
-// Rules:
-// - If content_type is empty: default to application/json
-// - If content_type has value but content is empty: only override Content-Type header
-// - If content has value: override the response body with content
-func (e *Engine) parseRspMeta(c *gin.Context) (string, string) {
-	respMeta := c.GetStringMap(ResponseMetaContext)
-	rspBody := c.GetString(ResponseContext)
-
-	// Default content type
-	contentType := "application/json"
-
-	if respMeta != nil {
-		// Apply ETag header
-		if etag, ok := respMeta[RspMetaETag]; ok && etag != nil && etag != "" {
-			c.Header("ETag", fmt.Sprintf("%v", etag))
-		}
-
-		// Check content_type
-		if ct, ok := respMeta[RspMetaContentType]; ok && ct != nil && ct != "" {
-			contentType = fmt.Sprintf("%v", ct)
-		}
-
-		// Check content - if has value, override response body
-		if content, ok := respMeta[RspMetaContent]; ok && content != nil && content != "" {
-			rspBody = fmt.Sprintf("%v", content)
-		}
-	}
-
-	return contentType, rspBody
 }
