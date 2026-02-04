@@ -93,7 +93,15 @@ func (e *Engine) HeaderLink(c *gin.Context) {
 }
 
 func (e *Engine) StaticLink(c *gin.Context) {
-	if dstPath, ok := e.StaticLinkMap[c.Request.URL.Path]; ok {
+	path := c.Request.URL.Path
+	for strings.Contains(path, "//") {
+		path = strings.ReplaceAll(path, "//", "/")
+	}
+	path = strings.TrimRight(path, "/")
+	if path == "" {
+		path = "/"
+	}
+	if dstPath, ok := e.StaticLinkMap[path]; ok {
 		c.Request.URL.Path = dstPath
 		e.HandleContext(c)
 		c.Abort()
