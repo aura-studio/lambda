@@ -69,7 +69,7 @@ func (e *Engine) InstallHandlers() {
 	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
 	e.HandleAllMethods("/meta/*path", e.Meta)
 	e.HandleAllMethods("/_/meta/*path", e.Debug, e.Meta)
-	e.HandleAllMethods("/*path", e.PageNotFound)
+	e.NoRoute(e.PageNotFound)
 	e.NoMethod(e.MethodNotAllowed)
 }
 
@@ -300,6 +300,19 @@ func (e *Engine) Meta(c *gin.Context) {
 }
 
 func (e *Engine) PageNotFound(c *gin.Context) {
+	e.HeaderLink(c)
+	if c.IsAborted() {
+		return
+	}
+	e.StaticLink(c)
+	if c.IsAborted() {
+		return
+	}
+	e.PrefixLink(c)
+	if c.IsAborted() {
+		return
+	}
+
 	if e.PageNotFoundPath != "" {
 		c.Request.URL.Path = e.PageNotFoundPath
 		e.HandleContext(c)
