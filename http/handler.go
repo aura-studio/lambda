@@ -69,7 +69,7 @@ func (e *Engine) InstallHandlers() {
 	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
 	e.HandleAllMethods("/meta/*path", e.Meta)
 	e.HandleAllMethods("/_/meta/*path", e.Debug, e.Meta)
-	e.NoRoute(e.PageNotFound)
+	e.HandleAllMethods("/*path", e.PageNotFound)
 	e.NoMethod(e.MethodNotAllowed)
 }
 
