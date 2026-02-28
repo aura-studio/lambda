@@ -18,20 +18,20 @@ import (
 )
 
 const (
-	HeaderContext       = "header"
-	PathContext         = "path"
-	RequestContext      = "request"
-	ResponseContext     = "response"
-	RequestMetaContext  = "request_meta"
-	ResponseMetaContext = "response_meta"
-	WireRequestContext  = "wire_request"
-	WireResponseContext = "wire_response"
-	ErrorContext        = "error"
-	PanicContext        = "panic"
-	DebugContext        = "debug"
-	StdoutContext       = "stdout"
-	StderrContext       = "stderr"
-	ProcessorContext    = "processor"
+	GinContextHeader       = "header"
+	GinContextPath         = "path"
+	GinContextRequest      = "request"
+	GinContextResponse     = "response"
+	GinContextRequestMeta  = "request_meta"
+	GinContextResponseMeta = "response_meta"
+	GinContextWireRequest  = "wire_request"
+	GinContextWireResponse = "wire_response"
+	GinContextError        = "error"
+	GinContextPanic        = "panic"
+	GinContextDebug        = "debug"
+	GinContextStdout       = "stdout"
+	GinContextStderr       = "stderr"
+	GinContextProcessor    = "processor"
 )
 
 const (
@@ -167,38 +167,38 @@ func (e *Engine) OK(c *gin.Context) {
 }
 
 func (e *Engine) Debug(c *gin.Context) {
-	c.Set(DebugContext, true)
+	c.Set(GinContextDebug, true)
 }
 
 func (e *Engine) API(c *gin.Context) {
 	// path
-	c.Set(PathContext, c.Param("path"))
+	c.Set(GinContextPath, c.Param("path"))
 
 	// header
-	c.Set(HeaderContext, c.Request.Header)
+	c.Set(GinContextHeader, c.Request.Header)
 
 	// meta
-	c.Set(RequestMetaContext, e.genReqMeta(c))
+	c.Set(GinContextRequestMeta, e.genReqMeta(c))
 
 	// request
 	switch c.Request.Method {
 	case http.MethodGet, "": // empty method treated as GET
-		c.Set(RequestContext, e.genGetReq(c))
+		c.Set(GinContextRequest, e.genGetReq(c))
 	case http.MethodPost:
-		c.Set(RequestContext, e.genPostReq(c))
+		c.Set(GinContextRequest, e.genPostReq(c))
 	default:
-		c.Set(RequestContext, "")
+		c.Set(GinContextRequest, "")
 	}
 
 	// processor
-	if c.GetBool(DebugContext) {
-		c.Set(ProcessorContext, e.debugProcessor)
+	if c.GetBool(GinContextDebug) {
+		c.Set(GinContextProcessor, e.debugProcessor)
 	} else {
-		c.Set(ProcessorContext, e.safeProcessor)
+		c.Set(GinContextProcessor, e.safeProcessor)
 	}
 
 	// handle
-	if v, ok := c.Get(ProcessorContext); ok {
+	if v, ok := c.Get(GinContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
 		c.String(http.StatusInternalServerError, "No processor")
@@ -207,21 +207,21 @@ func (e *Engine) API(c *gin.Context) {
 	}
 
 	// response
-	if c.GetBool(DebugContext) {
+	if c.GetBool(GinContextDebug) {
 		c.String(http.StatusOK, e.formatDebug(c))
 		c.Abort()
 		return
-	} else if v, ok := c.Get(PanicContext); ok && v != nil {
+	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
 		c.String(http.StatusInternalServerError, v.(error).Error())
 		c.Abort()
 		return
-	} else if v, ok := c.Get(ErrorContext); ok && v != nil {
+	} else if v, ok := c.Get(GinContextError); ok && v != nil {
 		c.String(http.StatusInternalServerError, v.(error).Error())
 		c.Abort()
 		return
 	} else {
-		rspMeta := c.GetStringMap(ResponseMetaContext)
-		rspBody := c.GetString(ResponseContext)
+		rspMeta := c.GetStringMap(GinContextResponseMeta)
+		rspBody := c.GetString(GinContextResponse)
 		contentType := "application/json"
 
 		if rspMeta != nil {
@@ -278,30 +278,30 @@ func (e *Engine) API(c *gin.Context) {
 
 func (e *Engine) WAPI(c *gin.Context) {
 	// path
-	c.Set(PathContext, c.Param("path"))
+	c.Set(GinContextPath, c.Param("path"))
 
 	// header
-	c.Set(HeaderContext, c.Request.Header)
+	c.Set(GinContextHeader, c.Request.Header)
 
 	// request
 	switch c.Request.Method {
 	case http.MethodGet, "": // empty method treated as GET
-		c.Set(RequestContext, e.genGetReq(c))
+		c.Set(GinContextRequest, e.genGetReq(c))
 	case http.MethodPost:
-		c.Set(RequestContext, e.genPostReq(c))
+		c.Set(GinContextRequest, e.genPostReq(c))
 	default:
-		c.Set(RequestContext, "")
+		c.Set(GinContextRequest, "")
 	}
 
 	// processor
-	if c.GetBool(DebugContext) {
-		c.Set(ProcessorContext, e.debugWireProcessor)
+	if c.GetBool(GinContextDebug) {
+		c.Set(GinContextProcessor, e.debugWireProcessor)
 	} else {
-		c.Set(ProcessorContext, e.safeWireProcessor)
+		c.Set(GinContextProcessor, e.safeWireProcessor)
 	}
 
 	// handle
-	if v, ok := c.Get(ProcessorContext); ok {
+	if v, ok := c.Get(GinContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
 		c.String(http.StatusInternalServerError, "No processor")
@@ -310,20 +310,20 @@ func (e *Engine) WAPI(c *gin.Context) {
 	}
 
 	// response
-	if c.GetBool(DebugContext) {
+	if c.GetBool(GinContextDebug) {
 		c.String(http.StatusOK, e.formatDebug(c))
 		c.Abort()
 		return
-	} else if v, ok := c.Get(PanicContext); ok && v != nil {
+	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
 		c.String(http.StatusInternalServerError, v.(error).Error())
 		c.Abort()
 		return
-	} else if v, ok := c.Get(ErrorContext); ok && v != nil {
+	} else if v, ok := c.Get(GinContextError); ok && v != nil {
 		c.String(http.StatusInternalServerError, v.(error).Error())
 		c.Abort()
 		return
 	} else {
-		response, err := http.ReadResponse(bufio.NewReader(strings.NewReader(c.GetString(WireResponseContext))), c.Request)
+		response, err := http.ReadResponse(bufio.NewReader(strings.NewReader(c.GetString(GinContextWireResponse))), c.Request)
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			c.Abort()
@@ -342,17 +342,17 @@ func (e *Engine) WAPI(c *gin.Context) {
 
 func (e *Engine) Meta(c *gin.Context) {
 	// path
-	c.Set(PathContext, c.Param("path"))
+	c.Set(GinContextPath, c.Param("path"))
 
 	// processor
-	if c.GetBool(DebugContext) {
-		c.Set(ProcessorContext, e.debugMetaProcessor)
+	if c.GetBool(GinContextDebug) {
+		c.Set(GinContextProcessor, e.debugMetaProcessor)
 	} else {
-		c.Set(ProcessorContext, e.safeMetaProcessor)
+		c.Set(GinContextProcessor, e.safeMetaProcessor)
 	}
 
 	// handle
-	if v, ok := c.Get(ProcessorContext); ok {
+	if v, ok := c.Get(GinContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
 		c.String(http.StatusInternalServerError, "No processor")
@@ -361,20 +361,20 @@ func (e *Engine) Meta(c *gin.Context) {
 	}
 
 	// response
-	if c.GetBool(DebugContext) {
+	if c.GetBool(GinContextDebug) {
 		c.String(http.StatusOK, e.formatDebug(c))
 		c.Abort()
 		return
-	} else if v, ok := c.Get(PanicContext); ok && v != nil {
+	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
 		c.String(http.StatusInternalServerError, v.(error).Error())
 		c.Abort()
 		return
-	} else if v, ok := c.Get(ErrorContext); ok && v != nil {
+	} else if v, ok := c.Get(GinContextError); ok && v != nil {
 		c.String(http.StatusInternalServerError, v.(error).Error())
 		c.Abort()
 		return
 	} else {
-		c.String(http.StatusOK, c.GetString(ResponseContext))
+		c.String(http.StatusOK, c.GetString(GinContextResponse))
 		c.Abort()
 		return
 	}
@@ -462,13 +462,13 @@ func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
 		err     error
 	)
 	defer func() {
-		c.Set(WireRequestContext, wireReq)
-		c.Set(ResponseContext, rsp)
-		c.Set(WireResponseContext, wireRsp)
-		c.Set(ErrorContext, err)
+		c.Set(GinContextWireRequest, wireReq)
+		c.Set(GinContextResponse, rsp)
+		c.Set(GinContextWireResponse, wireRsp)
+		c.Set(GinContextError, err)
 	}()
 
-	path := c.GetString(PathContext)
+	path := c.GetString(GinContextPath)
 
 	var buf bytes.Buffer
 	err = c.Request.Write(&buf)
@@ -498,7 +498,7 @@ func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
 }
 
 func (e *Engine) safeWireProcessor(c *gin.Context, f LocalHandler) {
-	c.Set(PanicContext, e.doSafe(func() {
+	c.Set(GinContextPanic, e.doSafe(func() {
 		e.doWireProcessor(c, f)
 	}))
 }
@@ -507,15 +507,15 @@ func (e *Engine) debugWireProcessor(c *gin.Context, f LocalHandler) {
 	stdout, stderr, panicErr := e.doDebug(func() {
 		e.doWireProcessor(c, f)
 	})
-	c.Set(StdoutContext, stdout)
-	c.Set(StderrContext, stderr)
-	c.Set(PanicContext, panicErr)
+	c.Set(GinContextStdout, stdout)
+	c.Set(GinContextStderr, stderr)
+	c.Set(GinContextPanic, panicErr)
 }
 
 func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
-	path := c.GetString(PathContext)
-	req := c.GetString(RequestContext)
-	reqMeta := c.GetStringMap(RequestMetaContext)
+	path := c.GetString(GinContextPath)
+	req := c.GetString(GinContextRequest)
+	reqMeta := c.GetStringMap(GinContextRequestMeta)
 	if gjson.Valid(req) && !gjson.Get(req, "__meta__").Exists() {
 		req, _ = sjson.Set(req, "__meta__", reqMeta)
 	}
@@ -526,15 +526,15 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 			rspMeta[key.String()] = value.Value()
 			return true
 		})
-		c.Set(ResponseMetaContext, rspMeta)
+		c.Set(GinContextResponseMeta, rspMeta)
 		rsp, _ = sjson.Delete(rsp, "__meta__")
 	}
-	c.Set(ResponseContext, rsp)
-	c.Set(ErrorContext, err)
+	c.Set(GinContextResponse, rsp)
+	c.Set(GinContextError, err)
 }
 
 func (e *Engine) safeProcessor(c *gin.Context, f LocalHandler) {
-	c.Set(PanicContext, e.doSafe(func() {
+	c.Set(GinContextPanic, e.doSafe(func() {
 		e.doProcessor(c, f)
 	}))
 }
@@ -543,20 +543,20 @@ func (e *Engine) debugProcessor(c *gin.Context, f LocalHandler) {
 	stdout, stderr, panicErr := e.doDebug(func() {
 		e.doProcessor(c, f)
 	})
-	c.Set(StdoutContext, stdout)
-	c.Set(StderrContext, stderr)
-	c.Set(PanicContext, panicErr)
+	c.Set(GinContextStdout, stdout)
+	c.Set(GinContextStderr, stderr)
+	c.Set(GinContextPanic, panicErr)
 }
 
 func (e *Engine) doMetaProcessor(c *gin.Context) {
-	path := c.GetString(PathContext)
+	path := c.GetString(GinContextPath)
 	rsp, err := e.meta(path)
-	c.Set(ResponseContext, rsp)
-	c.Set(ErrorContext, err)
+	c.Set(GinContextResponse, rsp)
+	c.Set(GinContextError, err)
 }
 
 func (e *Engine) safeMetaProcessor(c *gin.Context, f LocalHandler) {
-	c.Set(PanicContext, e.doSafe(func() {
+	c.Set(GinContextPanic, e.doSafe(func() {
 		e.doMetaProcessor(c)
 	}))
 }
@@ -565,9 +565,9 @@ func (e *Engine) debugMetaProcessor(c *gin.Context, f LocalHandler) {
 	stdout, stderr, panicErr := e.doDebug(func() {
 		e.doMetaProcessor(c)
 	})
-	c.Set(StdoutContext, stdout)
-	c.Set(StderrContext, stderr)
-	c.Set(PanicContext, panicErr)
+	c.Set(GinContextStdout, stdout)
+	c.Set(GinContextStderr, stderr)
+	c.Set(GinContextPanic, panicErr)
 }
 
 func (e *Engine) handle(path string, req string) (string, error) {
@@ -615,47 +615,47 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	buf.WriteString(c.Request.URL.Host)
 	buf.WriteString("\n")
 	buf.WriteString(`Path: `)
-	buf.WriteString(c.GetString(PathContext))
+	buf.WriteString(c.GetString(GinContextPath))
 	buf.WriteString("\n")
 	buf.WriteString(`Header: `)
-	headerBytes, _ := json.Marshal(c.GetString(HeaderContext))
+	headerBytes, _ := json.Marshal(c.GetString(GinContextHeader))
 	buf.WriteString(string(headerBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Request Meta: `)
-	reqMetaBytes, _ := json.Marshal(c.GetString(RequestMetaContext))
+	reqMetaBytes, _ := json.Marshal(c.GetString(GinContextRequestMeta))
 	buf.WriteString(string(reqMetaBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Response Meta: `)
-	rspMetaBytes, _ := json.Marshal(c.GetStringMap(ResponseMetaContext))
+	rspMetaBytes, _ := json.Marshal(c.GetStringMap(GinContextResponseMeta))
 	buf.WriteString(string(rspMetaBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Stdout: `)
-	buf.WriteString(c.GetString(StdoutContext))
+	buf.WriteString(c.GetString(GinContextStdout))
 	buf.WriteString("\n")
 	buf.WriteString(`Stderr: `)
-	buf.WriteString(c.GetString(StderrContext))
+	buf.WriteString(c.GetString(GinContextStderr))
 	buf.WriteString("\n")
 	buf.WriteString(`Error: `)
-	if v, ok := c.Get(ErrorContext); ok && v != nil {
+	if v, ok := c.Get(GinContextError); ok && v != nil {
 		buf.WriteString(v.(error).Error())
 	}
 	buf.WriteString("\n")
 	buf.WriteString(`Panic: `)
-	if v, ok := c.Get(PanicContext); ok && v != nil {
+	if v, ok := c.Get(GinContextPanic); ok && v != nil {
 		buf.WriteString(v.(error).Error())
 	}
 	buf.WriteString("\n")
 	buf.WriteString(`Request: `)
-	buf.WriteString(c.GetString(RequestContext))
+	buf.WriteString(c.GetString(GinContextRequest))
 	buf.WriteString("\n")
 	buf.WriteString(`Response: `)
-	buf.WriteString(c.GetString(ResponseContext))
+	buf.WriteString(c.GetString(GinContextResponse))
 	buf.WriteString("\n")
 	buf.WriteString(`Wire Request: `)
-	buf.WriteString(c.GetString(WireRequestContext))
+	buf.WriteString(c.GetString(GinContextWireRequest))
 	buf.WriteString("\n")
 	buf.WriteString(`Wire Response: `)
-	buf.WriteString(c.GetString(WireResponseContext))
+	buf.WriteString(c.GetString(GinContextWireResponse))
 	buf.WriteString("\n")
 	return buf.String()
 }
