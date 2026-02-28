@@ -46,6 +46,7 @@ const (
 	ReqMetaHost                    = "host"
 	ReqMetaRawHost                 = "raw_host"
 	ReqMetaPath                    = "path"
+	ReqMetaToken                   = "token"
 )
 
 const (
@@ -66,7 +67,7 @@ type (
 var methods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions}
 
 func (e *Engine) InstallHandlers() {
-	e.Use(e.HeaderLink, e.StaticLink, e.PrefixLink)
+	e.Use(e.HeaderLink, e.TokenLink, e.StaticLink, e.PrefixLink)
 
 	e.HandleAllMethods("/", e.OK)
 	e.HandleAllMethods("/health-check", e.OK)
@@ -92,6 +93,30 @@ func (e *Engine) HeaderLink(c *gin.Context) {
 			strs := []string{strings.TrimRight(prefix, "/"), strings.TrimLeft(headerLink[0], "/")}
 			c.Request.URL.Path = strings.Join(strs, "/")
 			c.Request.Header.Del(key)
+			e.HandleContext(c)
+			c.Abort()
+			return
+		}
+	}
+}
+
+func (e *Engine) TokenLink(c *gin.Context) {
+	path := c.Request.URL.Path
+	for srcPrefix, dstPath := range e.TokenLinkMap {
+		if strings.HasPrefix(path, srcPrefix+"/") {
+			token := strings.TrimPrefix(path, srcPrefix+"/")
+			token = strings.TrimRight(token, "/")
+			if token != "" {
+				c.Set(ReqMetaToken, token)
+				c.Request.URL.Path = dstPath
+				e.HandleContext(c)
+				c.Abort()
+				return
+			}
+		}
+		if path == srcPrefix {
+			c.Set(ReqMetaToken, "")
+			c.Request.URL.Path = dstPath
 			e.HandleContext(c)
 			c.Abort()
 			return
@@ -390,6 +415,7 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	meta[ReqMetaHost] = c.Request.Host
 	meta[ReqMetaRawHost] = c.Request.Header.Get("Host")
 	meta[ReqMetaPath] = c.Request.URL.Path
+	meta[ReqMetaToken], _ = c.Get(ReqMetaToken)
 
 	return meta
 }

@@ -20,6 +20,7 @@ type Options struct {
 	StaticLinkMap    map[string]string
 	PrefixLinkMap    map[string]string
 	HeaderLinkMap    map[string]string
+	TokenLinkMap     map[string]string
 	PageNotFoundPath string
 }
 
@@ -30,6 +31,7 @@ var defaultOptions = &Options{
 	StaticLinkMap:    map[string]string{},
 	PrefixLinkMap:    map[string]string{},
 	HeaderLinkMap:    map[string]string{},
+	TokenLinkMap:     map[string]string{},
 	PageNotFoundPath: "",
 }
 
@@ -87,5 +89,11 @@ func WithHeaderLinkKey(key string, prefix string) Option {
 func WithPageNotFoundPath(path string) Option {
 	return HttpOption(func(o *Options) {
 		o.PageNotFoundPath = path
+	})
+}
+
+func WithTokenLink(srcPrefix string, dstPath string) Option {
+	return HttpOption(func(o *Options) {
+		o.TokenLinkMap[srcPrefix] = dstPath
 	})
 }
