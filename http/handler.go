@@ -45,6 +45,7 @@ const (
 	ReqMetaCloudFrontViewerAddress = "cloudfront_viewer_address"
 	ReqMetaHost                    = "host"
 	ReqMetaRawHost                 = "raw_host"
+	ReqMetaPath                    = "path"
 )
 
 const (
@@ -388,6 +389,7 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	meta[ReqMetaCloudFrontViewerAddress] = c.Request.Header.Get("CloudFront-Viewer-Address")
 	meta[ReqMetaHost] = c.Request.Host
 	meta[ReqMetaRawHost] = c.Request.Header.Get("Host")
+	meta[ReqMetaPath] = c.Request.URL.Path
 
 	return meta
 }
