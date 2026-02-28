@@ -3,6 +3,7 @@ package http
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,6 +32,10 @@ const (
 	StdoutContext       = "stdout"
 	StderrContext       = "stderr"
 	ProcessorContext    = "processor"
+)
+
+const (
+	ReqContextToken = "token"
 )
 
 const (
@@ -101,21 +106,25 @@ func (e *Engine) HeaderLink(c *gin.Context) {
 }
 
 func (e *Engine) TokenLink(c *gin.Context) {
+	if v := c.Request.Context().Value(ReqContextToken); v != nil {
+		return
+	}
 	path := c.Request.URL.Path
 	for srcPrefix, dstPath := range e.TokenLinkMap {
-		if strings.HasPrefix(path, srcPrefix+"/") {
-			token := strings.TrimPrefix(path, srcPrefix+"/")
+		prefix := "/" + strings.Trim(srcPrefix, "/")
+		if strings.HasPrefix(path, prefix+"/") {
+			token := strings.TrimPrefix(path, prefix+"/")
 			token = strings.TrimRight(token, "/")
 			if token != "" {
-				c.Set(ReqMetaToken, token)
+				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ReqContextToken, token))
 				c.Request.URL.Path = dstPath
 				e.HandleContext(c)
 				c.Abort()
 				return
 			}
 		}
-		if path == srcPrefix {
-			c.Set(ReqMetaToken, "")
+		if path == prefix {
+			c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ReqContextToken, ""))
 			c.Request.URL.Path = dstPath
 			e.HandleContext(c)
 			c.Abort()
@@ -415,7 +424,7 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	meta[ReqMetaHost] = c.Request.Host
 	meta[ReqMetaRawHost] = c.Request.Header.Get("Host")
 	meta[ReqMetaPath] = c.Request.URL.Path
-	meta[ReqMetaToken], _ = c.Get(ReqMetaToken)
+	meta[ReqMetaToken] = c.Request.Context().Value(ReqContextToken)
 
 	return meta
 }
