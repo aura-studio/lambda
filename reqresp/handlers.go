@@ -168,3 +168,31 @@ func errString(err error) string {
 	}
 	return err.Error()
 }
+
+
+// handle 解析路径并调用 Dynamic.GetPackage
+func (e *Engine) handle(path string, req string) (string, error) {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid path: %q", path)
+	}
+	pkg := parts[0]
+	version := parts[1]
+
+	tunnel, err := e.GetPackage(pkg, version)
+	if err != nil {
+		return "", err
+	}
+
+	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
+	rsp := tunnel.Invoke(route, req)
+
+	// parse response prefix protocol
+	if after, found := strings.CutPrefix(rsp, "error://"); found {
+		return "", fmt.Errorf("%s", after)
+	}
+	if after, found := strings.CutPrefix(rsp, "data://"); found {
+		return after, nil
+	}
+	return rsp, nil
+}

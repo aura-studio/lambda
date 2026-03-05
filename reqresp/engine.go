@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"sync/atomic"
 
 	"github.com/aura-studio/lambda/dynamic"
@@ -107,22 +106,4 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 	}
 
 	return proto.Marshal(resp)
-}
-
-// handle 解析路径并调用 Dynamic.GetPackage
-func (e *Engine) handle(path string, req string) (string, error) {
-	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid path: %q", path)
-	}
-	pkg := parts[0]
-	version := parts[1]
-
-	tunnel, err := e.GetPackage(pkg, version)
-	if err != nil {
-		return "", err
-	}
-
-	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
-	return tunnel.Invoke(route, req), nil
 }
