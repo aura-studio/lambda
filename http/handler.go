@@ -477,7 +477,7 @@ func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
 	}
 	wireReq = buf.String()
 
-	wireRsp, err = e.handle(path, wireReq)
+	wireRsp, err = f(path, wireReq)
 	if err != nil {
 		return
 	}
