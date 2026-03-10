@@ -13,10 +13,10 @@ func (f OptionFunc) Apply(o *Options) { f(o) }
 type RunMode string
 
 const (
-	RunModeStrict    RunMode = "strict"
-	RunModePartial   RunMode = "partial"
-	RunModeBatch     RunMode = "batch"
-	RunModeReentrant RunMode = "reentrant"
+	RunModeStrict    RunMode = "strict"    // 遇到错误时，当前及后续所有消息标记为失败，部分重试
+	RunModePartial   RunMode = "partial"   // 遇到错误时，仅将失败消息标记为失败并重试，其余继续处理
+	RunModeBatch     RunMode = "batch"     // 遇到错误时，直接返回 error，整批消息全部重试
+	RunModeReentrant RunMode = "reentrant" // 遇到错误时，记录最后一个错误，继续处理剩余消息，最终返回该错误触发整批重试
 )
 
 type Options struct {
