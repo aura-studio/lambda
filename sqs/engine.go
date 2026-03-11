@@ -3,6 +3,7 @@ package sqs
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sync/atomic"
@@ -120,21 +121,23 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 
 		var request Request
 		if unmarshalErr := proto.Unmarshal(b, &request); unmarshalErr != nil {
-			log.Printf("[SQS] Unmarshal message %s body error: %v", msg.MessageId, unmarshalErr)
-			switch e.RunMode {
-			case RunModeStrict:
-				for j := i; j < len(ev.Records); j++ {
-					resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: ev.Records[j].MessageId})
+			if jsonErr := json.Unmarshal(b, &request); jsonErr != nil {
+				log.Printf("[SQS] Unmarshal message %s body error: proto: %v, json: %v", msg.MessageId, unmarshalErr, jsonErr)
+				switch e.RunMode {
+				case RunModeStrict:
+					for j := i; j < len(ev.Records); j++ {
+						resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: ev.Records[j].MessageId})
+					}
+					return resp, nil
+				case RunModePartial:
+					resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
+					continue
+				case RunModeBatch:
+					return resp, jsonErr
+				case RunModeReentrant:
+					err = jsonErr
+					continue
 				}
-				return resp, nil
-			case RunModePartial:
-				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
-				continue
-			case RunModeBatch:
-				return resp, unmarshalErr
-			case RunModeReentrant:
-				err = unmarshalErr
-				continue
 			}
 		}
 
