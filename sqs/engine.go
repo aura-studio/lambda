@@ -94,6 +94,10 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			continue
 		}
 
+		if e.DebugMode {
+			log.Printf("[SQS] Message %s body: %s", msg.MessageId, msg.Body)
+		}
+
 		b, decodeErr := base64.StdEncoding.DecodeString(msg.Body)
 		if decodeErr != nil {
 			log.Printf("[SQS] Decode message %s body error: %v", msg.MessageId, decodeErr)

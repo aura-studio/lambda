@@ -69,7 +69,6 @@ func (c *Client) listener() {
 	}
 }
 
-
 func (c *Client) handleIncomingMessage(msg types.Message) {
 	if msg.Body == nil {
 		return
@@ -128,6 +127,25 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*sqs.Re
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+// Send sends a message synchronously and returns immediately without waiting for a response.
+func (c *Client) Send(ctx context.Context, path string, payload []byte) error {
+	request := &sqs.Request{
+		Path:    path,
+		Payload: payload,
+	}
+
+	b, err := proto.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.SQSClient.SendMessage(ctx, &awssqs.SendMessageInput{
+		QueueUrl:    &c.RequestSqsId,
+		MessageBody: aws.String(base64.StdEncoding.EncodeToString(b)),
+	})
+	return err
 }
 
 func (c *Client) CallAsync(ctx context.Context, path string, payload []byte, callback func(*sqs.Response, error)) {
