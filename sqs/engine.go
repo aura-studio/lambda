@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/aura-studio/lambda/dynamic"
-	events "github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -89,18 +89,14 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 	_ = ctx
 	for i, msg := range ev.Records {
 		if e.running.Load() == 0 {
-			if e.DebugMode {
-				log.Printf("[SQS] Engine stopped, message %s failed", msg.MessageId)
-			}
+			log.Printf("[SQS] Engine stopped, message %s failed", msg.MessageId)
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
 
 		b, decodeErr := base64.StdEncoding.DecodeString(msg.Body)
 		if decodeErr != nil {
-			if e.DebugMode {
-				log.Printf("[SQS] Decode message %s body error: %v", msg.MessageId, decodeErr)
-			}
+			log.Printf("[SQS] Decode message %s body error: %v", msg.MessageId, decodeErr)
 			switch e.RunMode {
 			case RunModeStrict:
 				for j := i; j < len(ev.Records); j++ {
@@ -120,9 +116,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 
 		var request Request
 		if unmarshalErr := proto.Unmarshal(b, &request); unmarshalErr != nil {
-			if e.DebugMode {
-				log.Printf("[SQS] Unmarshal message %s body error: %v", msg.MessageId, unmarshalErr)
-			}
+			log.Printf("[SQS] Unmarshal message %s body error: %v", msg.MessageId, unmarshalErr)
 			switch e.RunMode {
 			case RunModeStrict:
 				for j := i; j < len(ev.Records); j++ {
@@ -164,9 +158,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			log.Printf("[SQS] Response: %s %s", c.Path, c.Response)
 		}
 		if c.Err != nil {
-			if e.DebugMode {
-				log.Printf("[SQS] Dispatch message %s error: %v", msg.MessageId, c.Err)
-			}
+			log.Printf("[SQS] Dispatch message %s error: %v", msg.MessageId, c.Err)
 
 			switch e.RunMode {
 			case RunModeStrict:
@@ -191,9 +183,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 		}
 		// When a response is requested, RequestSqsId must be present.
 		if request.RequestSqsId == "" {
-			if e.DebugMode {
-				log.Printf("[SQS] RequestSqsId is empty for message %s", msg.MessageId)
-			}
+			log.Printf("[SQS] RequestSqsId is empty for message %s", msg.MessageId)
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
@@ -206,9 +196,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 		}
 		b, err = proto.Marshal(rsp)
 		if err != nil {
-			if e.DebugMode {
-				log.Printf("[SQS] Marshal response for message %s error: %v", msg.MessageId, err)
-			}
+			log.Printf("[SQS] Marshal response for message %s error: %v", msg.MessageId, err)
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
@@ -219,9 +207,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 				QueueUrl:    &request.ResponseSqsId,
 			})
 			if sendErr != nil {
-				if e.DebugMode {
-					log.Printf("[SQS] Send response for message %s error: %v", msg.MessageId, sendErr)
-				}
+				log.Printf("[SQS] Send response for message %s error: %v", msg.MessageId, sendErr)
 				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 				continue
 			}
