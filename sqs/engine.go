@@ -112,6 +112,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			case RunModeBatch:
 				return resp, unmarshalErr
 			case RunModeReentrant:
+				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 				err = unmarshalErr
 				continue
 			}
@@ -155,6 +156,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			case RunModeBatch:
 				return resp, c.Err
 			case RunModeReentrant:
+				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 				err = c.Err
 				continue
 			}
