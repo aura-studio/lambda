@@ -2,7 +2,7 @@ package client
 
 import (
 	"context"
-	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -12,7 +12,6 @@ import (
 	awssqs "github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/proto"
 )
 
 type Client struct {
@@ -73,12 +72,8 @@ func (c *Client) handleIncomingMessage(msg types.Message) {
 	if msg.Body == nil {
 		return
 	}
-	b, err := base64.StdEncoding.DecodeString(*msg.Body)
-	if err != nil {
-		return
-	}
 	var resp sqs.Response
-	if err := proto.Unmarshal(b, &resp); err != nil {
+	if err := json.Unmarshal([]byte(*msg.Body), &resp); err != nil {
 		return
 	}
 
@@ -101,14 +96,14 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*sqs.Re
 	c.pendingRequests.Store(correlationId, respChan)
 	defer c.pendingRequests.Delete(correlationId)
 
-	b, err := proto.Marshal(request)
+	b, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
 
 	_, err = c.SQSClient.SendMessage(ctx, &awssqs.SendMessageInput{
 		QueueUrl:    &c.RequestSqsId,
-		MessageBody: aws.String(base64.StdEncoding.EncodeToString(b)),
+		MessageBody: aws.String(string(b)),
 	})
 	if err != nil {
 		return nil, err
@@ -136,14 +131,14 @@ func (c *Client) Send(ctx context.Context, path string, payload []byte) error {
 		Payload: payload,
 	}
 
-	b, err := proto.Marshal(request)
+	b, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
 
 	_, err = c.SQSClient.SendMessage(ctx, &awssqs.SendMessageInput{
 		QueueUrl:    &c.RequestSqsId,
-		MessageBody: aws.String(base64.StdEncoding.EncodeToString(b)),
+		MessageBody: aws.String(string(b)),
 	})
 	return err
 }

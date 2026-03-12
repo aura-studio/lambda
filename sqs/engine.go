@@ -2,7 +2,6 @@ package sqs
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"google.golang.org/protobuf/proto"
 )
 
 type SQSClient interface {
@@ -99,9 +97,9 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			log.Printf("[SQS] Message %s body: %s", msg.MessageId, msg.Body)
 		}
 
-		b, decodeErr := base64.StdEncoding.DecodeString(msg.Body)
-		if decodeErr != nil {
-			log.Printf("[SQS] Decode message %s body error: %v", msg.MessageId, decodeErr)
+		var request Request
+		if unmarshalErr := json.Unmarshal([]byte(msg.Body), &request); unmarshalErr != nil {
+			log.Printf("[SQS] Unmarshal message %s body error: %v", msg.MessageId, unmarshalErr)
 			switch e.RunMode {
 			case RunModeStrict:
 				for j := i; j < len(ev.Records); j++ {
@@ -112,32 +110,10 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 				continue
 			case RunModeBatch:
-				return resp, decodeErr
+				return resp, unmarshalErr
 			case RunModeReentrant:
-				err = decodeErr
+				err = unmarshalErr
 				continue
-			}
-		}
-
-		var request Request
-		if unmarshalErr := proto.Unmarshal(b, &request); unmarshalErr != nil {
-			if jsonErr := json.Unmarshal(b, &request); jsonErr != nil {
-				log.Printf("[SQS] Unmarshal message %s body error: proto: %v, json: %v", msg.MessageId, unmarshalErr, jsonErr)
-				switch e.RunMode {
-				case RunModeStrict:
-					for j := i; j < len(ev.Records); j++ {
-						resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: ev.Records[j].MessageId})
-					}
-					return resp, nil
-				case RunModePartial:
-					resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
-					continue
-				case RunModeBatch:
-					return resp, jsonErr
-				case RunModeReentrant:
-					err = jsonErr
-					continue
-				}
 			}
 		}
 
@@ -201,16 +177,16 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			CorrelationId: request.CorrelationId,
 			Payload:       []byte(c.Response),
 		}
-		b, err = proto.Marshal(rsp)
-		if err != nil {
-			log.Printf("[SQS] Marshal response for message %s error: %v", msg.MessageId, err)
+		b, marshalErr := json.Marshal(rsp)
+		if marshalErr != nil {
+			log.Printf("[SQS] Marshal response for message %s error: %v", msg.MessageId, marshalErr)
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 			continue
 		}
 
 		if e.ReplyMode && request.ResponseSqsId != "" {
 			_, sendErr := e.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
-				MessageBody: aws.String(base64.StdEncoding.EncodeToString(b)),
+				MessageBody: aws.String(string(b)),
 				QueueUrl:    &request.ResponseSqsId,
 			})
 			if sendErr != nil {
