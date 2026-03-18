@@ -532,8 +532,16 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 	path := c.GetString(GinContextPath)
 	req := c.GetString(GinContextRequest)
 	reqMeta := c.GetStringMap(GinContextRequestMeta)
-	if gjson.Valid(req) && !gjson.Get(req, "__meta__").Exists() {
-		req, _ = sjson.Set(req, "__meta__", reqMeta)
+	if gjson.Valid(req) {
+		if !gjson.Get(req, "__meta__").Exists() {
+			req, _ = sjson.Set(req, "__meta__", reqMeta)
+		}
+	} else {
+		envelope, _ := json.Marshal(map[string]any{
+			"__meta__": reqMeta,
+			"__body__": req,
+		})
+		req = string(envelope)
 	}
 	rsp, err := f(path, req)
 	if gjson.Valid(rsp) && gjson.Get(rsp, "__meta__").Exists() {
