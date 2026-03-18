@@ -52,6 +52,8 @@ const (
 	ReqMetaRawHost                 = "raw_host"
 	ReqMetaPath                    = "path"
 	ReqMetaToken                   = "token"
+	ReqMetaTimestamp               = "timestamp"
+	ReqMetaXSign                   = "x_sign"
 )
 
 const (
@@ -425,6 +427,8 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	meta[ReqMetaRawHost] = c.Request.Header.Get("Host")
 	meta[ReqMetaPath] = c.Request.URL.Path
 	meta[ReqMetaToken] = c.Request.Context().Value(ReqContextToken)
+	meta[ReqMetaTimestamp] = c.Request.Header.Get("Timestamp")
+	meta[ReqMetaXSign] = c.Request.Header.Get("X-Sign")
 
 	return meta
 }
