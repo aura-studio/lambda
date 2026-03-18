@@ -414,21 +414,33 @@ func (e *Engine) MethodNotAllowed(c *gin.Context) {
 func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	meta := map[string]any{}
 
-	meta[ReqMetaXForwardedFor] = c.Request.Header.Get("X-Forwarded-For")
-	meta[ReqMetaXForwardedPort] = c.Request.Header.Get("X-Forwarded-Port")
-	meta[ReqMetaXForwardedProto] = c.Request.Header.Get("X-Forwarded-Proto")
-	meta[ReqMetaXForwardedHost] = c.Request.Header.Get("X-Forwarded-Host")
-	meta[ReqMetaRemoteAddr] = c.Request.RemoteAddr
-	meta[ReqMetaCloudFrontPolicy] = c.Request.Header.Get("CloudFront-Policy")
-	meta[ReqMetaCloudFrontSignature] = c.Request.Header.Get("CloudFront-Signature")
-	meta[ReqMetaCloudFrontKeyPairId] = c.Request.Header.Get("CloudFront-Key-Pair-Id")
-	meta[ReqMetaCloudFrontViewerAddress] = c.Request.Header.Get("CloudFront-Viewer-Address")
-	meta[ReqMetaHost] = c.Request.Host
-	meta[ReqMetaRawHost] = c.Request.Header.Get("Host")
-	meta[ReqMetaPath] = c.Request.URL.Path
-	meta[ReqMetaToken] = c.Request.Context().Value(ReqContextToken)
-	meta[ReqMetaTimestamp] = c.Request.Header.Get("Timestamp")
-	meta[ReqMetaXSign] = c.Request.Header.Get("X-Sign")
+	set := func(key string, value any) {
+		switch v := value.(type) {
+		case string:
+			if v != "" {
+				meta[key] = v
+			}
+		case nil:
+		default:
+			meta[key] = v
+		}
+	}
+
+	set(ReqMetaXForwardedFor, c.Request.Header.Get("X-Forwarded-For"))
+	set(ReqMetaXForwardedPort, c.Request.Header.Get("X-Forwarded-Port"))
+	set(ReqMetaXForwardedProto, c.Request.Header.Get("X-Forwarded-Proto"))
+	set(ReqMetaXForwardedHost, c.Request.Header.Get("X-Forwarded-Host"))
+	set(ReqMetaRemoteAddr, c.Request.RemoteAddr)
+	set(ReqMetaCloudFrontPolicy, c.Request.Header.Get("CloudFront-Policy"))
+	set(ReqMetaCloudFrontSignature, c.Request.Header.Get("CloudFront-Signature"))
+	set(ReqMetaCloudFrontKeyPairId, c.Request.Header.Get("CloudFront-Key-Pair-Id"))
+	set(ReqMetaCloudFrontViewerAddress, c.Request.Header.Get("CloudFront-Viewer-Address"))
+	set(ReqMetaHost, c.Request.Host)
+	set(ReqMetaRawHost, c.Request.Header.Get("Host"))
+	set(ReqMetaPath, c.Request.URL.Path)
+	set(ReqMetaToken, c.Request.Context().Value(ReqContextToken))
+	set(ReqMetaTimestamp, c.Request.Header.Get("Timestamp"))
+	set(ReqMetaXSign, c.Request.Header.Get("X-Sign"))
 
 	return meta
 }
