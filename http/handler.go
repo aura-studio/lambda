@@ -54,6 +54,7 @@ const (
 	ReqMetaToken                   = "token"
 	ReqMetaTimestamp               = "timestamp"
 	ReqMetaXSign                   = "x_sign"
+	ReqMetaBody                    = "body"
 )
 
 const (
@@ -537,7 +538,7 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 			req, _ = sjson.Set(req, "__meta__", reqMeta)
 		}
 	} else {
-		reqMeta["body"] = req
+		reqMeta[ReqMetaBody] = req
 		envelope, _ := json.Marshal(map[string]any{
 			"__meta__": reqMeta,
 		})
