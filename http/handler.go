@@ -537,9 +537,9 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 			req, _ = sjson.Set(req, "__meta__", reqMeta)
 		}
 	} else {
+		reqMeta["body"] = req
 		envelope, _ := json.Marshal(map[string]any{
 			"__meta__": reqMeta,
-			"__body__": req,
 		})
 		req = string(envelope)
 	}
