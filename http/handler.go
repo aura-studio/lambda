@@ -215,11 +215,19 @@ func (e *Engine) API(c *gin.Context) {
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
-		c.String(http.StatusInternalServerError, v.(error).Error())
+		if e.HideError {
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+		} else {
+			c.String(http.StatusInternalServerError, v.(error).Error())
+		}
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextError); ok && v != nil {
-		c.String(http.StatusInternalServerError, v.(error).Error())
+		if e.HideError {
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+		} else {
+			c.String(http.StatusInternalServerError, v.(error).Error())
+		}
 		c.Abort()
 		return
 	} else {
@@ -318,11 +326,19 @@ func (e *Engine) WAPI(c *gin.Context) {
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
-		c.String(http.StatusInternalServerError, v.(error).Error())
+		if e.HideError {
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+		} else {
+			c.String(http.StatusInternalServerError, v.(error).Error())
+		}
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextError); ok && v != nil {
-		c.String(http.StatusInternalServerError, v.(error).Error())
+		if e.HideError {
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+		} else {
+			c.String(http.StatusInternalServerError, v.(error).Error())
+		}
 		c.Abort()
 		return
 	} else {
@@ -537,7 +553,7 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 		if !gjson.Get(req, "__meta__").Exists() {
 			req, _ = sjson.Set(req, "__meta__", reqMeta)
 		}
-	} else {
+	} else if e.WrapBody {
 		reqMeta[ReqMetaBody] = req
 		envelope, _ := json.Marshal(map[string]any{
 			"__meta__": reqMeta,

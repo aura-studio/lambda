@@ -10,8 +10,10 @@ import (
 type yamlHTTPConfig struct {
 	Address string `yaml:"address"`
 	Mode    struct {
-		Debug bool `yaml:"debug"`
-		Cors  bool `yaml:"cors"`
+		Debug      bool `yaml:"debug"`
+		Cors       bool `yaml:"cors"`
+		WrapBody   bool `yaml:"wrapBody"`
+		HideError  bool `yaml:"hideError"`
 	} `yaml:"mode"`
 	StaticLink []struct {
 		SrcPath string `yaml:"srcPath"`
@@ -39,6 +41,8 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 		}
 		o.DebugMode = cfg.Mode.Debug
 		o.CorsMode = cfg.Mode.Cors
+		o.WrapBody = cfg.Mode.WrapBody
+		o.HideError = cfg.Mode.HideError
 
 		if o.StaticLinkMap == nil {
 			o.StaticLinkMap = make(map[string]string)

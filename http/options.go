@@ -17,6 +17,8 @@ type Options struct {
 	Address          string
 	DebugMode        bool
 	CorsMode         bool
+	WrapBody         bool
+	HideError        bool
 	StaticLinkMap    map[string]string
 	PrefixLinkMap    map[string]string
 	HeaderLinkMap    map[string]string
@@ -28,6 +30,8 @@ var defaultOptions = &Options{
 	Address:          ":8080",
 	DebugMode:        false,
 	CorsMode:         false,
+	WrapBody:         false,
+	HideError:        false,
 	StaticLinkMap:    map[string]string{},
 	PrefixLinkMap:    map[string]string{},
 	HeaderLinkMap:    map[string]string{},
