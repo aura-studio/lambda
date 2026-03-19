@@ -41,8 +41,8 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 		}
 		o.DebugMode = cfg.Mode.Debug
 		o.CorsMode = cfg.Mode.Cors
-		o.WrapBody = cfg.Mode.WrapBody
-		o.HideError = cfg.Mode.HideError
+		o.WrapBodyMode = cfg.Mode.WrapBody
+		o.HideErrorMode = cfg.Mode.HideError
 
 		if o.StaticLinkMap == nil {
 			o.StaticLinkMap = make(map[string]string)
