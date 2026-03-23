@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/aura-studio/lambda/dynamic"
+	"github.com/aura-studio/lambda/event"
 	"github.com/aura-studio/lambda/http"
+	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aura-studio/lambda/sqs"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -15,6 +17,8 @@ type yamlServerConfig struct {
 	Lambda  string `yaml:"lambda"`
 	HTTP    any    `yaml:"http"`
 	SQS     any    `yaml:"sqs"`
+	ReqResp any    `yaml:"reqresp"`
+	Event   any    `yaml:"event"`
 	Dynamic any    `yaml:"dynamic"`
 }
 
@@ -26,6 +30,8 @@ type Options struct {
 	Lambda  string
 	Http    []http.Option
 	Sqs     []sqs.Option
+	ReqResp []reqresp.Option
+	Event   []event.Option
 	Dynamic []dynamic.Option
 }
 
@@ -34,10 +40,12 @@ type serveOptionFunc func(*Options)
 func (f serveOptionFunc) Apply(o *Options) { f(o) }
 
 type serveConfigOption struct {
-	lambda  string
-	httpOpt http.Option
-	sqsOpt  sqs.Option
-	dynOpt  dynamic.Option
+	lambda     string
+	httpOpt    http.Option
+	sqsOpt     sqs.Option
+	reqRespOpt reqresp.Option
+	eventOpt   event.Option
+	dynOpt     dynamic.Option
 }
 
 func (o serveConfigOption) Apply(opts *Options) {
@@ -49,6 +57,12 @@ func (o serveConfigOption) Apply(opts *Options) {
 	}
 	if o.sqsOpt != nil {
 		opts.Sqs = append(opts.Sqs, o.sqsOpt)
+	}
+	if o.reqRespOpt != nil {
+		opts.ReqResp = append(opts.ReqResp, o.reqRespOpt)
+	}
+	if o.eventOpt != nil {
+		opts.Event = append(opts.Event, o.eventOpt)
 	}
 	if o.dynOpt != nil {
 		opts.Dynamic = append(opts.Dynamic, o.dynOpt)
@@ -73,6 +87,20 @@ func WithHttpOptions(opts ...http.Option) Option {
 func WithSqsOptions(opts ...sqs.Option) Option {
 	return serveOptionFunc(func(o *Options) {
 		o.Sqs = append(o.Sqs, opts...)
+	})
+}
+
+// WithReqRespOptions adds ReqResp options.
+func WithReqRespOptions(opts ...reqresp.Option) Option {
+	return serveOptionFunc(func(o *Options) {
+		o.ReqResp = append(o.ReqResp, opts...)
+	})
+}
+
+// WithEventOptions adds Event options.
+func WithEventOptions(opts ...event.Option) Option {
+	return serveOptionFunc(func(o *Options) {
+		o.Event = append(o.Event, opts...)
 	})
 }
 
@@ -108,6 +136,24 @@ func WithServeConfig(yamlBytes []byte) Option {
 		sqsOpt = sqs.WithConfig(b)
 	}
 
+	var reqRespOpt reqresp.Option
+	if cfg.ReqResp != nil {
+		b, err := yaml.Marshal(cfg.ReqResp)
+		if err != nil {
+			panic(fmt.Errorf("server.WithServeConfig: %w", err))
+		}
+		reqRespOpt = reqresp.WithConfig(b)
+	}
+
+	var eventOpt event.Option
+	if cfg.Event != nil {
+		b, err := yaml.Marshal(cfg.Event)
+		if err != nil {
+			panic(fmt.Errorf("server.WithServeConfig: %w", err))
+		}
+		eventOpt = event.WithConfig(b)
+	}
+
 	var dynOpt dynamic.Option
 	if cfg.Dynamic != nil {
 		b, err := yaml.Marshal(cfg.Dynamic)
@@ -118,10 +164,12 @@ func WithServeConfig(yamlBytes []byte) Option {
 	}
 
 	return serveConfigOption{
-		lambda:  cfg.Lambda,
-		httpOpt: httpOpt,
-		sqsOpt:  sqsOpt,
-		dynOpt:  dynOpt,
+		lambda:     cfg.Lambda,
+		httpOpt:    httpOpt,
+		sqsOpt:     sqsOpt,
+		reqRespOpt: reqRespOpt,
+		eventOpt:   eventOpt,
+		dynOpt:     dynOpt,
 	}
 }
 

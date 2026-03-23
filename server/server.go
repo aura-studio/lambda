@@ -1,7 +1,9 @@
 package server
 
 import (
+	"github.com/aura-studio/lambda/event"
 	"github.com/aura-studio/lambda/http"
+	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aura-studio/lambda/sqs"
 )
 
@@ -17,6 +19,12 @@ func Serve(opts ...Option) error {
 	case "sqs":
 		sqs.Serve(options.Sqs, options.Dynamic)
 		return nil
+	case "reqresp":
+		reqresp.Serve(options.ReqResp, options.Dynamic)
+		return nil
+	case "event":
+		event.Serve(options.Event, options.Dynamic)
+		return nil
 	case "http":
 		fallthrough
 	default:
@@ -29,5 +37,7 @@ func Close() error {
 		return err
 	}
 	sqs.Close()
+	reqresp.Close()
+	event.Close()
 	return nil
 }
