@@ -2,12 +2,12 @@ package reqresp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sync/atomic"
 
 	"github.com/aura-studio/lambda/dynamic"
-	"google.golang.org/protobuf/proto"
 )
 
 // Engine 是 reqresp 模块的核心引擎
@@ -53,19 +53,19 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 		resp := &Response{
 			Error: "engine is stopped",
 		}
-		return proto.Marshal(resp)
+		return json.Marshal(resp)
 	}
 
 	// 解析请求
 	var request Request
-	if err := proto.Unmarshal(payload, &request); err != nil {
+	if err := json.Unmarshal(payload, &request); err != nil {
 		if e.DebugMode {
 			log.Printf("[ReqResp] Unmarshal request error: %v", err)
 		}
 		resp := &Response{
 			Error: fmt.Sprintf("unmarshal request error: %v", err),
 		}
-		return proto.Marshal(resp)
+		return json.Marshal(resp)
 	}
 
 	// 创建上下文
@@ -105,5 +105,5 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 		}
 	}
 
-	return proto.Marshal(resp)
+	return json.Marshal(resp)
 }

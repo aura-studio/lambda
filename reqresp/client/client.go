@@ -2,13 +2,13 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	"google.golang.org/protobuf/proto"
 )
 
 // Client reqresp 客户端
@@ -32,7 +32,7 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*reqres
 	}
 
 	// 序列化请求
-	requestBytes, err := proto.Marshal(request)
+	requestBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
@@ -67,8 +67,8 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*reqres
 
 	// 解析 Response protobuf
 	response := &reqresp.Response{}
-	if err := proto.Unmarshal(output.Payload, response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := json.Unmarshal(output.Payload, response); err != nil {
+		return nil, fmt.Errorf("failed to decode response jsn: %w", err)
 	}
 
 	return response, nil

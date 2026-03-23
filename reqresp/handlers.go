@@ -12,7 +12,7 @@ func (e *Engine) InstallHandlers() {
 		e.r = NewRouter()
 	}
 
-	e.r.Use(e.HeaderLink, e.StaticLink, e.PrefixLink)
+	e.r.Use(e.StaticLink, e.PrefixLink)
 
 	e.HandleAllMethods("/", e.OK)
 	e.HandleAllMethods("/health-check", e.OK)
@@ -59,11 +59,6 @@ func (e *Engine) NoMethod(handlers ...HandlerFunc) {
 		e.r = NewRouter()
 	}
 	e.r.NoMethod(handlers...)
-}
-
-// HeaderLink 头部链接中间件（预留）
-func (e *Engine) HeaderLink(c *Context) {
-	// ReqResp request currently has no headers. Reserved for future.
 }
 
 // StaticLink 静态路径映射中间件
@@ -168,7 +163,6 @@ func errString(err error) string {
 	}
 	return err.Error()
 }
-
 
 // handle 解析路径并调用 Dynamic.GetPackage
 func (e *Engine) handle(path string, req string) (string, error) {
