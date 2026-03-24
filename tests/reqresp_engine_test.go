@@ -6,7 +6,6 @@ import (
 
 	"github.com/aura-studio/lambda/dynamic"
 	"github.com/aura-studio/lambda/reqresp"
-	"google.golang.org/protobuf/proto"
 )
 
 // TestEngineCreation tests that NewEngine creates an engine with correct options
@@ -65,20 +64,12 @@ func TestEngineInvokeWhenStopped(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 	engine.Stop()
 
-	req := &reqresp.Request{
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
 		Path:    "/health-check",
 		Payload: []byte("test"),
-	}
-	payload, _ := proto.Marshal(req)
-
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	if resp.Error == "" {
@@ -94,20 +85,11 @@ func TestEngineInvokeWhenStopped(t *testing.T) {
 func TestEngineInvokeHealthCheck(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	req := &reqresp.Request{
-		Path:    "/health-check",
-		Payload: nil,
-	}
-	payload, _ := proto.Marshal(req)
-
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/health-check",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	if string(resp.Payload) != "OK" {
@@ -123,20 +105,11 @@ func TestEngineInvokeHealthCheck(t *testing.T) {
 func TestEngineInvokeRootPath(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	req := &reqresp.Request{
-		Path:    "/",
-		Payload: nil,
-	}
-	payload, _ := proto.Marshal(req)
-
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	if string(resp.Payload) != "OK" {
@@ -148,44 +121,15 @@ func TestEngineInvokeRootPath(t *testing.T) {
 func TestEngineInvokePageNotFound(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	req := &reqresp.Request{
-		Path:    "/nonexistent/path",
-		Payload: nil,
-	}
-	payload, _ := proto.Marshal(req)
-
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/nonexistent/path",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	if resp.Error == "" {
 		t.Error("Expected error for nonexistent path")
-	}
-}
-
-// TestEngineInvokeInvalidPayload tests handling of invalid protobuf payload
-func TestEngineInvokeInvalidPayload(t *testing.T) {
-	engine := reqresp.NewEngine(nil, nil)
-
-	// Send invalid protobuf data
-	respBytes, err := engine.Invoke(context.Background(), []byte("invalid protobuf"))
-	if err != nil {
-		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
-
-	if resp.Error == "" {
-		t.Error("Expected error for invalid payload")
 	}
 }
 
@@ -195,20 +139,11 @@ func TestEngineInvokeStaticLink(t *testing.T) {
 		reqresp.WithStaticLink("/custom-health", "/health-check"),
 	}, nil)
 
-	req := &reqresp.Request{
-		Path:    "/custom-health",
-		Payload: nil,
-	}
-	payload, _ := proto.Marshal(req)
-
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/custom-health",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	if string(resp.Payload) != "OK" {
@@ -220,23 +155,14 @@ func TestEngineInvokeStaticLink(t *testing.T) {
 func TestEngineInvokeAPIPathMissingPackage(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	req := &reqresp.Request{
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
 		Path:    "/api/nonexistent-pkg/v1/route",
 		Payload: []byte("{}"),
-	}
-	payload, _ := proto.Marshal(req)
-
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
-
-	// Should return error because package doesn't exist
 	if resp.Error == "" {
 		t.Error("Expected error for nonexistent package")
 	}
@@ -246,23 +172,14 @@ func TestEngineInvokeAPIPathMissingPackage(t *testing.T) {
 func TestEngineInvokeAPIPathInvalid(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	req := &reqresp.Request{
-		Path:    "/api/", // Missing package and version
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/api/",
 		Payload: []byte("{}"),
-	}
-	payload, _ := proto.Marshal(req)
-
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
-
-	// Should return error because path is invalid
 	if resp.Error == "" {
 		t.Error("Expected error for invalid API path")
 	}
@@ -274,24 +191,14 @@ func TestEngineInvokeDebugMode(t *testing.T) {
 		reqresp.WithDebugMode(true),
 	}, nil)
 
-	req := &reqresp.Request{
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
 		Path:    "/_/api/nonexistent/v1/route",
 		Payload: []byte("test-request"),
-	}
-	payload, _ := proto.Marshal(req)
-
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var resp reqresp.Response
-	if err := proto.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
-
-	// Debug mode should include debug info in response
-	// Even with error, the response payload should contain debug JSON
 	if len(resp.Payload) == 0 && resp.Error == "" {
 		t.Error("Expected either payload or error in debug mode response")
 	}

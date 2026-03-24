@@ -25,19 +25,16 @@ func NewClient(opts ...Option) *Client {
 
 // Call 同步调用 Lambda 函数
 func (c *Client) Call(ctx context.Context, path string, payload []byte) (*reqresp.Response, error) {
-	// 创建 Request protobuf
 	request := &reqresp.Request{
 		Path:    path,
 		Payload: payload,
 	}
 
-	// 序列化请求
-	requestBytes, err := json.Marshal(request)
+	invokePayload, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// 设置超时上下文
 	timeout := c.DefaultTimeout
 	if deadline, ok := ctx.Deadline(); ok {
 		timeout = time.Until(deadline)
@@ -45,30 +42,26 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*reqres
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// 调用 Lambda
 	output, err := c.LambdaClient.Invoke(ctx, &lambda.InvokeInput{
 		FunctionName: aws.String(c.FunctionName),
-		Payload:      requestBytes,
+		Payload:      invokePayload,
 	})
 	if err != nil {
-		// 检查是否是超时错误
 		if ctx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("request timeout")
 		}
 		return nil, fmt.Errorf("lambda invoke failed: %w", err)
 	}
 
-	// 检查 Lambda 函数错误
 	if output.FunctionError != nil {
 		return &reqresp.Response{
-			Error: *output.FunctionError,
+			Error: fmt.Sprintf("%s: %s", *output.FunctionError, string(output.Payload)),
 		}, nil
 	}
 
-	// 解析 Response protobuf
 	response := &reqresp.Response{}
 	if err := json.Unmarshal(output.Payload, response); err != nil {
-		return nil, fmt.Errorf("failed to decode response jsn: %w", err)
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return response, nil

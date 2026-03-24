@@ -9,7 +9,6 @@ import (
 	"github.com/aura-studio/dynamic"
 	dynamicpkg "github.com/aura-studio/lambda/dynamic"
 	"github.com/aura-studio/lambda/reqresp"
-	"google.golang.org/protobuf/proto"
 )
 
 // reqresp_handler_test.go - Integration tests for reqresp handlers
@@ -34,31 +33,6 @@ func (m *mockReqRespTunnel) Meta() string {
 
 func (m *mockReqRespTunnel) Close() {}
 
-// Helper function to create and marshal a request
-func createReqRespRequest(t *testing.T, path string, payload []byte) []byte {
-	t.Helper()
-	req := &reqresp.Request{
-		Path:    path,
-		Payload: payload,
-	}
-	data, err := proto.Marshal(req)
-	if err != nil {
-		t.Fatalf("Failed to marshal request: %v", err)
-	}
-	return data
-}
-
-// Helper function to unmarshal response
-func unmarshalReqRespResponse(t *testing.T, data []byte) *reqresp.Response {
-	t.Helper()
-	var resp reqresp.Response
-	if err := proto.Unmarshal(data, &resp); err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
-	return &resp
-}
-
-
 // =============================================================================
 // Health Check Route Tests
 // =============================================================================
@@ -67,13 +41,12 @@ func unmarshalReqRespResponse(t *testing.T, data []byte) *reqresp.Response {
 func TestReqRespHandler_HealthCheck_ReturnsOK(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "/health-check", nil)
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/health-check",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if string(resp.Payload) != "OK" {
 		t.Errorf("Payload = %q, want 'OK'", string(resp.Payload))
@@ -88,13 +61,13 @@ func TestReqRespHandler_HealthCheck_ReturnsOK(t *testing.T) {
 func TestReqRespHandler_HealthCheck_WithPayload(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "/health-check", []byte("ignored-payload"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/health-check",
+		Payload: []byte("ignored-payload"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if string(resp.Payload) != "OK" {
 		t.Errorf("Payload = %q, want 'OK'", string(resp.Payload))
@@ -109,13 +82,12 @@ func TestReqRespHandler_HealthCheck_WithPayload(t *testing.T) {
 func TestReqRespHandler_RootPath_ReturnsOK(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "/", nil)
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if string(resp.Payload) != "OK" {
 		t.Errorf("Payload = %q, want 'OK'", string(resp.Payload))
@@ -141,7 +113,6 @@ func TestReqRespHandler_API_CallsDynamic(t *testing.T) {
 		},
 	}
 
-	// Register the mock package
 	dynamic.RegisterPackage("testpkg", "v1", tunnel)
 
 	engine := reqresp.NewEngine(nil, []dynamicpkg.Option{
@@ -152,13 +123,13 @@ func TestReqRespHandler_API_CallsDynamic(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "/api/testpkg/v1/myroute", []byte("request-data"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/api/testpkg/v1/myroute",
+		Payload: []byte("request-data"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error != "" {
 		t.Errorf("Error = %q, want empty", resp.Error)
@@ -197,13 +168,13 @@ func TestReqRespHandler_API_MultipleRouteSegments(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "/api/multipkg/v2/users/123/profile", []byte("{}"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/api/multipkg/v2/users/123/profile",
+		Payload: []byte("{}"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error != "" {
 		t.Errorf("Error = %q, want empty", resp.Error)
@@ -234,19 +205,18 @@ func TestReqRespHandler_API_NoRouteSegment(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "/api/noroutepkg/v1", []byte("{}"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/api/noroutepkg/v1",
+		Payload: []byte("{}"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error != "" {
 		t.Errorf("Error = %q, want empty", resp.Error)
 	}
 
-	// When no route segment, the route should be "/"
 	if invokedRoute != "/" {
 		t.Errorf("invokedRoute = %q, want '/'", invokedRoute)
 	}
@@ -256,13 +226,13 @@ func TestReqRespHandler_API_NoRouteSegment(t *testing.T) {
 func TestReqRespHandler_API_PackageNotFound(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "/api/nonexistent/v1/route", []byte("{}"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/api/nonexistent/v1/route",
+		Payload: []byte("{}"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error == "" {
 		t.Error("Expected error for non-existent package")
@@ -289,13 +259,13 @@ func TestReqRespHandler_WAPI_CallsDynamic(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "/wapi/wapipkg/v1/myroute", []byte("{}"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/wapi/wapipkg/v1/myroute",
+		Payload: []byte("{}"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error != "" {
 		t.Errorf("Error = %q, want empty", resp.Error)
@@ -309,7 +279,6 @@ func TestReqRespHandler_WAPI_CallsDynamic(t *testing.T) {
 		t.Errorf("invokedRoute = %q, want '/myroute'", invokedRoute)
 	}
 }
-
 
 // =============================================================================
 // Debug Mode Tests
@@ -335,25 +304,23 @@ func TestReqRespHandler_DebugMode_ReturnsDebugJSON(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "/_/api/debugpkg/v1/route", []byte("debug-request"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/_/api/debugpkg/v1/route",
+		Payload: []byte("debug-request"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error != "" {
 		t.Errorf("Error = %q, want empty", resp.Error)
 	}
 
-	// Debug mode should return JSON with debug fields
 	var debugInfo map[string]interface{}
 	if err := json.Unmarshal(resp.Payload, &debugInfo); err != nil {
 		t.Fatalf("Failed to unmarshal debug JSON: %v", err)
 	}
 
-	// Check required debug fields
 	if _, ok := debugInfo["mode"]; !ok {
 		t.Error("Debug response missing 'mode' field")
 	}
@@ -373,12 +340,10 @@ func TestReqRespHandler_DebugMode_ReturnsDebugJSON(t *testing.T) {
 		t.Error("Debug response missing 'response' field")
 	}
 
-	// Verify mode is "api"
 	if mode, ok := debugInfo["mode"].(string); !ok || mode != "api" {
 		t.Errorf("Debug mode = %v, want 'api'", debugInfo["mode"])
 	}
 
-	// Verify response contains the actual response
 	if debugInfo["response"] != "debug-api-response" {
 		t.Errorf("Debug response = %v, want 'debug-api-response'", debugInfo["response"])
 	}
@@ -390,22 +355,19 @@ func TestReqRespHandler_DebugMode_WithError(t *testing.T) {
 		reqresp.WithDebugMode(true),
 	}, nil)
 
-	// Use non-existent package to trigger error
-	payload := createReqRespRequest(t, "/_/api/nonexistent/v1/route", []byte("{}"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/_/api/nonexistent/v1/route",
+		Payload: []byte("{}"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	resp := unmarshalReqRespResponse(t, respBytes)
-
-	// Debug mode should still return JSON even with error
 	var debugInfo map[string]interface{}
 	if err := json.Unmarshal(resp.Payload, &debugInfo); err != nil {
 		t.Fatalf("Failed to unmarshal debug JSON: %v", err)
 	}
 
-	// Check error field is present and non-empty
 	if errField, ok := debugInfo["error"].(string); !ok || errField == "" {
 		t.Error("Debug response should contain error for failed request")
 	}
@@ -431,25 +393,23 @@ func TestReqRespHandler_DebugMode_WAPI(t *testing.T) {
 		}),
 	})
 
-	payload := createReqRespRequest(t, "/_/wapi/debugwapi/v1/route", []byte("{}"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/_/wapi/debugwapi/v1/route",
+		Payload: []byte("{}"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error != "" {
 		t.Errorf("Error = %q, want empty", resp.Error)
 	}
 
-	// Debug mode should return JSON
 	var debugInfo map[string]interface{}
 	if err := json.Unmarshal(resp.Payload, &debugInfo); err != nil {
 		t.Fatalf("Failed to unmarshal debug JSON: %v", err)
 	}
 
-	// Verify mode is "api" (WAPI is alias for API)
 	if mode, ok := debugInfo["mode"].(string); !ok || mode != "api" {
 		t.Errorf("Debug mode = %v, want 'api'", debugInfo["mode"])
 	}
@@ -463,13 +423,12 @@ func TestReqRespHandler_DebugMode_WAPI(t *testing.T) {
 func TestReqRespHandler_UnmatchedRoute_Returns404(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 
-	payload := createReqRespRequest(t, "/nonexistent/path", nil)
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/nonexistent/path",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error == "" {
 		t.Error("Expected error for unmatched route")
@@ -497,13 +456,12 @@ func TestReqRespHandler_UnmatchedRoute_VariousPaths(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			payload := createReqRespRequest(t, tc.path, nil)
-			respBytes, err := engine.Invoke(context.Background(), payload)
+			resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+				Path: tc.path,
+			})
 			if err != nil {
 				t.Fatalf("Invoke returned error: %v", err)
 			}
-
-			resp := unmarshalReqRespResponse(t, respBytes)
 
 			if resp.Error == "" {
 				t.Errorf("Expected error for unmatched path: %s", tc.path)
@@ -512,43 +470,21 @@ func TestReqRespHandler_UnmatchedRoute_VariousPaths(t *testing.T) {
 	}
 }
 
-
 // =============================================================================
 // Additional Integration Tests
 // =============================================================================
-
-// TestReqRespHandler_InvalidProtobuf tests handling of invalid protobuf payload
-func TestReqRespHandler_InvalidProtobuf(t *testing.T) {
-	engine := reqresp.NewEngine(nil, nil)
-
-	respBytes, err := engine.Invoke(context.Background(), []byte("not-valid-protobuf"))
-	if err != nil {
-		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
-
-	if resp.Error == "" {
-		t.Error("Expected error for invalid protobuf")
-	}
-
-	if !strings.Contains(resp.Error, "unmarshal") {
-		t.Errorf("Error = %q, expected to contain 'unmarshal'", resp.Error)
-	}
-}
 
 // TestReqRespHandler_EngineStopped tests that stopped engine returns error
 func TestReqRespHandler_EngineStopped(t *testing.T) {
 	engine := reqresp.NewEngine(nil, nil)
 	engine.Stop()
 
-	payload := createReqRespRequest(t, "/health-check", nil)
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/health-check",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error == "" {
 		t.Error("Expected error when engine is stopped")
@@ -565,13 +501,12 @@ func TestReqRespHandler_StaticLink(t *testing.T) {
 		reqresp.WithStaticLink("/custom-health", "/health-check"),
 	}, nil)
 
-	payload := createReqRespRequest(t, "/custom-health", nil)
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path: "/custom-health",
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if string(resp.Payload) != "OK" {
 		t.Errorf("Payload = %q, want 'OK' (static link should map to health-check)", string(resp.Payload))
@@ -602,14 +537,13 @@ func TestReqRespHandler_PrefixLink(t *testing.T) {
 		}),
 	})
 
-	// /v1/prefixpkg/v1/route should be mapped to /api/prefixpkg/v1/route
-	payload := createReqRespRequest(t, "/v1/prefixpkg/v1/route", []byte("{}"))
-	respBytes, err := engine.Invoke(context.Background(), payload)
+	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
+		Path:    "/v1/prefixpkg/v1/route",
+		Payload: []byte("{}"),
+	})
 	if err != nil {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
-
-	resp := unmarshalReqRespResponse(t, respBytes)
 
 	if resp.Error != "" {
 		t.Errorf("Error = %q, want empty", resp.Error)

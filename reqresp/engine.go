@@ -2,7 +2,6 @@ package reqresp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"sync/atomic"
@@ -45,42 +44,24 @@ func (e *Engine) IsRunning() bool {
 }
 
 // Invoke 处理 Lambda 调用请求
-func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
-	_ = ctx // reserved for future use
+func (e *Engine) Invoke(ctx context.Context, req *Request) (*Response, error) {
+	_ = ctx
 
-	// 检查引擎是否正在运行
 	if e.running.Load() == 0 {
-		resp := &Response{
-			Error: "engine is stopped",
-		}
-		return json.Marshal(resp)
+		return &Response{Error: "engine is stopped"}, nil
 	}
 
-	// 解析请求
-	var request Request
-	if err := json.Unmarshal(payload, &request); err != nil {
-		if e.DebugMode {
-			log.Printf("[ReqResp] Unmarshal request error: %v", err)
-		}
-		resp := &Response{
-			Error: fmt.Sprintf("unmarshal request error: %v", err),
-		}
-		return json.Marshal(resp)
-	}
-
-	// 创建上下文
 	c := &Context{
 		Engine:  e,
-		RawPath: request.Path,
-		Path:    request.Path,
-		Request: string(request.Payload),
+		RawPath: req.Path,
+		Path:    req.Path,
+		Request: string(req.Payload),
 	}
 
 	if e.DebugMode {
 		log.Printf("[ReqResp] Request: %s %s", c.Path, c.Request)
 	}
 
-	// 分发请求到路由器，捕获 panic
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -94,7 +75,6 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 		log.Printf("[ReqResp] Response: %s %s", c.Path, c.Response)
 	}
 
-	// 构建响应
 	resp := &Response{
 		Payload: []byte(c.Response),
 	}
@@ -105,5 +85,5 @@ func (e *Engine) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 		}
 	}
 
-	return json.Marshal(resp)
+	return resp, nil
 }
