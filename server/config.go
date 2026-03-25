@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/aura-studio/lambda/dynamic"
-	"github.com/aura-studio/lambda/event"
 	"github.com/aura-studio/lambda/http"
 	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aura-studio/lambda/sqs"
@@ -18,7 +17,6 @@ type yamlServerConfig struct {
 	HTTP    any    `yaml:"http"`
 	SQS     any    `yaml:"sqs"`
 	ReqResp any    `yaml:"reqresp"`
-	Event   any    `yaml:"event"`
 	Dynamic any    `yaml:"dynamic"`
 }
 
@@ -31,7 +29,6 @@ type Options struct {
 	Http    []http.Option
 	Sqs     []sqs.Option
 	ReqResp []reqresp.Option
-	Event   []event.Option
 	Dynamic []dynamic.Option
 }
 
@@ -44,7 +41,6 @@ type serveConfigOption struct {
 	httpOpt    http.Option
 	sqsOpt     sqs.Option
 	reqRespOpt reqresp.Option
-	eventOpt   event.Option
 	dynOpt     dynamic.Option
 }
 
@@ -60,9 +56,6 @@ func (o serveConfigOption) Apply(opts *Options) {
 	}
 	if o.reqRespOpt != nil {
 		opts.ReqResp = append(opts.ReqResp, o.reqRespOpt)
-	}
-	if o.eventOpt != nil {
-		opts.Event = append(opts.Event, o.eventOpt)
 	}
 	if o.dynOpt != nil {
 		opts.Dynamic = append(opts.Dynamic, o.dynOpt)
@@ -94,13 +87,6 @@ func WithSqsOptions(opts ...sqs.Option) Option {
 func WithReqRespOptions(opts ...reqresp.Option) Option {
 	return serveOptionFunc(func(o *Options) {
 		o.ReqResp = append(o.ReqResp, opts...)
-	})
-}
-
-// WithEventOptions adds Event options.
-func WithEventOptions(opts ...event.Option) Option {
-	return serveOptionFunc(func(o *Options) {
-		o.Event = append(o.Event, opts...)
 	})
 }
 
@@ -145,15 +131,6 @@ func WithServeConfig(yamlBytes []byte) Option {
 		reqRespOpt = reqresp.WithConfig(b)
 	}
 
-	var eventOpt event.Option
-	if cfg.Event != nil {
-		b, err := yaml.Marshal(cfg.Event)
-		if err != nil {
-			panic(fmt.Errorf("server.WithServeConfig: %w", err))
-		}
-		eventOpt = event.WithConfig(b)
-	}
-
 	var dynOpt dynamic.Option
 	if cfg.Dynamic != nil {
 		b, err := yaml.Marshal(cfg.Dynamic)
@@ -168,7 +145,6 @@ func WithServeConfig(yamlBytes []byte) Option {
 		httpOpt:    httpOpt,
 		sqsOpt:     sqsOpt,
 		reqRespOpt: reqRespOpt,
-		eventOpt:   eventOpt,
 		dynOpt:     dynOpt,
 	}
 }
