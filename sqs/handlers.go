@@ -46,8 +46,6 @@ func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 	e.r.NoRoute(handlers...)
 }
 
-
-
 func (e *Engine) StaticLink(c *Context) {
 	if e.StaticLinkMap == nil {
 		return
