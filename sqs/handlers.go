@@ -133,7 +133,6 @@ func (e *Engine) handle(path string, req string) (string, error) {
 	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
 	rsp := tunnel.Invoke(route, req)
 
-	// parse response prefix protocol
 	if after, found := strings.CutPrefix(rsp, "error://"); found {
 		return "", fmt.Errorf("%s", after)
 	}
@@ -144,7 +143,6 @@ func (e *Engine) handle(path string, req string) (string, error) {
 }
 
 func (e *Engine) meta(path string) (string, error) {
-	// 获取 tunnel 的 meta 信息（如果路径有效）
 	var tunnelMeta string
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) >= 2 {
@@ -155,6 +153,5 @@ func (e *Engine) meta(path string) (string, error) {
 		}
 	}
 
-	// 使用 MetaGenerator 生成完整的 meta 信息
 	return e.MetaGenerator.Generate(tunnelMeta), nil
 }
