@@ -54,7 +54,6 @@ const (
 	ReqMetaToken                   = "token"
 	ReqMetaTimestamp               = "timestamp"
 	ReqMetaXSign                   = "x_sign"
-	ReqMetaBody                    = "body"
 )
 
 const (
@@ -544,12 +543,6 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 		if !gjson.Get(req, "__meta__").Exists() {
 			req, _ = sjson.Set(req, "__meta__", reqMeta)
 		}
-	} else if e.WrapBodyMode {
-		reqMeta[ReqMetaBody] = req
-		envelope, _ := json.Marshal(map[string]any{
-			"__meta__": reqMeta,
-		})
-		req = string(envelope)
 	}
 	rsp, err := f(path, req)
 	if gjson.Valid(rsp) && gjson.Get(rsp, "__meta__").Exists() {

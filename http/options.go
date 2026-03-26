@@ -16,9 +16,8 @@ type Options struct {
 	// Http Options
 	Address          string
 	DebugMode        bool
-	CorsMode         bool
-	WrapBodyMode     bool
-	HideErrorMode    bool
+	CorsMode      bool
+	HideErrorMode bool
 	StaticLinkMap    map[string]string
 	PrefixLinkMap    map[string]string
 	HeaderLinkMap    map[string]string
@@ -29,9 +28,8 @@ type Options struct {
 var defaultOptions = &Options{
 	Address:          ":8080",
 	DebugMode:        false,
-	CorsMode:         false,
-	WrapBodyMode:     false,
-	HideErrorMode:    false,
+	CorsMode:      false,
+	HideErrorMode: false,
 	StaticLinkMap:    map[string]string{},
 	PrefixLinkMap:    map[string]string{},
 	HeaderLinkMap:    map[string]string{},
@@ -72,11 +70,6 @@ func WithCorsMode() Option {
 	})
 }
 
-func WithWrapBodyMode() Option {
-	return HttpOption(func(o *Options) {
-		o.WrapBodyMode = true
-	})
-}
 
 func WithHideErrorMode() Option {
 	return HttpOption(func(o *Options) {
