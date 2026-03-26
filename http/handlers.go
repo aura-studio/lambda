@@ -609,13 +609,6 @@ func (e *Engine) handle(path string, req string) (string, error) {
 	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
 	rsp := tunnel.Invoke(route, req)
 
-	// parse response prefix protocol
-	if after, found := strings.CutPrefix(rsp, "error://"); found {
-		return "", fmt.Errorf("%s", after)
-	}
-	if after, found := strings.CutPrefix(rsp, "data://"); found {
-		return after, nil
-	}
 	return rsp, nil
 }
 
