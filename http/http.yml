@@ -9,9 +9,6 @@ staticLink:
 prefixLink:
   - srcPrefix: "/api"
     dstPrefix: "/v1"
-tokenLink:
-  - srcPrefix: "/s"
-    dstPath: "/api/shortlink/v1/resolve"
 headerLinkKey:
   - key: "X-Custom-Header"
     prefix: "custom-"

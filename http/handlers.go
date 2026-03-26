@@ -3,7 +3,6 @@ package http
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,10 +34,6 @@ const (
 )
 
 const (
-	ReqContextToken = "token"
-)
-
-const (
 	ReqMetaRemoteAddr              = "remote_addr"
 	ReqMetaXForwardedFor           = "x_forwarded_for"
 	ReqMetaXForwardedPort          = "x_forwarded_port"
@@ -51,7 +46,6 @@ const (
 	ReqMetaHost                    = "host"
 	ReqMetaRawHost                 = "raw_host"
 	ReqMetaPath                    = "path"
-	ReqMetaToken                   = "token"
 	ReqMetaTimestamp               = "timestamp"
 	ReqMetaXSign                   = "x_sign"
 )
@@ -74,7 +68,7 @@ type (
 var methods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions}
 
 func (e *Engine) InstallHandlers() {
-	e.Use(e.HeaderLink, e.TokenLink, e.StaticLink, e.PrefixLink)
+	e.Use(e.HeaderLink, e.StaticLink, e.PrefixLink)
 
 	e.HandleAllMethods("/", e.OK)
 	e.HandleAllMethods("/health-check", e.OK)
@@ -99,34 +93,6 @@ func (e *Engine) HeaderLink(c *gin.Context) {
 			strs := []string{strings.TrimRight(prefix, "/"), strings.TrimLeft(headerLink[0], "/")}
 			c.Request.URL.Path = strings.Join(strs, "/")
 			c.Request.Header.Del(key)
-			e.HandleContext(c)
-			c.Abort()
-			return
-		}
-	}
-}
-
-func (e *Engine) TokenLink(c *gin.Context) {
-	if v := c.Request.Context().Value(ReqContextToken); v != nil {
-		return
-	}
-	path := c.Request.URL.Path
-	for srcPrefix, dstPath := range e.TokenLinkMap {
-		prefix := "/" + strings.Trim(srcPrefix, "/")
-		if strings.HasPrefix(path, prefix+"/") {
-			token := strings.TrimPrefix(path, prefix+"/")
-			token = strings.TrimRight(token, "/")
-			if token != "" {
-				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ReqContextToken, token))
-				c.Request.URL.Path = dstPath
-				e.HandleContext(c)
-				c.Abort()
-				return
-			}
-		}
-		if path == prefix {
-			c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ReqContextToken, ""))
-			c.Request.URL.Path = dstPath
 			e.HandleContext(c)
 			c.Abort()
 			return
@@ -445,7 +411,6 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	set(ReqMetaHost, c.Request.Host)
 	set(ReqMetaRawHost, c.Request.Header.Get("Host"))
 	set(ReqMetaPath, c.Request.URL.Path)
-	set(ReqMetaToken, c.Request.Context().Value(ReqContextToken))
 	set(ReqMetaTimestamp, c.Request.Header.Get("Timestamp"))
 	set(ReqMetaXSign, c.Request.Header.Get("X-Sign"))
 
