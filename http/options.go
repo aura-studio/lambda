@@ -17,7 +17,6 @@ type Options struct {
 	Address          string
 	DebugMode        bool
 	CorsMode      bool
-	HideErrorMode bool
 	StaticLinkMap    map[string]string
 	PrefixLinkMap    map[string]string
 	PageNotFoundPath string
@@ -27,7 +26,6 @@ var defaultOptions = &Options{
 	Address:          ":8080",
 	DebugMode:        false,
 	CorsMode:      false,
-	HideErrorMode: false,
 	StaticLinkMap:    map[string]string{},
 	PrefixLinkMap:    map[string]string{},
 	PageNotFoundPath: "",
@@ -66,12 +64,6 @@ func WithCorsMode() Option {
 	})
 }
 
-
-func WithHideErrorMode() Option {
-	return HttpOption(func(o *Options) {
-		o.HideErrorMode = true
-	})
-}
 
 func WithStaticLink(srcPath, dstPath string) Option {
 	return HttpOption(func(o *Options) {

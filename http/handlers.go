@@ -15,18 +15,16 @@ import (
 )
 
 const (
-	GinContextHeader       = "header"
-	GinContextPath         = "path"
-	GinContextRequest      = "request"
-	GinContextResponse     = "response"
-	GinContextWireRequest  = "wire_request"
-	GinContextWireResponse = "wire_response"
-	GinContextError        = "error"
-	GinContextPanic        = "panic"
-	GinContextDebug        = "debug"
-	GinContextStdout       = "stdout"
-	GinContextStderr       = "stderr"
-	GinContextProcessor    = "processor"
+	GinContextHeader    = "header"
+	GinContextPath      = "path"
+	GinContextRequest   = "request"
+	GinContextResponse  = "response"
+	GinContextError     = "error"
+	GinContextPanic     = "panic"
+	GinContextDebug     = "debug"
+	GinContextStdout    = "stdout"
+	GinContextStderr    = "stderr"
+	GinContextProcessor = "processor"
 )
 
 type (
@@ -85,7 +83,7 @@ func (e *Engine) PrefixLink(c *gin.Context) {
 }
 
 func (e *Engine) OK(c *gin.Context) {
-	c.String(http.StatusOK, "OK")
+	c.String(http.StatusOK, http.StatusText(http.StatusOK))
 	c.Abort()
 }
 
@@ -121,7 +119,8 @@ func (e *Engine) API(c *gin.Context) {
 	if v, ok := c.Get(GinContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
-		c.String(http.StatusInternalServerError, "No processor")
+		log.Println("processor not found")
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	}
@@ -132,19 +131,13 @@ func (e *Engine) API(c *gin.Context) {
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
-		if e.HideErrorMode {
-			c.String(http.StatusInternalServerError, "Internal Server Error")
-		} else {
-			c.String(http.StatusInternalServerError, v.(error).Error())
-		}
+		log.Println(v.(error).Error())
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextError); ok && v != nil {
-		if e.HideErrorMode {
-			c.String(http.StatusInternalServerError, "Internal Server Error")
-		} else {
-			c.String(http.StatusInternalServerError, v.(error).Error())
-		}
+		log.Println(v.(error).Error())
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else {
@@ -182,7 +175,8 @@ func (e *Engine) WAPI(c *gin.Context) {
 	if v, ok := c.Get(GinContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
-		c.String(http.StatusInternalServerError, "No processor")
+		log.Println("processor not found")
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	}
@@ -193,25 +187,20 @@ func (e *Engine) WAPI(c *gin.Context) {
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
-		if e.HideErrorMode {
-			c.String(http.StatusInternalServerError, "Internal Server Error")
-		} else {
-			c.String(http.StatusInternalServerError, v.(error).Error())
-		}
+		log.Println(v.(error).Error())
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextError); ok && v != nil {
-		if e.HideErrorMode {
-			c.String(http.StatusInternalServerError, "Internal Server Error")
-		} else {
-			c.String(http.StatusInternalServerError, v.(error).Error())
-		}
+		log.Println(v.(error).Error())
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else {
-		response, err := http.ReadResponse(bufio.NewReader(strings.NewReader(c.GetString(GinContextWireResponse))), c.Request)
+		response, err := http.ReadResponse(bufio.NewReader(strings.NewReader(c.GetString(GinContextResponse))), c.Request)
 		if err != nil {
-			c.String(http.StatusInternalServerError, err.Error())
+			log.Println(err.Error())
+			c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 			c.Abort()
 			return
 		}
@@ -237,18 +226,21 @@ func (e *Engine) Meta(c *gin.Context) {
 	if v, ok := c.Get(GinContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
-		c.String(http.StatusInternalServerError, "No processor")
+		log.Println("processor not found")
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	}
 
 	// response
 	if v, ok := c.Get(GinContextPanic); ok && v != nil {
-		c.String(http.StatusInternalServerError, v.(error).Error())
+		log.Println(v.(error).Error())
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else if v, ok := c.Get(GinContextError); ok && v != nil {
-		c.String(http.StatusInternalServerError, v.(error).Error())
+		log.Println(v.(error).Error())
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else {
@@ -274,12 +266,12 @@ func (e *Engine) PageNotFound(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	c.String(404, "404 page not found")
+	c.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 	c.Abort()
 }
 
 func (e *Engine) MethodNotAllowed(c *gin.Context) {
-	c.String(405, "405 method not allowed")
+	c.String(http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
 	c.Abort()
 }
 
@@ -311,14 +303,12 @@ func (e *Engine) genPostReq(c *gin.Context) string {
 func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
 	var (
 		wireReq string
-		rsp     string
 		wireRsp string
 		err     error
 	)
 	defer func() {
-		c.Set(GinContextWireRequest, wireReq)
-		c.Set(GinContextResponse, rsp)
-		c.Set(GinContextWireResponse, wireRsp)
+		c.Set(GinContextRequest, wireReq)
+		c.Set(GinContextResponse, wireRsp)
 		c.Set(GinContextError, err)
 	}()
 
@@ -332,23 +322,6 @@ func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
 	wireReq = buf.String()
 
 	wireRsp, err = f(path, wireReq)
-	if err != nil {
-		return
-	}
-
-	response, err := http.ReadResponse(bufio.NewReader(bytes.NewBufferString(wireRsp)), c.Request)
-	if response != nil {
-		defer response.Body.Close()
-	}
-	if err != nil {
-		return
-	}
-
-	data, err := io.ReadAll(response.Body)
-	if err != nil {
-		return
-	}
-	rsp = string(data)
 }
 
 func (e *Engine) safeWireProcessor(c *gin.Context, f LocalHandler) {
@@ -476,12 +449,6 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	buf.WriteString("\n")
 	buf.WriteString(`Response: `)
 	buf.WriteString(c.GetString(GinContextResponse))
-	buf.WriteString("\n")
-	buf.WriteString(`Wire Request: `)
-	buf.WriteString(c.GetString(GinContextWireRequest))
-	buf.WriteString("\n")
-	buf.WriteString(`Wire Response: `)
-	buf.WriteString(c.GetString(GinContextWireResponse))
 	buf.WriteString("\n")
 	return buf.String()
 }
