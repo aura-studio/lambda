@@ -5,19 +5,13 @@ import (
 	"strings"
 )
 
-// HandlerFunc 处理器函数类型
 type HandlerFunc func(*Context)
 
-// Context 请求上下文
 type Context struct {
 	Engine *Engine
 
-	// RawPath is the path as provided by the request (before link rewriting).
-	RawPath string
-	// Path is the current effective path (after link rewriting).
-	Path string
-	// ParamPath is the wildcard parameter value for routes like /api/*path.
-	// It includes a leading slash, e.g. /pkg/commit/route.
+	RawPath   string
+	Path      string
 	ParamPath string
 
 	Request  string
@@ -29,44 +23,34 @@ type Context struct {
 	aborted bool
 }
 
-// Abort 中止当前请求处理链
 func (c *Context) Abort() { c.aborted = true }
 
-// route 路由定义
 type route struct {
 	pattern  string
 	handlers []HandlerFunc
 }
 
-// Router 路由器（导出用于测试）
 type Router struct {
-	pre []HandlerFunc // 前置中间件
-
-	routes   []route       // 路由表
-	noRoute  []HandlerFunc // 未匹配路由处理器
+	pre     []HandlerFunc
+	routes  []route
+	noRoute []HandlerFunc
 }
 
-// NewRouter 创建新的路由器实例（导出用于测试）
 func NewRouter() *Router {
 	return &Router{}
 }
 
-// Use 注册前置中间件
 func (r *Router) Use(handlers ...HandlerFunc) {
 	r.pre = append(r.pre, handlers...)
 }
 
-// Handle 注册路由处理器
 func (r *Router) Handle(pattern string, handlers ...HandlerFunc) {
 	r.routes = append(r.routes, route{pattern: pattern, handlers: handlers})
 }
 
-// NoRoute 设置未匹配路由处理器
 func (r *Router) NoRoute(handlers ...HandlerFunc) { r.noRoute = handlers }
 
-// Dispatch 分发请求到匹配的处理器（导出用于测试）
 func (r *Router) Dispatch(ctx *Context) {
-	// 执行前置中间件
 	for _, h := range r.pre {
 		if h == nil {
 			continue
@@ -77,7 +61,6 @@ func (r *Router) Dispatch(ctx *Context) {
 		}
 	}
 
-	// 匹配路由
 	matched, handlers := r.match(ctx.Path)
 	if !matched {
 		handlers = r.noRoute
@@ -87,7 +70,6 @@ func (r *Router) Dispatch(ctx *Context) {
 		return
 	}
 
-	// 执行路由处理器
 	for _, h := range handlers {
 		if h == nil {
 			continue
@@ -102,7 +84,6 @@ func (r *Router) Dispatch(ctx *Context) {
 	}
 }
 
-// match 匹配路径到路由
 func (r *Router) match(path string) (bool, []HandlerFunc) {
 	for _, rt := range r.routes {
 		param, ok := MatchPattern(rt.pattern, path)
@@ -113,7 +94,6 @@ func (r *Router) match(path string) (bool, []HandlerFunc) {
 	return false, nil
 }
 
-// withParam 包装处理器链，在第一个处理器前设置 ParamPath
 func withParam(handlers []HandlerFunc, param string) []HandlerFunc {
 	if len(handlers) == 0 {
 		return handlers
@@ -126,9 +106,6 @@ func withParam(handlers []HandlerFunc, param string) []HandlerFunc {
 	return out
 }
 
-// MatchPattern 匹配路径模式
-// 支持精确匹配和通配符匹配（如 /api/*path）
-// 导出用于测试
 func MatchPattern(pattern, path string) (param string, ok bool) {
 	if strings.Contains(pattern, "*path") {
 		prefix := strings.TrimSuffix(pattern, "*path")

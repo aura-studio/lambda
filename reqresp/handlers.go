@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// InstallHandlers 注册默认路由处理器
 func (e *Engine) InstallHandlers() {
 	if e.r == nil {
 		e.r = NewRouter()
@@ -21,7 +20,6 @@ func (e *Engine) InstallHandlers() {
 	e.r.NoRoute(e.PageNotFound)
 }
 
-// Use 注册前置中间件
 func (e *Engine) Use(handlers ...HandlerFunc) {
 	if e.r == nil {
 		e.r = NewRouter()
@@ -29,7 +27,6 @@ func (e *Engine) Use(handlers ...HandlerFunc) {
 	e.r.Use(handlers...)
 }
 
-// Handle 注册路由处理器
 func (e *Engine) Handle(pattern string, handlers ...HandlerFunc) {
 	if e.r == nil {
 		e.r = NewRouter()
@@ -37,12 +34,10 @@ func (e *Engine) Handle(pattern string, handlers ...HandlerFunc) {
 	e.r.Handle(pattern, handlers...)
 }
 
-// HandleAllMethods 注册所有方法的路由处理器
 func (e *Engine) HandleAllMethods(pattern string, handlers ...HandlerFunc) {
 	e.Handle(pattern, handlers...)
 }
 
-// NoRoute 设置未匹配路由处理器
 func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 	if e.r == nil {
 		e.r = NewRouter()
@@ -50,8 +45,6 @@ func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 	e.r.NoRoute(handlers...)
 }
 
-
-// StaticLink 静态路径映射中间件
 func (e *Engine) StaticLink(c *Context) {
 	if e.StaticLinkMap == nil {
 		return
@@ -61,7 +54,6 @@ func (e *Engine) StaticLink(c *Context) {
 	}
 }
 
-// PrefixLink 前缀路径映射中间件
 func (e *Engine) PrefixLink(c *Context) {
 	if e.PrefixLinkMap == nil {
 		return
@@ -74,17 +66,14 @@ func (e *Engine) PrefixLink(c *Context) {
 	}
 }
 
-// OK 健康检查处理器
 func (e *Engine) OK(c *Context) {
 	c.Response = "OK"
 }
 
-// Debug 调试模式处理器
 func (e *Engine) Debug(c *Context) {
 	c.DebugMode = true
 }
 
-// API 处理器用于调用 Dynamic 业务包
 func (e *Engine) API(c *Context) {
 	if c.ParamPath == "" {
 		c.Err = fmt.Errorf("missing api path")
@@ -105,22 +94,18 @@ func (e *Engine) API(c *Context) {
 	c.Response = rsp
 }
 
-// WAPI 处理器作为 API 的别名
 func (e *Engine) WAPI(c *Context) {
 	e.API(c)
 }
 
-// PageNotFound 处理器用于处理未匹配路由
 func (e *Engine) PageNotFound(c *Context) {
 	c.Err = fmt.Errorf("404 page not found: %s", c.Path)
 }
 
-// MethodNotAllowed 方法不允许处理器
 func (e *Engine) MethodNotAllowed(c *Context) {
 	c.Err = fmt.Errorf("405 method not allowed")
 }
 
-// FormatDebug 格式化调试信息
 func (e *Engine) FormatDebug(c *Context, mode string) string {
 	data, _ := json.Marshal(map[string]any{
 		"mode":     mode,
@@ -133,7 +118,6 @@ func (e *Engine) FormatDebug(c *Context, mode string) string {
 	return string(data)
 }
 
-// FormatDebugWithResponse 格式化带响应的调试信息
 func (e *Engine) FormatDebugWithResponse(c *Context, mode string, rsp string) string {
 	data, _ := json.Marshal(map[string]any{
 		"mode":     mode,
@@ -154,7 +138,6 @@ func errString(err error) string {
 	return err.Error()
 }
 
-// handle 解析路径并调用 Dynamic.GetPackage
 func (e *Engine) handle(path string, req string) (string, error) {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) < 2 {
@@ -171,7 +154,6 @@ func (e *Engine) handle(path string, req string) (string, error) {
 	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
 	rsp := tunnel.Invoke(route, req)
 
-	// parse response prefix protocol
 	if after, found := strings.CutPrefix(rsp, "error://"); found {
 		return "", fmt.Errorf("%s", after)
 	}

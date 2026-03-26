@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
-// yamlReqRespConfig represents the YAML configuration structure for reqresp module
 type yamlReqRespConfig struct {
 	Mode struct {
 		Debug bool `yaml:"debug"`
@@ -48,8 +47,6 @@ func optionFromReqRespConfig(cfg yamlReqRespConfig) Option {
 	})
 }
 
-// optionFromConfigBytes parses YAML bytes and returns an Option.
-// Returns an error if the YAML is invalid.
 func optionFromConfigBytes(b []byte) (Option, error) {
 	var cfg yamlReqRespConfig
 	if err := yaml.Unmarshal(b, &cfg); err != nil {
@@ -59,8 +56,6 @@ func optionFromConfigBytes(b []byte) (Option, error) {
 	return optionFromReqRespConfig(cfg), nil
 }
 
-// WithConfig parses YAML bytes following reqresp.yml structure and applies it to Options.
-// It panics if the YAML is invalid.
 func WithConfig(yamlBytes []byte) Option {
 	opt, err := optionFromConfigBytes(yamlBytes)
 	if err != nil {
@@ -71,8 +66,6 @@ func WithConfig(yamlBytes []byte) Option {
 	return opt
 }
 
-// WithConfigFile loads a YAML file and applies it to Options.
-// It panics if the file cannot be read or YAML is invalid.
 func WithConfigFile(path string) Option {
 	b, err := os.ReadFile(path)
 	if err != nil {

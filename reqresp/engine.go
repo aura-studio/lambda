@@ -9,7 +9,6 @@ import (
 	"github.com/aura-studio/lambda/dynamic"
 )
 
-// Engine 是 reqresp 模块的核心引擎
 type Engine struct {
 	*Options
 	*dynamic.Dynamic
@@ -17,7 +16,6 @@ type Engine struct {
 	running atomic.Int32
 }
 
-// NewEngine 创建新的引擎实例
 func NewEngine(reqrespOpts []Option, dynamicOpts []dynamic.Option) *Engine {
 	e := &Engine{
 		Options: NewOptions(reqrespOpts...),
@@ -28,22 +26,18 @@ func NewEngine(reqrespOpts []Option, dynamicOpts []dynamic.Option) *Engine {
 	return e
 }
 
-// Start 启动引擎
 func (e *Engine) Start() {
 	e.running.Store(1)
 }
 
-// Stop 停止引擎
 func (e *Engine) Stop() {
 	e.running.Store(0)
 }
 
-// IsRunning 返回引擎是否正在运行
 func (e *Engine) IsRunning() bool {
 	return e.running.Load() == 1
 }
 
-// Invoke 处理 Lambda 调用请求
 func (e *Engine) Invoke(ctx context.Context, req *Request) (*Response, error) {
 	_ = ctx
 
