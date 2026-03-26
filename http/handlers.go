@@ -12,17 +12,14 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 )
 
 const (
-	GinContextHeader       = "header"
-	GinContextPath         = "path"
-	GinContextRequest      = "request"
-	GinContextResponse     = "response"
-	GinContextRequestMeta  = "request_meta"
-	GinContextResponseMeta = "response_meta"
+	GinContextHeader   = "header"
+	GinContextPath     = "path"
+	GinContextRequest  = "request"
+	GinContextResponse = "response"
+
 	GinContextWireRequest  = "wire_request"
 	GinContextWireResponse = "wire_response"
 	GinContextError        = "error"
@@ -31,33 +28,6 @@ const (
 	GinContextStdout       = "stdout"
 	GinContextStderr       = "stderr"
 	GinContextProcessor    = "processor"
-)
-
-const (
-	ReqMetaRemoteAddr              = "remote_addr"
-	ReqMetaXForwardedFor           = "x_forwarded_for"
-	ReqMetaXForwardedPort          = "x_forwarded_port"
-	ReqMetaXForwardedProto         = "x_forwarded_proto"
-	ReqMetaXForwardedHost          = "x_forwarded_host"
-	ReqMetaCloudFrontPolicy        = "cloudfront_policy"
-	ReqMetaCloudFrontSignature     = "cloudfront_signature"
-	ReqMetaCloudFrontKeyPairId     = "cloudfront_key_pair_id"
-	ReqMetaCloudFrontViewerAddress = "cloudfront_viewer_address"
-	ReqMetaHost                    = "host"
-	ReqMetaRawHost                 = "raw_host"
-	ReqMetaPath                    = "path"
-	ReqMetaTimestamp               = "timestamp"
-	ReqMetaXSign                   = "x_sign"
-)
-
-const (
-	RspMetaETag        = "etag"
-	RspMetaContentType = "content_type"
-	RspMetaContent     = "content"
-	RspMetaRedirect    = "redirect"
-	RspMetaPath        = "path"
-	RspMetaError       = "error"
-	RspMetaURL         = "url"
 )
 
 type (
@@ -86,7 +56,6 @@ func (e *Engine) HandleAllMethods(relativePath string, handlers ...gin.HandlerFu
 		e.Handle(method, relativePath, handlers...)
 	}
 }
-
 
 func (e *Engine) StaticLink(c *gin.Context) {
 	path := c.Request.URL.Path
@@ -131,9 +100,6 @@ func (e *Engine) API(c *gin.Context) {
 
 	// header
 	c.Set(GinContextHeader, c.Request.Header)
-
-	// meta
-	c.Set(GinContextRequestMeta, e.genReqMeta(c))
 
 	// request
 	switch c.Request.Method {
@@ -183,57 +149,7 @@ func (e *Engine) API(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
-		rspMeta := c.GetStringMap(GinContextResponseMeta)
-		rspBody := c.GetString(GinContextResponse)
-		contentType := "application/json"
-
-		if rspMeta != nil {
-			// url meta: parse scheme to determine action
-			if u, ok := rspMeta[RspMetaURL]; ok && u != nil && u != "" {
-				url := fmt.Sprintf("%v", u)
-				if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
-					c.Redirect(http.StatusTemporaryRedirect, url)
-					c.Abort()
-					return
-				} else if after, found := strings.CutPrefix(url, "path://"); found {
-					c.Request.URL.Path = "/" + strings.TrimLeft(after, "/")
-					e.HandleContext(c)
-					c.Abort()
-					return
-				} else if after, found := strings.CutPrefix(url, "error://"); found {
-					c.String(http.StatusInternalServerError, after)
-					c.Abort()
-					return
-				}
-			}
-			if r, ok := rspMeta[RspMetaRedirect]; ok && r != nil && r != "" {
-				c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%v", r))
-				c.Abort()
-				return
-			}
-			if p, ok := rspMeta[RspMetaPath]; ok && p != nil && p != "" {
-				c.Request.URL.Path = "/" + strings.TrimLeft(fmt.Sprintf("%v", p), "/")
-				e.HandleContext(c)
-				c.Abort()
-				return
-			}
-			if e, ok := rspMeta[RspMetaError]; ok && e != nil && e != "" {
-				c.String(http.StatusInternalServerError, fmt.Sprintf("%v", e))
-				c.Abort()
-				return
-			}
-			if etag, ok := rspMeta[RspMetaETag]; ok && etag != nil && etag != "" {
-				c.Header("ETag", fmt.Sprintf("%v", etag))
-			}
-			if ct, ok := rspMeta[RspMetaContentType]; ok && ct != nil && ct != "" {
-				contentType = fmt.Sprintf("%v", ct)
-			}
-			if content, ok := rspMeta[RspMetaContent]; ok && content != nil && content != "" {
-				rspBody = fmt.Sprintf("%v", content)
-			}
-		}
-
-		c.Data(http.StatusOK, contentType, []byte(rspBody))
+		c.Data(http.StatusOK, "application/json", []byte(c.GetString(GinContextResponse)))
 		c.Abort()
 		return
 	}
@@ -368,39 +284,6 @@ func (e *Engine) MethodNotAllowed(c *gin.Context) {
 	c.Abort()
 }
 
-func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
-	meta := map[string]any{}
-
-	set := func(key string, value any) {
-		switch v := value.(type) {
-		case string:
-			if v != "" {
-				meta[key] = v
-			}
-		case nil:
-		default:
-			meta[key] = v
-		}
-	}
-
-	set(ReqMetaXForwardedFor, c.Request.Header.Get("X-Forwarded-For"))
-	set(ReqMetaXForwardedPort, c.Request.Header.Get("X-Forwarded-Port"))
-	set(ReqMetaXForwardedProto, c.Request.Header.Get("X-Forwarded-Proto"))
-	set(ReqMetaXForwardedHost, c.Request.Header.Get("X-Forwarded-Host"))
-	set(ReqMetaRemoteAddr, c.Request.RemoteAddr)
-	set(ReqMetaCloudFrontPolicy, c.Request.Header.Get("CloudFront-Policy"))
-	set(ReqMetaCloudFrontSignature, c.Request.Header.Get("CloudFront-Signature"))
-	set(ReqMetaCloudFrontKeyPairId, c.Request.Header.Get("CloudFront-Key-Pair-Id"))
-	set(ReqMetaCloudFrontViewerAddress, c.Request.Header.Get("CloudFront-Viewer-Address"))
-	set(ReqMetaHost, c.Request.Host)
-	set(ReqMetaRawHost, c.Request.Header.Get("Host"))
-	set(ReqMetaPath, c.Request.URL.Path)
-	set(ReqMetaTimestamp, c.Request.Header.Get("Timestamp"))
-	set(ReqMetaXSign, c.Request.Header.Get("X-Sign"))
-
-	return meta
-}
-
 func (e *Engine) genGetReq(c *gin.Context) string {
 	dataMap := map[string]any{}
 	for k, v := range c.Request.URL.Query() {
@@ -487,22 +370,7 @@ func (e *Engine) debugWireProcessor(c *gin.Context, f LocalHandler) {
 func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 	path := c.GetString(GinContextPath)
 	req := c.GetString(GinContextRequest)
-	reqMeta := c.GetStringMap(GinContextRequestMeta)
-	if gjson.Valid(req) {
-		if !gjson.Get(req, "__meta__").Exists() {
-			req, _ = sjson.Set(req, "__meta__", reqMeta)
-		}
-	}
 	rsp, err := f(path, req)
-	if gjson.Valid(rsp) && gjson.Get(rsp, "__meta__").Exists() {
-		rspMeta := make(map[string]any)
-		gjson.Get(rsp, "__meta__").ForEach(func(key, value gjson.Result) bool {
-			rspMeta[key.String()] = value.Value()
-			return true
-		})
-		c.Set(GinContextResponseMeta, rspMeta)
-		rsp, _ = sjson.Delete(rsp, "__meta__")
-	}
 	c.Set(GinContextResponse, rsp)
 	c.Set(GinContextError, err)
 }
@@ -587,14 +455,6 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	buf.WriteString(`Header: `)
 	headerBytes, _ := json.Marshal(c.GetString(GinContextHeader))
 	buf.WriteString(string(headerBytes))
-	buf.WriteString("\n")
-	buf.WriteString(`Request Meta: `)
-	reqMetaBytes, _ := json.Marshal(c.GetString(GinContextRequestMeta))
-	buf.WriteString(string(reqMetaBytes))
-	buf.WriteString("\n")
-	buf.WriteString(`Response Meta: `)
-	rspMetaBytes, _ := json.Marshal(c.GetStringMap(GinContextResponseMeta))
-	buf.WriteString(string(rspMetaBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Stdout: `)
 	buf.WriteString(c.GetString(GinContextStdout))
