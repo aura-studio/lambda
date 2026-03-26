@@ -84,7 +84,6 @@ func (e *Engine) InstallHandlers() {
 	e.HandleAllMethods("/wapi/*path", e.WAPI)
 	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
 	e.HandleAllMethods("/meta/*path", e.Meta)
-	e.HandleAllMethods("/_/meta/*path", e.Debug, e.Meta)
 	e.NoRoute(e.PageNotFound)
 	e.NoMethod(e.MethodNotAllowed)
 }
@@ -364,11 +363,7 @@ func (e *Engine) Meta(c *gin.Context) {
 	c.Set(GinContextPath, c.Param("path"))
 
 	// processor
-	if c.GetBool(GinContextDebug) {
-		c.Set(GinContextProcessor, e.debugMetaProcessor)
-	} else {
-		c.Set(GinContextProcessor, e.safeMetaProcessor)
-	}
+	c.Set(GinContextProcessor, e.safeMetaProcessor)
 
 	// handle
 	if v, ok := c.Get(GinContextProcessor); ok {
@@ -380,11 +375,7 @@ func (e *Engine) Meta(c *gin.Context) {
 	}
 
 	// response
-	if c.GetBool(GinContextDebug) {
-		c.String(http.StatusOK, e.formatDebug(c))
-		c.Abort()
-		return
-	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
+	if v, ok := c.Get(GinContextPanic); ok && v != nil {
 		c.String(http.StatusInternalServerError, v.(error).Error())
 		c.Abort()
 		return
@@ -600,15 +591,6 @@ func (e *Engine) safeMetaProcessor(c *gin.Context, f LocalHandler) {
 	c.Set(GinContextPanic, e.doSafe(func() {
 		e.doMetaProcessor(c)
 	}))
-}
-
-func (e *Engine) debugMetaProcessor(c *gin.Context, f LocalHandler) {
-	stdout, stderr, panicErr := e.doDebug(func() {
-		e.doMetaProcessor(c)
-	})
-	c.Set(GinContextStdout, stdout)
-	c.Set(GinContextStderr, stderr)
-	c.Set(GinContextPanic, panicErr)
 }
 
 func (e *Engine) handle(path string, req string) (string, error) {

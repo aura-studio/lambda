@@ -18,7 +18,6 @@ func (e *Engine) InstallHandlers() {
 	e.HandleAllMethods("/api/*path", e.API)
 	e.HandleAllMethods("/_/api/*path", e.Debug, e.API)
 	e.HandleAllMethods("/meta/*path", e.Meta)
-	e.HandleAllMethods("/_/meta/*path", e.Debug, e.Meta)
 	e.r.NoRoute(e.PageNotFound)
 }
 
@@ -115,13 +114,6 @@ func (e *Engine) Meta(c *Context) {
 	rsp, err := e.meta(c.ParamPath)
 	if err != nil {
 		c.Err = err
-		if c.DebugMode {
-			c.Response = e.formatDebug(c, "meta")
-		}
-		return
-	}
-	if c.DebugMode {
-		c.Response = e.formatDebugWithResponse(c, "meta", rsp)
 		return
 	}
 	c.Response = rsp
