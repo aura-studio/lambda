@@ -40,7 +40,6 @@ func TestHTTPEngineCreation(t *testing.T) {
 		lambdahttp.WithCorsMode(),
 		lambdahttp.WithStaticLink("/static", "/public"),
 		lambdahttp.WithPrefixLink("/api", "/v1"),
-		lambdahttp.WithHeaderLinkKey("X-Route", "/route"),
 	}, nil)
 
 	if e == nil {
@@ -65,10 +64,6 @@ func TestHTTPEngineCreation(t *testing.T) {
 
 	if e.PrefixLinkMap["/api"] != "/v1" {
 		t.Errorf("PrefixLinkMap['/api'] = %q, want '/v1'", e.PrefixLinkMap["/api"])
-	}
-
-	if e.HeaderLinkMap["X-Route"] != "/route" {
-		t.Errorf("HeaderLinkMap['X-Route'] = %q, want '/route'", e.HeaderLinkMap["X-Route"])
 	}
 }
 
@@ -188,29 +183,6 @@ func TestHTTPEnginePrefixLink(t *testing.T) {
 	}
 }
 
-// TestHTTPEngineHeaderLink tests header link path mapping
-func TestHTTPEngineHeaderLink(t *testing.T) {
-	e := lambdahttp.NewEngine([]lambdahttp.Option{
-		lambdahttp.WithHeaderLinkKey("X-Route", "/"),
-	}, nil)
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("X-Route", "health-check")
-	w := httptest.NewRecorder()
-
-	e.ServeHTTP(w, req)
-
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
-	}
-
-	if string(body) != "OK" {
-		t.Errorf("Body = %q, want 'OK' (header link should map to health-check)", string(body))
-	}
-}
 
 // TestHTTPEngineAPIWithDynamic tests API route calling Dynamic
 func TestHTTPEngineAPIWithDynamic(t *testing.T) {

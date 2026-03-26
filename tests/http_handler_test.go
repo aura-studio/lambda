@@ -426,35 +426,6 @@ func TestHTTPHandler_PrefixLink(t *testing.T) {
 	}
 }
 
-// TestHTTPHandler_HeaderLink tests header link path mapping
-func TestHTTPHandler_HeaderLink(t *testing.T) {
-	dynamic.RegisterPackage("handler-header-pkg", "v1", &mockHTTPTunnel{
-		invokeFunc: func(route, req string) string {
-			return "header-mapped"
-		},
-	})
-
-	e := lambdahttp.NewEngine([]lambdahttp.Option{
-		lambdahttp.WithHeaderLinkKey("X-Api-Route", "/api"),
-	}, nil)
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("X-Api-Route", "handler-header-pkg/v1/route")
-	w := httptest.NewRecorder()
-
-	e.ServeHTTP(w, req)
-
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusOK)
-	}
-
-	if string(body) != "header-mapped" {
-		t.Errorf("Body = %q, want 'header-mapped'", string(body))
-	}
-}
 
 // =============================================================================
 // Error Handling Tests

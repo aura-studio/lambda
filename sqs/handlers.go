@@ -11,7 +11,7 @@ func (e *Engine) InstallHandlers() {
 		e.r = newRouter()
 	}
 
-	e.r.Use(e.HeaderLink, e.StaticLink, e.PrefixLink)
+	e.r.Use(e.StaticLink, e.PrefixLink)
 
 	e.HandleAllMethods("/", e.OK)
 	e.HandleAllMethods("/health-check", e.OK)
@@ -47,9 +47,6 @@ func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 }
 
 
-func (e *Engine) HeaderLink(c *Context) {
-	// SQS request currently has no headers. Reserved for future.
-}
 
 func (e *Engine) StaticLink(c *Context) {
 	if e.StaticLinkMap == nil {

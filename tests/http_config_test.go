@@ -16,9 +16,6 @@ staticLink:
 prefixLink:
   - srcPrefix: /api
     dstPrefix: /v1
-headerLinkKey:
-  - key: X-Rewrite
-    prefix: /p
 `)
 
 	o := lambdahttp.NewOptions(lambdahttp.WithConfig(yaml))
@@ -33,8 +30,5 @@ headerLinkKey:
 	}
 	if got := o.PrefixLinkMap["/api"]; got != "/v1" {
 		t.Fatalf("PrefixLinkMap['/api'] = %q", got)
-	}
-	if got := o.HeaderLinkMap["X-Rewrite"]; got != "/p" {
-		t.Fatalf("HeaderLinkMap['X-Rewrite'] = %q", got)
 	}
 }

@@ -68,7 +68,7 @@ type (
 var methods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions}
 
 func (e *Engine) InstallHandlers() {
-	e.Use(e.HeaderLink, e.StaticLink, e.PrefixLink)
+	e.Use(e.StaticLink, e.PrefixLink)
 
 	e.HandleAllMethods("/", e.OK)
 	e.HandleAllMethods("/health-check", e.OK)
@@ -87,18 +87,6 @@ func (e *Engine) HandleAllMethods(relativePath string, handlers ...gin.HandlerFu
 	}
 }
 
-func (e *Engine) HeaderLink(c *gin.Context) {
-	for key, prefix := range e.HeaderLinkMap {
-		if headerLink, ok := c.Request.Header[key]; ok && len(headerLink) > 0 {
-			strs := []string{strings.TrimRight(prefix, "/"), strings.TrimLeft(headerLink[0], "/")}
-			c.Request.URL.Path = strings.Join(strs, "/")
-			c.Request.Header.Del(key)
-			e.HandleContext(c)
-			c.Abort()
-			return
-		}
-	}
-}
 
 func (e *Engine) StaticLink(c *gin.Context) {
 	path := c.Request.URL.Path
@@ -356,10 +344,6 @@ func (e *Engine) Meta(c *gin.Context) {
 }
 
 func (e *Engine) PageNotFound(c *gin.Context) {
-	e.HeaderLink(c)
-	if c.IsAborted() {
-		return
-	}
 	e.StaticLink(c)
 	if c.IsAborted() {
 		return

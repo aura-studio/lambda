@@ -9,7 +9,4 @@ staticLink:
 prefixLink:
   - srcPrefix: "/api"
     dstPrefix: "/v1"
-headerLinkKey:
-  - key: "X-Custom-Header"
-    prefix: "custom-"
 pageNotFoundPath: ""

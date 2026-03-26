@@ -22,10 +22,6 @@ type yamlHTTPConfig struct {
 		SrcPrefix string `yaml:"srcPrefix"`
 		DstPrefix string `yaml:"dstPrefix"`
 	} `yaml:"prefixLink"`
-	HeaderLinkKey []struct {
-		Key    string `yaml:"key"`
-		Prefix string `yaml:"prefix"`
-	} `yaml:"headerLinkKey"`
 	PageNotFoundPath string `yaml:"pageNotFoundPath"`
 }
 
@@ -44,10 +40,6 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 		if o.PrefixLinkMap == nil {
 			o.PrefixLinkMap = make(map[string]string)
 		}
-		if o.HeaderLinkMap == nil {
-			o.HeaderLinkMap = make(map[string]string)
-		}
-
 		for _, link := range cfg.StaticLink {
 			if link.SrcPath == "" || link.DstPath == "" {
 				continue
@@ -59,12 +51,6 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 				continue
 			}
 			o.PrefixLinkMap[link.SrcPrefix] = link.DstPrefix
-		}
-		for _, link := range cfg.HeaderLinkKey {
-			if link.Key == "" || link.Prefix == "" {
-				continue
-			}
-			o.HeaderLinkMap[link.Key] = link.Prefix
 		}
 		if cfg.PageNotFoundPath != "" {
 			o.PageNotFoundPath = cfg.PageNotFoundPath

@@ -16,7 +16,6 @@ func TestHTTPWithDefaultConfigFile(t *testing.T) {
   cors: true
 staticLink: []
 prefixLink: []
-headerLinkKey: []
 `), 0o644); err != nil {
 		t.Fatalf("write http.yaml: %v", err)
 	}

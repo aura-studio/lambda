@@ -20,7 +20,6 @@ type Options struct {
 	HideErrorMode bool
 	StaticLinkMap    map[string]string
 	PrefixLinkMap    map[string]string
-	HeaderLinkMap    map[string]string
 	PageNotFoundPath string
 }
 
@@ -31,7 +30,6 @@ var defaultOptions = &Options{
 	HideErrorMode: false,
 	StaticLinkMap:    map[string]string{},
 	PrefixLinkMap:    map[string]string{},
-	HeaderLinkMap:    map[string]string{},
 	PageNotFoundPath: "",
 }
 
@@ -84,12 +82,6 @@ func WithStaticLink(srcPath, dstPath string) Option {
 func WithPrefixLink(srcPrefix string, dstPrefix string) Option {
 	return HttpOption(func(o *Options) {
 		o.PrefixLinkMap[srcPrefix] = dstPrefix
-	})
-}
-
-func WithHeaderLinkKey(key string, prefix string) Option {
-	return HttpOption(func(o *Options) {
-		o.HeaderLinkMap[key] = prefix
 	})
 }
 
