@@ -67,13 +67,13 @@ func WithCorsMode() Option {
 
 func WithStaticLink(srcPath, dstPath string) Option {
 	return HttpOption(func(o *Options) {
-		o.StaticLinkMap[srcPath] = dstPath
+		o.StaticLinkMap[normalizePath(srcPath)] = normalizePath(dstPath)
 	})
 }
 
 func WithPrefixLink(srcPrefix string, dstPrefix string) Option {
 	return HttpOption(func(o *Options) {
-		o.PrefixLinkMap[srcPrefix] = dstPrefix
+		o.PrefixLinkMap[normalizePath(srcPrefix)] = normalizePath(dstPrefix)
 	})
 }
 

@@ -54,16 +54,26 @@ func (e *Engine) HandleAllMethods(relativePath string, handlers ...gin.HandlerFu
 	}
 }
 
-func (e *Engine) StaticLink(c *gin.Context) {
-	path := c.Request.URL.Path
+func normalizePath(path string) string {
+	if path == "" {
+		return "/"
+	}
+	path = strings.ReplaceAll(path, "\\", "/")
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
 	for strings.Contains(path, "//") {
 		path = strings.ReplaceAll(path, "//", "/")
 	}
-	path = strings.TrimRight(path, "/")
-	if path == "" {
-		path = "/"
+	if len(path) > 1 && strings.HasSuffix(path, "/") {
+		path = strings.TrimRight(path, "/")
 	}
-	if dstPath, ok := e.StaticLinkMap[path]; ok {
+	return path
+}
+
+func (e *Engine) StaticLink(c *gin.Context) {
+	c.Request.URL.Path = normalizePath(c.Request.URL.Path)
+	if dstPath, ok := e.StaticLinkMap[c.Request.URL.Path]; ok {
 		c.Request.URL.Path = dstPath
 		e.HandleContext(c)
 		c.Abort()
@@ -72,6 +82,7 @@ func (e *Engine) StaticLink(c *gin.Context) {
 }
 
 func (e *Engine) PrefixLink(c *gin.Context) {
+	c.Request.URL.Path = normalizePath(c.Request.URL.Path)
 	for oldPrefix, newPrefix := range e.PrefixLinkMap {
 		if strings.HasPrefix(c.Request.URL.Path, oldPrefix) {
 			c.Request.URL.Path = strings.Replace(c.Request.URL.Path, oldPrefix, newPrefix, 1)
