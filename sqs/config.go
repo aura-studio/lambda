@@ -13,14 +13,6 @@ type yamlSQSConfig struct {
 		Run   RunMode `yaml:"run"`
 		Reply bool    `yaml:"reply"`
 	} `yaml:"mode"`
-	StaticLink []struct {
-		SrcPath string `yaml:"srcPath"`
-		DstPath string `yaml:"dstPath"`
-	} `yaml:"staticLink"`
-	PrefixLink []struct {
-		SrcPrefix string `yaml:"srcPrefix"`
-		DstPrefix string `yaml:"dstPrefix"`
-	} `yaml:"prefixLink"`
 }
 
 func optionFromSQSConfig(cfg yamlSQSConfig) Option {
@@ -34,26 +26,6 @@ func optionFromSQSConfig(cfg yamlSQSConfig) Option {
 			default:
 				panic(fmt.Errorf("sqs: unrecognized run mode: %q", cfg.Mode.Run))
 			}
-		}
-
-		if o.StaticLinkMap == nil {
-			o.StaticLinkMap = make(map[string]string)
-		}
-		for _, link := range cfg.StaticLink {
-			if link.SrcPath == "" || link.DstPath == "" {
-				continue
-			}
-			o.StaticLinkMap[link.SrcPath] = link.DstPath
-		}
-
-		if o.PrefixLinkMap == nil {
-			o.PrefixLinkMap = make(map[string]string)
-		}
-		for _, link := range cfg.PrefixLink {
-			if link.SrcPrefix == "" || link.DstPrefix == "" {
-				continue
-			}
-			o.PrefixLinkMap[link.SrcPrefix] = link.DstPrefix
 		}
 	})
 }

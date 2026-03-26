@@ -1,14 +1,2 @@
-# ReqResp 模块示例配置文件
-
 mode:
   debug: false
-
-# 静态路径映射配置
-staticLink:
-  - srcPath: "/custom-health"
-    dstPath: "/health-check"
-
-# 前缀路径映射配置
-prefixLink:
-  - srcPrefix: "/v2/api"
-    dstPrefix: "/api"

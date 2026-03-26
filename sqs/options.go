@@ -20,22 +20,17 @@ const (
 )
 
 type Options struct {
-	// reserved for future sqs-specific options
-	StaticLinkMap map[string]string
-	PrefixLinkMap map[string]string
-	SQSClient     SQSClient
-	RunMode       RunMode
-	ReplyMode     bool
-	DebugMode     bool
+	SQSClient SQSClient
+	RunMode   RunMode
+	ReplyMode bool
+	DebugMode bool
 }
 
 var defaultOptions = &Options{
-	StaticLinkMap: map[string]string{},
-	PrefixLinkMap: map[string]string{},
-	SQSClient:     nil,
-	RunMode:       RunModeBatch,
-	ReplyMode:     false,
-	DebugMode:     false,
+	SQSClient: nil,
+	RunMode:   RunModeBatch,
+	ReplyMode: false,
+	DebugMode: false,
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -82,14 +77,3 @@ func WithDebugMode(debug bool) Option {
 	})
 }
 
-func WithStaticLink(srcPath, dstPath string) Option {
-	return OptionFunc(func(o *Options) {
-		o.StaticLinkMap[srcPath] = dstPath
-	})
-}
-
-func WithPrefixLink(srcPrefix string, dstPrefix string) Option {
-	return OptionFunc(func(o *Options) {
-		o.PrefixLinkMap[srcPrefix] = dstPrefix
-	})
-}

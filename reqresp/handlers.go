@@ -11,8 +11,6 @@ func (e *Engine) InstallHandlers() {
 		e.r = NewRouter()
 	}
 
-	e.r.Use(e.StaticLink, e.PrefixLink)
-
 	e.Handle("/", e.OK)
 	e.Handle("/health-check", e.OK)
 	e.Handle("/api/*path", e.API)
@@ -40,27 +38,6 @@ func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 		e.r = NewRouter()
 	}
 	e.r.NoRoute(handlers...)
-}
-
-func (e *Engine) StaticLink(c *Context) {
-	if e.StaticLinkMap == nil {
-		return
-	}
-	if dst, ok := e.StaticLinkMap[c.Path]; ok {
-		c.Path = dst
-	}
-}
-
-func (e *Engine) PrefixLink(c *Context) {
-	if e.PrefixLinkMap == nil {
-		return
-	}
-	for oldPrefix, newPrefix := range e.PrefixLinkMap {
-		if strings.HasPrefix(c.Path, oldPrefix) {
-			c.Path = strings.Replace(c.Path, oldPrefix, newPrefix, 1)
-			return
-		}
-	}
 }
 
 func (e *Engine) OK(c *Context) {

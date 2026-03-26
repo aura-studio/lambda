@@ -34,29 +34,29 @@ type route struct {
 	handlers []HandlerFunc
 }
 
-type router struct {
+type Router struct {
 	pre []HandlerFunc
 
 	routes   []route
 	noRoute  []HandlerFunc
 }
 
-func newRouter() *router {
-	return &router{}
+func NewRouter() *Router {
+	return &Router{}
 }
 
-func (r *router) Use(handlers ...HandlerFunc) {
+func (r *Router) Use(handlers ...HandlerFunc) {
 	r.pre = append(r.pre, handlers...)
 }
 
-func (r *router) Handle(pattern string, handlers ...HandlerFunc) {
+func (r *Router) Handle(pattern string, handlers ...HandlerFunc) {
 	r.routes = append(r.routes, route{pattern: pattern, handlers: handlers})
 }
 
-func (r *router) NoRoute(handlers ...HandlerFunc) { r.noRoute = handlers }
+func (r *Router) NoRoute(handlers ...HandlerFunc) { r.noRoute = handlers }
 
 
-func (r *router) dispatch(ctx *Context) {
+func (r *Router) Dispatch(ctx *Context) {
 	for _, h := range r.pre {
 		if h == nil {
 			continue
@@ -90,9 +90,9 @@ func (r *router) dispatch(ctx *Context) {
 	}
 }
 
-func (r *router) match(path string) (bool, []HandlerFunc) {
+func (r *Router) match(path string) (bool, []HandlerFunc) {
 	for _, rt := range r.routes {
-		param, ok := matchPattern(rt.pattern, path)
+		param, ok := MatchPattern(rt.pattern, path)
 		if ok {
 			return true, withParam(rt.handlers, param)
 		}
@@ -114,7 +114,7 @@ func withParam(handlers []HandlerFunc, param string) []HandlerFunc {
 	return out
 }
 
-func matchPattern(pattern, path string) (param string, ok bool) {
+func MatchPattern(pattern, path string) (param string, ok bool) {
 	if strings.Contains(pattern, "*path") {
 		prefix := strings.TrimSuffix(pattern, "*path")
 		// pattern like "/api/*path" => prefix "/api/"

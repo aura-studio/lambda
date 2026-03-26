@@ -23,7 +23,7 @@ type SQSClient interface {
 type Engine struct {
 	*Options
 	*dynamic.Dynamic
-	r         *router
+	r         *Router
 	running   atomic.Int32
 	sqsClient SQSClient
 }
@@ -135,7 +135,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 					c.Err = fmt.Errorf("panic: %v", r)
 				}
 			}()
-			e.r.dispatch(c)
+			e.r.Dispatch(c)
 		}()
 
 		if e.DebugMode {

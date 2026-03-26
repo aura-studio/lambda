@@ -8,10 +8,8 @@ import (
 
 func (e *Engine) InstallHandlers() {
 	if e.r == nil {
-		e.r = newRouter()
+		e.r = NewRouter()
 	}
-
-	e.r.Use(e.StaticLink, e.PrefixLink)
 
 	e.Handle("/", e.OK)
 	e.Handle("/health-check", e.OK)
@@ -23,44 +21,23 @@ func (e *Engine) InstallHandlers() {
 
 func (e *Engine) Use(handlers ...HandlerFunc) {
 	if e.r == nil {
-		e.r = newRouter()
+		e.r = NewRouter()
 	}
 	e.r.Use(handlers...)
 }
 
 func (e *Engine) Handle(pattern string, handlers ...HandlerFunc) {
 	if e.r == nil {
-		e.r = newRouter()
+		e.r = NewRouter()
 	}
 	e.r.Handle(pattern, handlers...)
 }
 
 func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 	if e.r == nil {
-		e.r = newRouter()
+		e.r = NewRouter()
 	}
 	e.r.NoRoute(handlers...)
-}
-
-func (e *Engine) StaticLink(c *Context) {
-	if e.StaticLinkMap == nil {
-		return
-	}
-	if dst, ok := e.StaticLinkMap[c.Path]; ok {
-		c.Path = dst
-	}
-}
-
-func (e *Engine) PrefixLink(c *Context) {
-	if e.PrefixLinkMap == nil {
-		return
-	}
-	for oldPrefix, newPrefix := range e.PrefixLinkMap {
-		if strings.HasPrefix(c.Path, oldPrefix) {
-			c.Path = strings.Replace(c.Path, oldPrefix, newPrefix, 1)
-			return
-		}
-	}
 }
 
 func (e *Engine) OK(c *Context) {
@@ -80,12 +57,12 @@ func (e *Engine) API(c *Context) {
 	if err != nil {
 		c.Err = err
 		if c.DebugMode {
-			c.Response = e.formatDebug(c, "api")
+			c.Response = e.FormatDebug(c, "api")
 		}
 		return
 	}
 	if c.DebugMode {
-		c.Response = e.formatDebugWithResponse(c, "api", rsp)
+		c.Response = e.FormatDebugWithResponse(c, "api", rsp)
 		return
 	}
 	c.Response = rsp
@@ -108,7 +85,7 @@ func (e *Engine) PageNotFound(c *Context) {
 	c.Err = fmt.Errorf("404 page not found: %s", c.Path)
 }
 
-func (e *Engine) formatDebug(c *Context, mode string) string {
+func (e *Engine) FormatDebug(c *Context, mode string) string {
 	data, _ := json.Marshal(map[string]any{
 		"mode":     mode,
 		"raw_path": c.RawPath,
@@ -120,7 +97,7 @@ func (e *Engine) formatDebug(c *Context, mode string) string {
 	return string(data)
 }
 
-func (e *Engine) formatDebugWithResponse(c *Context, mode string, rsp string) string {
+func (e *Engine) FormatDebugWithResponse(c *Context, mode string, rsp string) string {
 	data, _ := json.Marshal(map[string]any{
 		"mode":     mode,
 		"raw_path": c.RawPath,

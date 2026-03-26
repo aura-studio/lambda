@@ -11,15 +11,11 @@ type OptionFunc func(*Options)
 func (f OptionFunc) Apply(o *Options) { f(o) }
 
 type Options struct {
-	StaticLinkMap map[string]string
-	PrefixLinkMap map[string]string
-	DebugMode     bool
+	DebugMode bool
 }
 
 var defaultOptions = &Options{
-	StaticLinkMap: map[string]string{},
-	PrefixLinkMap: map[string]string{},
-	DebugMode:     false,
+	DebugMode: false,
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -42,30 +38,3 @@ func WithDebugMode(debug bool) Option {
 	})
 }
 
-func WithStaticLinkMap(linkMap map[string]string) Option {
-	return OptionFunc(func(o *Options) {
-		for srcPath, dstPath := range linkMap {
-			o.StaticLinkMap[srcPath] = dstPath
-		}
-	})
-}
-
-func WithPrefixLinkMap(linkMap map[string]string) Option {
-	return OptionFunc(func(o *Options) {
-		for srcPrefix, dstPrefix := range linkMap {
-			o.PrefixLinkMap[srcPrefix] = dstPrefix
-		}
-	})
-}
-
-func WithStaticLink(srcPath, dstPath string) Option {
-	return OptionFunc(func(o *Options) {
-		o.StaticLinkMap[srcPath] = dstPath
-	})
-}
-
-func WithPrefixLink(srcPrefix, dstPrefix string) Option {
-	return OptionFunc(func(o *Options) {
-		o.PrefixLinkMap[srcPrefix] = dstPrefix
-	})
-}
