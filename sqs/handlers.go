@@ -13,11 +13,11 @@ func (e *Engine) InstallHandlers() {
 
 	e.r.Use(e.StaticLink, e.PrefixLink)
 
-	e.HandleAllMethods("/", e.OK)
-	e.HandleAllMethods("/health-check", e.OK)
-	e.HandleAllMethods("/api/*path", e.API)
-	e.HandleAllMethods("/_/api/*path", e.Debug, e.API)
-	e.HandleAllMethods("/meta/*path", e.Meta)
+	e.Handle("/", e.OK)
+	e.Handle("/health-check", e.OK)
+	e.Handle("/api/*path", e.API)
+	e.Handle("/_/api/*path", e.Debug, e.API)
+	e.Handle("/meta/*path", e.Meta)
 	e.r.NoRoute(e.PageNotFound)
 }
 
@@ -33,10 +33,6 @@ func (e *Engine) Handle(pattern string, handlers ...HandlerFunc) {
 		e.r = newRouter()
 	}
 	e.r.Handle(pattern, handlers...)
-}
-
-func (e *Engine) HandleAllMethods(pattern string, handlers ...HandlerFunc) {
-	e.Handle(pattern, handlers...)
 }
 
 func (e *Engine) NoRoute(handlers ...HandlerFunc) {
@@ -93,12 +89,6 @@ func (e *Engine) API(c *Context) {
 		return
 	}
 	c.Response = rsp
-}
-
-func (e *Engine) WAPI(c *Context) {
-	// For now, WAPI behaves like API in SQS.
-	// It exists to mirror http handler layout and can be evolved later.
-	e.API(c)
 }
 
 func (e *Engine) Meta(c *Context) {
