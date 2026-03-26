@@ -17,6 +17,7 @@ func (e *Engine) InstallHandlers() {
 	e.Handle("/health-check", e.OK)
 	e.Handle("/api/*path", e.API)
 	e.Handle("/_/api/*path", e.Debug, e.API)
+	e.Handle("/meta/*path", e.Meta)
 	e.r.NoRoute(e.PageNotFound)
 }
 
@@ -90,12 +91,21 @@ func (e *Engine) API(c *Context) {
 	c.Response = rsp
 }
 
-func (e *Engine) PageNotFound(c *Context) {
-	c.Err = fmt.Errorf("404 page not found: %s", c.Path)
+func (e *Engine) Meta(c *Context) {
+	if c.ParamPath == "" {
+		c.Err = fmt.Errorf("missing meta path")
+		return
+	}
+	rsp, err := e.meta(c.ParamPath)
+	if err != nil {
+		c.Err = err
+		return
+	}
+	c.Response = rsp
 }
 
-func (e *Engine) MethodNotAllowed(c *Context) {
-	c.Err = fmt.Errorf("405 method not allowed")
+func (e *Engine) PageNotFound(c *Context) {
+	c.Err = fmt.Errorf("404 page not found: %s", c.Path)
 }
 
 func (e *Engine) FormatDebug(c *Context, mode string) string {
@@ -153,4 +163,18 @@ func (e *Engine) handle(path string, req string) (string, error) {
 		return after, nil
 	}
 	return rsp, nil
+}
+
+func (e *Engine) meta(path string) (string, error) {
+	var tunnelMeta string
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) >= 2 {
+		pkg := parts[0]
+		version := parts[1]
+		if tunnel, err := e.GetPackage(pkg, version); err == nil {
+			tunnelMeta = tunnel.Meta()
+		}
+	}
+
+	return e.MetaGenerator.Generate(tunnelMeta), nil
 }

@@ -108,10 +108,6 @@ func (e *Engine) PageNotFound(c *Context) {
 	c.Err = fmt.Errorf("404 page not found: %s", c.Path)
 }
 
-func (e *Engine) MethodNotAllowed(c *Context) {
-	c.Err = fmt.Errorf("405 method not allowed")
-}
-
 func (e *Engine) formatDebug(c *Context, mode string) string {
 	data, _ := json.Marshal(map[string]any{
 		"mode":     mode,
