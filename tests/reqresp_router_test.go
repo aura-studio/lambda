@@ -51,25 +51,11 @@ func TestMatchPattern(t *testing.T) {
 			wantMatched: true,
 		},
 		{
-			name:        "wildcard wapi with route",
-			pattern:     "/wapi/*path",
-			path:        "/wapi/pkg/v1/route",
-			wantParam:   "/pkg/v1/route",
-			wantMatched: true,
-		},
-		{
 			name:        "wildcard debug api",
 			pattern:     "/_/api/*path",
 			path:        "/_/api/pkg/v1/route",
 			wantParam:   "/pkg/v1/route",
 			wantMatched: true,
-		},
-		{
-			name:        "wildcard no match different prefix",
-			pattern:     "/api/*path",
-			path:        "/wapi/pkg/v1/route",
-			wantParam:   "",
-			wantMatched: false,
 		},
 		{
 			name:        "wildcard deep path",

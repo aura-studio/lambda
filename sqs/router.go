@@ -39,7 +39,6 @@ type router struct {
 
 	routes   []route
 	noRoute  []HandlerFunc
-	noMethod []HandlerFunc
 }
 
 func newRouter() *router {
@@ -56,7 +55,6 @@ func (r *router) Handle(pattern string, handlers ...HandlerFunc) {
 
 func (r *router) NoRoute(handlers ...HandlerFunc) { r.noRoute = handlers }
 
-func (r *router) NoMethod(handlers ...HandlerFunc) { r.noMethod = handlers }
 
 func (r *router) dispatch(ctx *Context) {
 	for _, h := range r.pre {

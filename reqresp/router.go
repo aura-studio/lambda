@@ -44,7 +44,6 @@ type Router struct {
 
 	routes   []route       // 路由表
 	noRoute  []HandlerFunc // 未匹配路由处理器
-	noMethod []HandlerFunc // 方法不允许处理器
 }
 
 // NewRouter 创建新的路由器实例（导出用于测试）
@@ -64,9 +63,6 @@ func (r *Router) Handle(pattern string, handlers ...HandlerFunc) {
 
 // NoRoute 设置未匹配路由处理器
 func (r *Router) NoRoute(handlers ...HandlerFunc) { r.noRoute = handlers }
-
-// NoMethod 设置方法不允许处理器
-func (r *Router) NoMethod(handlers ...HandlerFunc) { r.noMethod = handlers }
 
 // Dispatch 分发请求到匹配的处理器（导出用于测试）
 func (r *Router) Dispatch(ctx *Context) {

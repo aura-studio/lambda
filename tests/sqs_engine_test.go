@@ -280,36 +280,6 @@ func TestSQSEngineInvokeAPIWithDynamic(t *testing.T) {
 	}
 }
 
-// TestSQSEngineInvokeWAPI tests WAPI route
-func TestSQSEngineInvokeWAPI(t *testing.T) {
-	mock := &mockSQSClient{}
-
-	var invokedRoute string
-	dynamic.RegisterPackage("sqswapi", "v1", &mockTunnel{
-		invoke: func(route, req string) string {
-			invokedRoute = route
-			return "wapi-response"
-		},
-	})
-
-	e := lambdasqs.NewEngine([]lambdasqs.Option{lambdasqs.WithSQSClient(mock)}, nil)
-
-	ev := events.SQSEvent{Records: []events.SQSMessage{
-		{MessageId: "wapi", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/wapi/sqswapi/v1/route", Payload: []byte(`{}`)})},
-	}}
-
-	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
-	if err != nil {
-		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
-	}
-	if len(resp.BatchItemFailures) != 0 {
-		t.Errorf("Expected 0 failures, got %d", len(resp.BatchItemFailures))
-	}
-
-	if invokedRoute != "/route" {
-		t.Errorf("invokedRoute = %q, want '/route'", invokedRoute)
-	}
-}
 
 // TestSQSEngineMultipleMessages tests processing multiple messages
 func TestSQSEngineMultipleMessages(t *testing.T) {

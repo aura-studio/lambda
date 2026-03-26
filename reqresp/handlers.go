@@ -18,10 +18,7 @@ func (e *Engine) InstallHandlers() {
 	e.HandleAllMethods("/health-check", e.OK)
 	e.HandleAllMethods("/api/*path", e.API)
 	e.HandleAllMethods("/_/api/*path", e.Debug, e.API)
-	e.HandleAllMethods("/wapi/*path", e.WAPI)
-	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
 	e.r.NoRoute(e.PageNotFound)
-	e.r.NoMethod(e.MethodNotAllowed)
 }
 
 // Use 注册前置中间件
@@ -53,13 +50,6 @@ func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 	e.r.NoRoute(handlers...)
 }
 
-// NoMethod 设置方法不允许处理器
-func (e *Engine) NoMethod(handlers ...HandlerFunc) {
-	if e.r == nil {
-		e.r = NewRouter()
-	}
-	e.r.NoMethod(handlers...)
-}
 
 // StaticLink 静态路径映射中间件
 func (e *Engine) StaticLink(c *Context) {

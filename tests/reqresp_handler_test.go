@@ -239,46 +239,6 @@ func TestReqRespHandler_API_PackageNotFound(t *testing.T) {
 	}
 }
 
-// TestReqRespHandler_WAPI_CallsDynamic tests that /wapi/* works as API alias
-func TestReqRespHandler_WAPI_CallsDynamic(t *testing.T) {
-	var invokedRoute string
-	tunnel := &mockReqRespTunnel{
-		invokeFunc: func(route, req string) string {
-			invokedRoute = route
-			return "wapi-response"
-		},
-	}
-
-	dynamic.RegisterPackage("wapipkg", "v1", tunnel)
-
-	engine := reqresp.NewEngine(nil, []dynamicpkg.Option{
-		dynamicpkg.WithStaticPackage(&dynamicpkg.Package{
-			Package: "wapipkg",
-			Version: "v1",
-			Tunnel:  tunnel,
-		}),
-	})
-
-	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
-		Path:    "/wapi/wapipkg/v1/myroute",
-		Payload: []byte("{}"),
-	})
-	if err != nil {
-		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	if resp.Error != "" {
-		t.Errorf("Error = %q, want empty", resp.Error)
-	}
-
-	if string(resp.Payload) != "wapi-response" {
-		t.Errorf("Payload = %q, want 'wapi-response'", string(resp.Payload))
-	}
-
-	if invokedRoute != "/myroute" {
-		t.Errorf("invokedRoute = %q, want '/myroute'", invokedRoute)
-	}
-}
 
 // =============================================================================
 // Debug Mode Tests
@@ -373,47 +333,6 @@ func TestReqRespHandler_DebugMode_WithError(t *testing.T) {
 	}
 }
 
-// TestReqRespHandler_DebugMode_WAPI tests debug mode with WAPI route
-func TestReqRespHandler_DebugMode_WAPI(t *testing.T) {
-	tunnel := &mockReqRespTunnel{
-		invokeFunc: func(route, req string) string {
-			return "debug-wapi-response"
-		},
-	}
-
-	dynamic.RegisterPackage("debugwapi", "v1", tunnel)
-
-	engine := reqresp.NewEngine([]reqresp.Option{
-		reqresp.WithDebugMode(true),
-	}, []dynamicpkg.Option{
-		dynamicpkg.WithStaticPackage(&dynamicpkg.Package{
-			Package: "debugwapi",
-			Version: "v1",
-			Tunnel:  tunnel,
-		}),
-	})
-
-	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
-		Path:    "/_/wapi/debugwapi/v1/route",
-		Payload: []byte("{}"),
-	})
-	if err != nil {
-		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	if resp.Error != "" {
-		t.Errorf("Error = %q, want empty", resp.Error)
-	}
-
-	var debugInfo map[string]interface{}
-	if err := json.Unmarshal(resp.Payload, &debugInfo); err != nil {
-		t.Fatalf("Failed to unmarshal debug JSON: %v", err)
-	}
-
-	if mode, ok := debugInfo["mode"].(string); !ok || mode != "api" {
-		t.Errorf("Debug mode = %v, want 'api'", debugInfo["mode"])
-	}
-}
 
 // =============================================================================
 // Unmatched Route Tests (404)

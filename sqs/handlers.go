@@ -17,12 +17,9 @@ func (e *Engine) InstallHandlers() {
 	e.HandleAllMethods("/health-check", e.OK)
 	e.HandleAllMethods("/api/*path", e.API)
 	e.HandleAllMethods("/_/api/*path", e.Debug, e.API)
-	e.HandleAllMethods("/wapi/*path", e.WAPI)
-	e.HandleAllMethods("/_/wapi/*path", e.Debug, e.WAPI)
 	e.HandleAllMethods("/meta/*path", e.Meta)
 	e.HandleAllMethods("/_/meta/*path", e.Debug, e.Meta)
 	e.r.NoRoute(e.PageNotFound)
-	e.r.NoMethod(e.MethodNotAllowed)
 }
 
 func (e *Engine) Use(handlers ...HandlerFunc) {
@@ -50,12 +47,6 @@ func (e *Engine) NoRoute(handlers ...HandlerFunc) {
 	e.r.NoRoute(handlers...)
 }
 
-func (e *Engine) NoMethod(handlers ...HandlerFunc) {
-	if e.r == nil {
-		e.r = newRouter()
-	}
-	e.r.NoMethod(handlers...)
-}
 
 func (e *Engine) HeaderLink(c *Context) {
 	// SQS request currently has no headers. Reserved for future.
