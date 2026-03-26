@@ -15,11 +15,10 @@ import (
 )
 
 const (
-	GinContextHeader   = "header"
-	GinContextPath     = "path"
-	GinContextRequest  = "request"
-	GinContextResponse = "response"
-
+	GinContextHeader       = "header"
+	GinContextPath         = "path"
+	GinContextRequest      = "request"
+	GinContextResponse     = "response"
 	GinContextWireRequest  = "wire_request"
 	GinContextWireResponse = "wire_response"
 	GinContextError        = "error"
