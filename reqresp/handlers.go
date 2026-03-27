@@ -1,9 +1,12 @@
 package reqresp
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/aura-studio/cast"
 )
 
 func (e *Engine) InstallHandlers() {
@@ -53,7 +56,7 @@ func (e *Engine) API(c *Context) {
 		c.Err = fmt.Errorf("missing api path")
 		return
 	}
-	rsp, err := e.handle(c.ParamPath, c.Request)
+	rsp, err := e.process(c.ParamPath, c.Request)
 	if err != nil {
 		c.Err = err
 		if c.DebugMode {
@@ -92,7 +95,7 @@ func (e *Engine) FormatDebug(c *Context, mode string) string {
 		"path":     c.Path,
 		"param":    c.ParamPath,
 		"request":  c.Request,
-		"error":    errString(c.Err),
+		"error":    cast.ToString(c.Err),
 	})
 	return string(data)
 }
@@ -105,16 +108,48 @@ func (e *Engine) FormatDebugWithResponse(c *Context, mode string, rsp string) st
 		"param":    c.ParamPath,
 		"request":  c.Request,
 		"response": rsp,
-		"error":    errString(c.Err),
+		"error":    cast.ToString(c.Err),
 	})
 	return string(data)
 }
 
-func errString(err error) string {
-	if err == nil {
-		return ""
+func (e *Engine) process(path string, req string) (string, error) {
+	// 封装请求: {"meta":{}, "data":"base64"}
+	reqEnvelope := struct {
+		Meta map[string]any `json:"meta"`
+		Data string         `json:"data"`
+	}{
+		Meta: map[string]any{},
+		Data: base64.StdEncoding.EncodeToString([]byte(req)),
 	}
-	return err.Error()
+	reqBytes, err := json.Marshal(reqEnvelope)
+	if err != nil {
+		return "", err
+	}
+
+	rsp, err := e.handle(path, string(reqBytes))
+	if err != nil {
+		return "", err
+	}
+
+	// 解封装响应: {"meta":{}, "data":"base64"}
+	var rspEnvelope struct {
+		Meta map[string]any `json:"meta"`
+		Data string         `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(rsp), &rspEnvelope); err != nil {
+		return rsp, nil
+	}
+
+	if errMsg := cast.ToString(rspEnvelope.Meta["error"]); errMsg != "" {
+		return "", fmt.Errorf("%s", errMsg)
+	}
+
+	data, err := base64.StdEncoding.DecodeString(rspEnvelope.Data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 func (e *Engine) handle(path string, req string) (string, error) {
@@ -133,12 +168,6 @@ func (e *Engine) handle(path string, req string) (string, error) {
 	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
 	rsp := tunnel.Invoke(route, req)
 
-	if after, found := strings.CutPrefix(rsp, "error://"); found {
-		return "", fmt.Errorf("%s", after)
-	}
-	if after, found := strings.CutPrefix(rsp, "data://"); found {
-		return after, nil
-	}
 	return rsp, nil
 }
 

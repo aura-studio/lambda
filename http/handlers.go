@@ -3,6 +3,7 @@ package http
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aura-studio/cast"
 	"github.com/gin-gonic/gin"
 )
 
@@ -353,9 +355,54 @@ func (e *Engine) debugWireProcessor(c *gin.Context, f LocalHandler) {
 func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 	path := c.GetString(GinContextPath)
 	req := c.GetString(GinContextRequest)
-	rsp, err := f(path, req)
-	c.Set(GinContextResponse, rsp)
-	c.Set(GinContextError, err)
+
+	// 封装请求: {"meta":{}, "data":"base64"}
+	reqEnvelope := struct {
+		Meta map[string]any `json:"meta"`
+		Data string         `json:"data"`
+	}{
+		Meta: map[string]any{},
+		Data: base64.StdEncoding.EncodeToString([]byte(req)),
+	}
+	reqBytes, err := json.Marshal(reqEnvelope)
+	if err != nil {
+		c.Set(GinContextResponse, "")
+		c.Set(GinContextError, err)
+		return
+	}
+
+	rsp, err := f(path, string(reqBytes))
+	if err != nil {
+		c.Set(GinContextResponse, "")
+		c.Set(GinContextError, err)
+		return
+	}
+
+	// 解封装响应: {"meta":{}, "data":"base64"}
+	var rspEnvelope struct {
+		Meta map[string]any `json:"meta"`
+		Data string         `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(rsp), &rspEnvelope); err != nil {
+		c.Set(GinContextResponse, rsp)
+		c.Set(GinContextError, nil)
+		return
+	}
+
+	if errMsg := cast.ToString(rspEnvelope.Meta["error"]); errMsg != "" {
+		c.Set(GinContextResponse, "")
+		c.Set(GinContextError, fmt.Errorf("%s", errMsg))
+		return
+	}
+
+	data, decErr := base64.StdEncoding.DecodeString(rspEnvelope.Data)
+	if decErr != nil {
+		c.Set(GinContextResponse, "")
+		c.Set(GinContextError, decErr)
+		return
+	}
+	c.Set(GinContextResponse, string(data))
+	c.Set(GinContextError, nil)
 }
 
 func (e *Engine) safeProcessor(c *gin.Context, f LocalHandler) {
@@ -402,12 +449,6 @@ func (e *Engine) handle(path string, req string) (string, error) {
 	route := fmt.Sprintf("/%s", strings.Join(parts[2:], "/"))
 	rsp := tunnel.Invoke(route, req)
 
-	if after, found := strings.CutPrefix(rsp, "error://"); found {
-		return "", fmt.Errorf("%s", after)
-	}
-	if after, found := strings.CutPrefix(rsp, "data://"); found {
-		return after, nil
-	}
 	return rsp, nil
 }
 
