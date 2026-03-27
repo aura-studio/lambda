@@ -2,6 +2,8 @@ package tests
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"testing"
 
 	"github.com/aura-studio/dynamic"
@@ -16,14 +18,22 @@ func TestSQSRunMode(t *testing.T) {
 			if route == "/fail" {
 				panic("intentional failure")
 			}
-			return "OK"
+			return encodeEnvelope(nil, "OK")
 		},
 	})
 
+	mustJSONRequest := func(path string, payload string) string {
+		b, _ := json.Marshal(map[string]any{
+			"path":    path,
+			"payload": base64.StdEncoding.EncodeToString([]byte(payload)),
+		})
+		return string(b)
+	}
+
 	ev := events.SQSEvent{Records: []events.SQSMessage{
-		{MessageId: "msg-1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/mode-test/v1/success", Payload: []byte(`{}`)})},
-		{MessageId: "msg-2", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/mode-test/v1/fail", Payload: []byte(`{}`)})},
-		{MessageId: "msg-3", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/api/mode-test/v1/success", Payload: []byte(`{}`)})},
+		{MessageId: "msg-1", Body: mustJSONRequest("/api/mode-test/v1/success", "{}")},
+		{MessageId: "msg-2", Body: mustJSONRequest("/api/mode-test/v1/fail", "{}")},
+		{MessageId: "msg-3", Body: mustJSONRequest("/api/mode-test/v1/success", "{}")},
 	}}
 
 	t.Run("Strict", func(t *testing.T) {

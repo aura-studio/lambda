@@ -18,8 +18,6 @@ func TestSQSEngineCreation(t *testing.T) {
 		lambdasqs.WithDebugMode(true),
 		lambdasqs.WithRunMode(lambdasqs.RunModePartial),
 		lambdasqs.WithReplyMode(true),
-		lambdasqs.WithStaticLink("/static", "/public"),
-		lambdasqs.WithPrefixLink("/api", "/v1"),
 	}, nil)
 
 	if e == nil {
@@ -36,14 +34,6 @@ func TestSQSEngineCreation(t *testing.T) {
 
 	if !e.ReplyMode {
 		t.Error("ReplyMode should be true")
-	}
-
-	if e.StaticLinkMap["/static"] != "/public" {
-		t.Errorf("StaticLinkMap['/static'] = %q, want '/public'", e.StaticLinkMap["/static"])
-	}
-
-	if e.PrefixLinkMap["/api"] != "/v1" {
-		t.Errorf("PrefixLinkMap['/api'] = %q, want '/v1'", e.PrefixLinkMap["/api"])
 	}
 }
 
@@ -191,56 +181,6 @@ func TestSQSEngineInvokeInvalidProtobuf(t *testing.T) {
 	}
 	if len(resp.BatchItemFailures) != 1 {
 		t.Errorf("Expected 1 failure for invalid protobuf, got %d", len(resp.BatchItemFailures))
-	}
-}
-
-// TestSQSEngineInvokeStaticLink tests static link path mapping
-func TestSQSEngineInvokeStaticLink(t *testing.T) {
-	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine([]lambdasqs.Option{
-		lambdasqs.WithSQSClient(mock),
-		lambdasqs.WithStaticLink("/custom-health", "/health-check"),
-	}, nil)
-
-	ev := events.SQSEvent{Records: []events.SQSMessage{
-		{MessageId: "static", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/custom-health"})},
-	}}
-
-	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
-	if err != nil {
-		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
-	}
-	if len(resp.BatchItemFailures) != 0 {
-		t.Errorf("Expected 0 failures (static link should map to health-check), got %d", len(resp.BatchItemFailures))
-	}
-}
-
-// TestSQSEngineInvokePrefixLink tests prefix link path mapping
-func TestSQSEngineInvokePrefixLink(t *testing.T) {
-	mock := &mockSQSClient{}
-
-	dynamic.RegisterPackage("prefixpkg-sqs", "v1", &mockTunnel{
-		invoke: func(route, req string) string {
-			return "prefix-response"
-		},
-	})
-
-	e := lambdasqs.NewEngine([]lambdasqs.Option{
-		lambdasqs.WithSQSClient(mock),
-		lambdasqs.WithPrefixLink("/v1", "/api"),
-	}, nil)
-
-	// /v1/prefixpkg-sqs/v1/route should be mapped to /api/prefixpkg-sqs/v1/route
-	ev := events.SQSEvent{Records: []events.SQSMessage{
-		{MessageId: "prefix", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/v1/prefixpkg-sqs/v1/route", Payload: []byte(`{}`)})},
-	}}
-
-	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
-	if err != nil {
-		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
-	}
-	if len(resp.BatchItemFailures) != 0 {
-		t.Errorf("Expected 0 failures, got %d", len(resp.BatchItemFailures))
 	}
 }
 

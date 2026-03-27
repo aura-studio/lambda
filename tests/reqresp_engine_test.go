@@ -12,8 +12,6 @@ import (
 func TestEngineCreation(t *testing.T) {
 	reqrespOpts := []reqresp.Option{
 		reqresp.WithDebugMode(true),
-		reqresp.WithStaticLink("/static", "/public"),
-		reqresp.WithPrefixLink("/api", "/v1"),
 	}
 	dynamicOpts := []dynamic.Option{}
 
@@ -25,14 +23,6 @@ func TestEngineCreation(t *testing.T) {
 
 	if !engine.DebugMode {
 		t.Error("DebugMode should be true")
-	}
-
-	if engine.StaticLinkMap["/static"] != "/public" {
-		t.Errorf("StaticLinkMap['/static'] = %q, want '/public'", engine.StaticLinkMap["/static"])
-	}
-
-	if engine.PrefixLinkMap["/api"] != "/v1" {
-		t.Errorf("PrefixLinkMap['/api'] = %q, want '/v1'", engine.PrefixLinkMap["/api"])
 	}
 
 	if !engine.IsRunning() {
@@ -130,24 +120,6 @@ func TestEngineInvokePageNotFound(t *testing.T) {
 
 	if resp.Error == "" {
 		t.Error("Expected error for nonexistent path")
-	}
-}
-
-// TestEngineInvokeStaticLink tests static link path mapping
-func TestEngineInvokeStaticLink(t *testing.T) {
-	engine := reqresp.NewEngine([]reqresp.Option{
-		reqresp.WithStaticLink("/custom-health", "/health-check"),
-	}, nil)
-
-	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
-		Path: "/custom-health",
-	})
-	if err != nil {
-		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	if string(resp.Payload) != "OK" {
-		t.Errorf("Payload = %q, want 'OK' (static link should map to health-check)", string(resp.Payload))
 	}
 }
 

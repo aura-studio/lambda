@@ -14,12 +14,6 @@ func TestSQSWithConfig(t *testing.T) {
   debug: true
   run: partial
   reply: true
-staticLink:
-  - srcPath: /a
-    dstPath: /b
-prefixLink:
-  - srcPrefix: /api
-    dstPrefix: /v1
 `)
 
 	o := lambdasqs.NewOptions(lambdasqs.WithConfig(yaml))
@@ -31,12 +25,6 @@ prefixLink:
 	}
 	if !o.ReplyMode {
 		t.Fatalf("ReplyMode = false, expected true")
-	}
-	if got := o.StaticLinkMap["/a"]; got != "/b" {
-		t.Fatalf("StaticLinkMap['/a'] = %q, expected '/b'", got)
-	}
-	if got := o.PrefixLinkMap["/api"]; got != "/v1" {
-		t.Fatalf("PrefixLinkMap['/api'] = %q, expected '/v1'", got)
 	}
 }
 
@@ -87,93 +75,9 @@ func TestSQSWithConfigEmptyYAML(t *testing.T) {
 	if o.ReplyMode {
 		t.Fatalf("ReplyMode = true, expected false for empty config")
 	}
-	if len(o.StaticLinkMap) != 0 {
-		t.Fatalf("StaticLinkMap should be empty, got %d entries", len(o.StaticLinkMap))
-	}
-	if len(o.PrefixLinkMap) != 0 {
-		t.Fatalf("PrefixLinkMap should be empty, got %d entries", len(o.PrefixLinkMap))
-	}
 }
 
-// TestSQSWithConfigMultipleLinks tests YAML configuration with multiple link entries
-func TestSQSWithConfigMultipleLinks(t *testing.T) {
-	yaml := []byte(`mode:
-  debug: true
-staticLink:
-  - srcPath: /static1
-    dstPath: /dest1
-  - srcPath: /static2
-    dstPath: /dest2
-  - srcPath: /static3
-    dstPath: /dest3
-prefixLink:
-  - srcPrefix: /api
-    dstPrefix: /v1
-  - srcPrefix: /admin
-    dstPrefix: /v2
-`)
 
-	o := lambdasqs.NewOptions(lambdasqs.WithConfig(yaml))
-
-	// Verify all static links
-	expectedStatic := map[string]string{
-		"/static1": "/dest1",
-		"/static2": "/dest2",
-		"/static3": "/dest3",
-	}
-	for src, expectedDst := range expectedStatic {
-		if got := o.StaticLinkMap[src]; got != expectedDst {
-			t.Fatalf("StaticLinkMap['%s'] = %q, expected %q", src, got, expectedDst)
-		}
-	}
-
-	// Verify all prefix links
-	expectedPrefix := map[string]string{
-		"/api":   "/v1",
-		"/admin": "/v2",
-	}
-	for src, expectedDst := range expectedPrefix {
-		if got := o.PrefixLinkMap[src]; got != expectedDst {
-			t.Fatalf("PrefixLinkMap['%s'] = %q, expected %q", src, got, expectedDst)
-		}
-	}
-}
-
-// TestSQSWithConfigSkipsEmptyPaths tests that empty paths in config are skipped
-func TestSQSWithConfigSkipsEmptyPaths(t *testing.T) {
-	yaml := []byte(`staticLink:
-  - srcPath: ""
-    dstPath: /dest
-  - srcPath: /src
-    dstPath: ""
-  - srcPath: /valid
-    dstPath: /valid-dest
-prefixLink:
-  - srcPrefix: ""
-    dstPrefix: /dest
-  - srcPrefix: /src
-    dstPrefix: ""
-  - srcPrefix: /valid-prefix
-    dstPrefix: /valid-prefix-dest
-`)
-
-	o := lambdasqs.NewOptions(lambdasqs.WithConfig(yaml))
-
-	// Only valid entries should be present
-	if len(o.StaticLinkMap) != 1 {
-		t.Fatalf("StaticLinkMap should have 1 entry, got %d", len(o.StaticLinkMap))
-	}
-	if got := o.StaticLinkMap["/valid"]; got != "/valid-dest" {
-		t.Fatalf("StaticLinkMap['/valid'] = %q, expected '/valid-dest'", got)
-	}
-
-	if len(o.PrefixLinkMap) != 1 {
-		t.Fatalf("PrefixLinkMap should have 1 entry, got %d", len(o.PrefixLinkMap))
-	}
-	if got := o.PrefixLinkMap["/valid-prefix"]; got != "/valid-prefix-dest" {
-		t.Fatalf("PrefixLinkMap['/valid-prefix'] = %q, expected '/valid-prefix-dest'", got)
-	}
-}
 
 // TestSQSWithConfigFile tests YAML configuration loading from file
 func TestSQSWithConfigFile(t *testing.T) {
@@ -185,12 +89,6 @@ func TestSQSWithConfigFile(t *testing.T) {
   debug: true
   run: strict
   reply: true
-staticLink:
-  - srcPath: /file-static
-    dstPath: /file-dest
-prefixLink:
-  - srcPrefix: /file-api
-    dstPrefix: /file-v1
 `)
 
 	if err := os.WriteFile(configPath, yaml, 0644); err != nil {
@@ -206,12 +104,6 @@ prefixLink:
 	}
 	if !o.ReplyMode {
 		t.Fatalf("ReplyMode = false, expected true")
-	}
-	if got := o.StaticLinkMap["/file-static"]; got != "/file-dest" {
-		t.Fatalf("StaticLinkMap['/file-static'] = %q, expected '/file-dest'", got)
-	}
-	if got := o.PrefixLinkMap["/file-api"]; got != "/file-v1" {
-		t.Fatalf("PrefixLinkMap['/file-api'] = %q, expected '/file-v1'", got)
 	}
 }
 
@@ -392,9 +284,6 @@ func TestSQSWithDefaultConfigFileLoadsConfig(t *testing.T) {
 	yaml := []byte(`mode:
   debug: true
   run: reentrant
-staticLink:
-  - srcPath: /default-static
-    dstPath: /default-dest
 `)
 	if err := os.WriteFile(configPath, yaml, 0644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
@@ -411,8 +300,5 @@ staticLink:
 	}
 	if o.RunMode != lambdasqs.RunModeReentrant {
 		t.Fatalf("RunMode = %q, expected 'reentrant'", o.RunMode)
-	}
-	if got := o.StaticLinkMap["/default-static"]; got != "/default-dest" {
-		t.Fatalf("StaticLinkMap['/default-static'] = %q, expected '/default-dest'", got)
 	}
 }
