@@ -17,18 +17,18 @@ import (
 )
 
 const (
-	GinContextHeader       = "Header"
-	GinContextPath         = "Path"
-	GinContextRequest      = "Request"
-	GinContextResponse     = "Response"
-	GinContextRequestMeta  = "RequestMeta"
-	GinContextResponseMeta = "ResponseMeta"
-	GinContextError        = "Error"
-	GinContextPanic        = "Panic"
-	GinContextDebug        = "Debug"
-	GinContextStdout       = "Stdout"
-	GinContextStderr       = "Stderr"
-	GinContextProcessor    = "Processor"
+	ContextHeader       = "Header"
+	ContextPath         = "Path"
+	ContextRequest      = "Request"
+	ContextResponse     = "Response"
+	ContextRequestMeta  = "RequestMeta"
+	ContextResponseMeta = "ResponseMeta"
+	ContextError        = "Error"
+	ContextPanic        = "Panic"
+	ContextDebug        = "Debug"
+	ContextStdout       = "Stdout"
+	ContextStderr       = "Stderr"
+	ContextProcessor    = "Processor"
 )
 
 const (
@@ -115,38 +115,38 @@ func (e *Engine) OK(c *gin.Context) {
 }
 
 func (e *Engine) Debug(c *gin.Context) {
-	c.Set(GinContextDebug, true)
+	c.Set(ContextDebug, true)
 }
 
 func (e *Engine) API(c *gin.Context) {
 	// path
-	c.Set(GinContextPath, c.Param("path"))
+	c.Set(ContextPath, c.Param("path"))
 
 	// header
-	c.Set(GinContextHeader, c.Request.Header)
+	c.Set(ContextHeader, c.Request.Header)
 
 	// meta
-	c.Set(GinContextRequestMeta, e.genReqMeta(c))
+	c.Set(ContextRequestMeta, e.genReqMeta(c))
 
 	// request
 	switch c.Request.Method {
 	case http.MethodGet, "": // empty method treated as GET
-		c.Set(GinContextRequest, e.genGetReq(c))
+		c.Set(ContextRequest, e.genGetReq(c))
 	case http.MethodPost:
-		c.Set(GinContextRequest, e.genPostReq(c))
+		c.Set(ContextRequest, e.genPostReq(c))
 	default:
-		c.Set(GinContextRequest, "")
+		c.Set(ContextRequest, "")
 	}
 
 	// processor
-	if c.GetBool(GinContextDebug) {
-		c.Set(GinContextProcessor, e.debugProcessor)
+	if c.GetBool(ContextDebug) {
+		c.Set(ContextProcessor, e.debugProcessor)
 	} else {
-		c.Set(GinContextProcessor, e.safeProcessor)
+		c.Set(ContextProcessor, e.safeProcessor)
 	}
 
 	// handle
-	if v, ok := c.Get(GinContextProcessor); ok {
+	if v, ok := c.Get(ContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
 		log.Println("processor not found")
@@ -156,23 +156,23 @@ func (e *Engine) API(c *gin.Context) {
 	}
 
 	// response
-	if c.GetBool(GinContextDebug) {
+	if c.GetBool(ContextDebug) {
 		c.String(http.StatusOK, e.formatDebug(c))
 		c.Abort()
 		return
-	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
+	} else if v, ok := c.Get(ContextPanic); ok && v != nil {
 		log.Println(v.(error).Error())
 		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
-	} else if v, ok := c.Get(GinContextError); ok && v != nil {
+	} else if v, ok := c.Get(ContextError); ok && v != nil {
 		log.Println(v.(error).Error())
 		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else {
-		rspMeta := c.GetStringMap(GinContextResponseMeta)
-		rspBody := c.GetString(GinContextResponse)
+		rspMeta := c.GetStringMap(ContextResponseMeta)
+		rspBody := c.GetString(ContextResponse)
 		contentType := "application/json"
 		statusCode := http.StatusOK
 
@@ -198,30 +198,30 @@ func (e *Engine) API(c *gin.Context) {
 
 func (e *Engine) WAPI(c *gin.Context) {
 	// path
-	c.Set(GinContextPath, c.Param("path"))
+	c.Set(ContextPath, c.Param("path"))
 
 	// header
-	c.Set(GinContextHeader, c.Request.Header)
+	c.Set(ContextHeader, c.Request.Header)
 
 	// request
 	switch c.Request.Method {
 	case http.MethodGet, "": // empty method treated as GET
-		c.Set(GinContextRequest, e.genGetReq(c))
+		c.Set(ContextRequest, e.genGetReq(c))
 	case http.MethodPost:
-		c.Set(GinContextRequest, e.genPostReq(c))
+		c.Set(ContextRequest, e.genPostReq(c))
 	default:
-		c.Set(GinContextRequest, "")
+		c.Set(ContextRequest, "")
 	}
 
 	// processor
-	if c.GetBool(GinContextDebug) {
-		c.Set(GinContextProcessor, e.debugWireProcessor)
+	if c.GetBool(ContextDebug) {
+		c.Set(ContextProcessor, e.debugWireProcessor)
 	} else {
-		c.Set(GinContextProcessor, e.safeWireProcessor)
+		c.Set(ContextProcessor, e.safeWireProcessor)
 	}
 
 	// handle
-	if v, ok := c.Get(GinContextProcessor); ok {
+	if v, ok := c.Get(ContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
 		log.Println("processor not found")
@@ -231,22 +231,22 @@ func (e *Engine) WAPI(c *gin.Context) {
 	}
 
 	// response
-	if c.GetBool(GinContextDebug) {
+	if c.GetBool(ContextDebug) {
 		c.String(http.StatusOK, e.formatDebug(c))
 		c.Abort()
 		return
-	} else if v, ok := c.Get(GinContextPanic); ok && v != nil {
+	} else if v, ok := c.Get(ContextPanic); ok && v != nil {
 		log.Println(v.(error).Error())
 		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
-	} else if v, ok := c.Get(GinContextError); ok && v != nil {
+	} else if v, ok := c.Get(ContextError); ok && v != nil {
 		log.Println(v.(error).Error())
 		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else {
-		response, err := http.ReadResponse(bufio.NewReader(strings.NewReader(c.GetString(GinContextResponse))), c.Request)
+		response, err := http.ReadResponse(bufio.NewReader(strings.NewReader(c.GetString(ContextResponse))), c.Request)
 		if err != nil {
 			log.Println(err.Error())
 			c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
@@ -266,13 +266,13 @@ func (e *Engine) WAPI(c *gin.Context) {
 
 func (e *Engine) Meta(c *gin.Context) {
 	// path
-	c.Set(GinContextPath, c.Param("path"))
+	c.Set(ContextPath, c.Param("path"))
 
 	// processor
-	c.Set(GinContextProcessor, e.safeMetaProcessor)
+	c.Set(ContextProcessor, e.safeMetaProcessor)
 
 	// handle
-	if v, ok := c.Get(GinContextProcessor); ok {
+	if v, ok := c.Get(ContextProcessor); ok {
 		v.(Proccessor)(c, e.handle)
 	} else {
 		log.Println("processor not found")
@@ -282,18 +282,18 @@ func (e *Engine) Meta(c *gin.Context) {
 	}
 
 	// response
-	if v, ok := c.Get(GinContextPanic); ok && v != nil {
+	if v, ok := c.Get(ContextPanic); ok && v != nil {
 		log.Println(v.(error).Error())
 		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
-	} else if v, ok := c.Get(GinContextError); ok && v != nil {
+	} else if v, ok := c.Get(ContextError); ok && v != nil {
 		log.Println(v.(error).Error())
 		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		c.Abort()
 		return
 	} else {
-		c.String(http.StatusOK, c.GetString(GinContextResponse))
+		c.String(http.StatusOK, c.GetString(ContextResponse))
 		c.Abort()
 		return
 	}
@@ -383,12 +383,12 @@ func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
 		err     error
 	)
 	defer func() {
-		c.Set(GinContextRequest, wireReq)
-		c.Set(GinContextResponse, wireRsp)
-		c.Set(GinContextError, err)
+		c.Set(ContextRequest, wireReq)
+		c.Set(ContextResponse, wireRsp)
+		c.Set(ContextError, err)
 	}()
 
-	path := c.GetString(GinContextPath)
+	path := c.GetString(ContextPath)
 
 	var buf bytes.Buffer
 	err = c.Request.Write(&buf)
@@ -401,7 +401,7 @@ func (e *Engine) doWireProcessor(c *gin.Context, f LocalHandler) {
 }
 
 func (e *Engine) safeWireProcessor(c *gin.Context, f LocalHandler) {
-	c.Set(GinContextPanic, e.doSafe(func() {
+	c.Set(ContextPanic, e.doSafe(func() {
 		e.doWireProcessor(c, f)
 	}))
 }
@@ -410,15 +410,15 @@ func (e *Engine) debugWireProcessor(c *gin.Context, f LocalHandler) {
 	stdout, stderr, panicErr := e.doDebug(func() {
 		e.doWireProcessor(c, f)
 	})
-	c.Set(GinContextStdout, stdout)
-	c.Set(GinContextStderr, stderr)
-	c.Set(GinContextPanic, panicErr)
+	c.Set(ContextStdout, stdout)
+	c.Set(ContextStderr, stderr)
+	c.Set(ContextPanic, panicErr)
 }
 
 func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
-	path := c.GetString(GinContextPath)
-	req := c.GetString(GinContextRequest)
-	reqMeta := c.GetStringMap(GinContextRequestMeta)
+	path := c.GetString(ContextPath)
+	req := c.GetString(ContextRequest)
+	reqMeta := c.GetStringMap(ContextRequestMeta)
 
 	// 封装请求: {"meta":{...}, "data":"base64"}
 	reqEnvelope := struct {
@@ -430,15 +430,15 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 	}
 	reqBytes, err := json.Marshal(reqEnvelope)
 	if err != nil {
-		c.Set(GinContextResponse, "")
-		c.Set(GinContextError, err)
+		c.Set(ContextResponse, "")
+		c.Set(ContextError, err)
 		return
 	}
 
 	rsp, err := f(path, string(reqBytes))
 	if err != nil {
-		c.Set(GinContextResponse, "")
-		c.Set(GinContextError, err)
+		c.Set(ContextResponse, "")
+		c.Set(ContextError, err)
 		return
 	}
 
@@ -448,33 +448,33 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 		Data string         `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(rsp), &rspEnvelope); err != nil {
-		c.Set(GinContextResponse, rsp)
-		c.Set(GinContextError, nil)
+		c.Set(ContextResponse, rsp)
+		c.Set(ContextError, nil)
 		return
 	}
 
 	if len(rspEnvelope.Meta) > 0 {
-		c.Set(GinContextResponseMeta, rspEnvelope.Meta)
+		c.Set(ContextResponseMeta, rspEnvelope.Meta)
 	}
 
 	if errMsg := cast.ToString(rspEnvelope.Meta[RspMetaError]); errMsg != "" {
-		c.Set(GinContextResponse, "")
-		c.Set(GinContextError, cast.ToError(errMsg))
+		c.Set(ContextResponse, "")
+		c.Set(ContextError, cast.ToError(errMsg))
 		return
 	}
 
 	data, decErr := base64.StdEncoding.DecodeString(rspEnvelope.Data)
 	if decErr != nil {
-		c.Set(GinContextResponse, "")
-		c.Set(GinContextError, decErr)
+		c.Set(ContextResponse, "")
+		c.Set(ContextError, decErr)
 		return
 	}
-	c.Set(GinContextResponse, string(data))
-	c.Set(GinContextError, nil)
+	c.Set(ContextResponse, string(data))
+	c.Set(ContextError, nil)
 }
 
 func (e *Engine) safeProcessor(c *gin.Context, f LocalHandler) {
-	c.Set(GinContextPanic, e.doSafe(func() {
+	c.Set(ContextPanic, e.doSafe(func() {
 		e.doProcessor(c, f)
 	}))
 }
@@ -483,20 +483,20 @@ func (e *Engine) debugProcessor(c *gin.Context, f LocalHandler) {
 	stdout, stderr, panicErr := e.doDebug(func() {
 		e.doProcessor(c, f)
 	})
-	c.Set(GinContextStdout, stdout)
-	c.Set(GinContextStderr, stderr)
-	c.Set(GinContextPanic, panicErr)
+	c.Set(ContextStdout, stdout)
+	c.Set(ContextStderr, stderr)
+	c.Set(ContextPanic, panicErr)
 }
 
 func (e *Engine) doMetaProcessor(c *gin.Context) {
-	path := c.GetString(GinContextPath)
+	path := c.GetString(ContextPath)
 	rsp, err := e.meta(path)
-	c.Set(GinContextResponse, rsp)
-	c.Set(GinContextError, err)
+	c.Set(ContextResponse, rsp)
+	c.Set(ContextError, err)
 }
 
 func (e *Engine) safeMetaProcessor(c *gin.Context, f LocalHandler) {
-	c.Set(GinContextPanic, e.doSafe(func() {
+	c.Set(ContextPanic, e.doSafe(func() {
 		e.doMetaProcessor(c)
 	}))
 }
@@ -548,41 +548,41 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	buf.WriteString(c.Request.URL.Host)
 	buf.WriteString("\n")
 	buf.WriteString(`Path: `)
-	buf.WriteString(c.GetString(GinContextPath))
+	buf.WriteString(c.GetString(ContextPath))
 	buf.WriteString("\n")
 	buf.WriteString(`Header: `)
-	headerBytes, _ := json.Marshal(c.GetString(GinContextHeader))
+	headerBytes, _ := json.Marshal(c.GetString(ContextHeader))
 	buf.WriteString(string(headerBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Request Meta: `)
-	reqMetaBytes, _ := json.Marshal(c.GetStringMap(GinContextRequestMeta))
+	reqMetaBytes, _ := json.Marshal(c.GetStringMap(ContextRequestMeta))
 	buf.WriteString(string(reqMetaBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Response Meta: `)
-	rspMetaBytes, _ := json.Marshal(c.GetStringMap(GinContextResponseMeta))
+	rspMetaBytes, _ := json.Marshal(c.GetStringMap(ContextResponseMeta))
 	buf.WriteString(string(rspMetaBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Stdout: `)
-	buf.WriteString(c.GetString(GinContextStdout))
+	buf.WriteString(c.GetString(ContextStdout))
 	buf.WriteString("\n")
 	buf.WriteString(`Stderr: `)
-	buf.WriteString(c.GetString(GinContextStderr))
+	buf.WriteString(c.GetString(ContextStderr))
 	buf.WriteString("\n")
 	buf.WriteString(`Error: `)
-	if v, ok := c.Get(GinContextError); ok && v != nil {
+	if v, ok := c.Get(ContextError); ok && v != nil {
 		buf.WriteString(v.(error).Error())
 	}
 	buf.WriteString("\n")
 	buf.WriteString(`Panic: `)
-	if v, ok := c.Get(GinContextPanic); ok && v != nil {
+	if v, ok := c.Get(ContextPanic); ok && v != nil {
 		buf.WriteString(v.(error).Error())
 	}
 	buf.WriteString("\n")
 	buf.WriteString(`Request: `)
-	buf.WriteString(c.GetString(GinContextRequest))
+	buf.WriteString(c.GetString(ContextRequest))
 	buf.WriteString("\n")
 	buf.WriteString(`Response: `)
-	buf.WriteString(c.GetString(GinContextResponse))
+	buf.WriteString(c.GetString(ContextResponse))
 	buf.WriteString("\n")
 	return buf.String()
 }
