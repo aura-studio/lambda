@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync/atomic"
 
 	"github.com/aura-studio/lambda/dynamic"
 	"github.com/aws/aws-lambda-go/events"
@@ -22,9 +21,8 @@ type SQSClient interface {
 
 type Engine struct {
 	*Options
+	*Router
 	*dynamic.Dynamic
-	r         *Router
-	running   atomic.Int32
 	sqsClient SQSClient
 }
 
@@ -37,23 +35,15 @@ func NewEngine(sqsOpts []Option, dynamicOpts []dynamic.Option) *Engine {
 	e := &Engine{
 		Options: NewOptions(sqsOpts...),
 		Dynamic: dynamic.NewDynamic(dynamicOpts...),
+		Router:  NewRouter(),
 	}
 	if e.Options.SQSClient != nil {
 		e.sqsClient = e.Options.SQSClient
 	} else {
 		e.sqsClient = sqs.NewFromConfig(cfg)
 	}
-	e.running.Store(1)
 	e.InstallHandlers()
 	return e
-}
-
-func (e *Engine) Start() {
-	e.running.Store(1)
-}
-
-func (e *Engine) Stop() {
-	e.running.Store(0)
 }
 
 // HandleSQSMessagesWithoutResponse 重试全部数据
@@ -87,12 +77,6 @@ func (e *Engine) Invoke(ctx context.Context, ev events.SQSEvent) (events.SQSEven
 func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (resp events.SQSEventResponse, err error) {
 	_ = ctx
 	for i, msg := range ev.Records {
-		if e.running.Load() == 0 {
-			log.Printf("[SQS] Engine stopped, message %s failed", msg.MessageId)
-			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
-			continue
-		}
-
 		if e.DebugMode {
 			log.Printf("[SQS] Message %s body: %s", msg.MessageId, msg.Body)
 		}
@@ -118,31 +102,29 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			}
 		}
 
-		c := &Context{
-			Engine:  e,
-			RawPath: request.Path,
-			Path:    request.Path,
-			Request: string(request.Payload),
-		}
+		c := &Context{}
+		c.Set(ContextPath, request.Path)
+		c.Set(ContextRequest, string(request.Payload))
 
 		if e.DebugMode {
-			log.Printf("[SQS] Request: %s %s", c.Path, c.Request)
+			log.Printf("[SQS] Request: %s %s", c.GetString(ContextPath), c.GetString(ContextRequest))
 		}
 
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					c.Err = fmt.Errorf("panic: %v", r)
-				}
-			}()
-			e.r.Dispatch(c)
-		}()
+		e.Router.Dispatch(c)
 
 		if e.DebugMode {
-			log.Printf("[SQS] Response: %s %s", c.Path, c.Response)
+			log.Printf("[SQS] Response: %s %s", c.GetString(ContextPath), c.GetString(ContextResponse))
 		}
-		if c.Err != nil {
-			log.Printf("[SQS] Dispatch message %s error: %v", msg.MessageId, c.Err)
+
+		// check panic first, then error
+		var cErr error
+		if v, ok := c.Get(ContextPanic); ok && v != nil {
+			cErr = v.(error)
+		} else {
+			cErr = c.GetError()
+		}
+		if cErr != nil {
+			log.Printf("[SQS] Dispatch message %s error: %v", msg.MessageId, cErr)
 
 			switch e.RunMode {
 			case RunModeStrict:
@@ -154,10 +136,10 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
 				continue
 			case RunModeBatch:
-				return resp, c.Err
+				return resp, cErr
 			case RunModeReentrant:
 				resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
-				err = c.Err
+				err = cErr
 				continue
 			}
 		}
@@ -166,7 +148,6 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 		if request.ResponseSqsId == "" {
 			continue
 		}
-		// When a response is requested, RequestSqsId must be present.
 		if request.RequestSqsId == "" {
 			log.Printf("[SQS] RequestSqsId is empty for message %s", msg.MessageId)
 			resp.BatchItemFailures = append(resp.BatchItemFailures, events.SQSBatchItemFailure{ItemIdentifier: msg.MessageId})
@@ -177,7 +158,7 @@ func (e *Engine) handleSQSMessages(ctx context.Context, ev events.SQSEvent) (res
 			RequestSqsId:  request.RequestSqsId,
 			ResponseSqsId: request.ResponseSqsId,
 			CorrelationId: request.CorrelationId,
-			Payload:       []byte(c.Response),
+			Payload:       []byte(c.GetString(ContextResponse)),
 		}
 		b, marshalErr := json.Marshal(rsp)
 		if marshalErr != nil {

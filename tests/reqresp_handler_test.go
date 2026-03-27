@@ -388,28 +388,3 @@ func TestReqRespHandler_UnmatchedRoute_VariousPaths(t *testing.T) {
 		})
 	}
 }
-
-// =============================================================================
-// Additional Integration Tests
-// =============================================================================
-
-// TestReqRespHandler_EngineStopped tests that stopped engine returns error
-func TestReqRespHandler_EngineStopped(t *testing.T) {
-	engine := reqresp.NewEngine(nil, nil)
-	engine.Stop()
-
-	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
-		Path: "/health-check",
-	})
-	if err != nil {
-		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	if resp.Error == "" {
-		t.Error("Expected error when engine is stopped")
-	}
-
-	if resp.Error != "engine is stopped" {
-		t.Errorf("Error = %q, want 'engine is stopped'", resp.Error)
-	}
-}

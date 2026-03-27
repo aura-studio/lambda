@@ -16,7 +16,4 @@ func Serve(reqrespOpts []Option, dynamicOpts []dynamic.Option) {
 
 // Close 优雅关闭引擎
 func Close() {
-	if engine != nil {
-		engine.Stop()
-	}
 }

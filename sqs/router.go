@@ -8,23 +8,60 @@ import (
 type HandlerFunc func(*Context)
 
 type Context struct {
-	Engine *Engine
-
-	// RawPath is the path as provided by the request (before link rewriting).
-	RawPath string
-	// Path is the current effective path (after link rewriting).
-	Path string
-	// ParamPath is the wildcard parameter value for routes like /api/*path.
-	// It includes a leading slash, e.g. /pkg/commit/route.
-	ParamPath string
-
-	Request  string
-	Response string
-	Err      error
-
-	DebugMode bool
+	Keys map[string]any
 
 	aborted bool
+}
+
+func (c *Context) Set(key string, value any) {
+	if c.Keys == nil {
+		c.Keys = make(map[string]any)
+	}
+	c.Keys[key] = value
+}
+
+func (c *Context) Get(key string) (any, bool) {
+	if c.Keys == nil {
+		return nil, false
+	}
+	v, ok := c.Keys[key]
+	return v, ok
+}
+
+func (c *Context) GetString(key string) string {
+	if v, ok := c.Get(key); ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func (c *Context) GetBool(key string) bool {
+	if v, ok := c.Get(key); ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+	}
+	return false
+}
+
+func (c *Context) GetStringMap(key string) map[string]any {
+	if v, ok := c.Get(key); ok {
+		if m, ok := v.(map[string]any); ok {
+			return m
+		}
+	}
+	return nil
+}
+
+func (c *Context) GetError() error {
+	if v, ok := c.Get(ContextError); ok {
+		if e, ok := v.(error); ok {
+			return e
+		}
+	}
+	return nil
 }
 
 func (c *Context) Abort() { c.aborted = true }
@@ -67,12 +104,12 @@ func (r *Router) Dispatch(ctx *Context) {
 		}
 	}
 
-	matched, handlers := r.match(ctx.Path)
+	matched, handlers := r.match(ctx.GetString(ContextPath))
 	if !matched {
 		handlers = r.noRoute
 	}
 	if len(handlers) == 0 {
-		ctx.Err = fmt.Errorf("no route for path: %q", ctx.Path)
+		ctx.Set(ContextError, fmt.Errorf("no route for path: %q", ctx.GetString(ContextPath)))
 		return
 	}
 
@@ -84,7 +121,7 @@ func (r *Router) Dispatch(ctx *Context) {
 		if ctx.aborted {
 			return
 		}
-		if ctx.Err != nil {
+		if ctx.GetError() != nil {
 			return
 		}
 	}
@@ -108,7 +145,7 @@ func withParam(handlers []HandlerFunc, param string) []HandlerFunc {
 	}
 	out := make([]HandlerFunc, 0, len(handlers)+1)
 	out = append(out, func(c *Context) {
-		c.ParamPath = param
+		c.Set(ContextPath, param)
 	})
 	out = append(out, handlers...)
 	return out

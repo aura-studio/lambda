@@ -93,24 +93,3 @@ func TestReqRespExample_HealthCheck(t *testing.T) {
 
 	t.Log("Health check: OK")
 }
-
-// TestReqRespExample_EngineLifecycle 展示引擎生命周期控制
-func TestReqRespExample_EngineLifecycle(t *testing.T) {
-	engine := reqresp.NewEngine(nil, nil)
-
-	if !engine.IsRunning() {
-		t.Error("Engine should be running after creation")
-	}
-
-	engine.Stop()
-	if engine.IsRunning() {
-		t.Error("Engine should be stopped after Stop()")
-	}
-
-	engine.Start()
-	if !engine.IsRunning() {
-		t.Error("Engine should be running after Start()")
-	}
-
-	t.Log("Engine lifecycle: Create -> Stop -> Start -> OK")
-}

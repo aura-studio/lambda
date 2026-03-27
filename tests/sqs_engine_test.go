@@ -37,53 +37,6 @@ func TestSQSEngineCreation(t *testing.T) {
 	}
 }
 
-// TestSQSEngineStartStop tests the Start and Stop methods
-func TestSQSEngineStartStop(t *testing.T) {
-	mock := &mockSQSClient{}
-	e := lambdasqs.NewEngine([]lambdasqs.Option{
-		lambdasqs.WithSQSClient(mock),
-		lambdasqs.WithRunMode(lambdasqs.RunModePartial),
-	}, nil)
-
-	// Engine should be running after creation
-	// Test by sending a message
-	ev := events.SQSEvent{Records: []events.SQSMessage{
-		{MessageId: "1", Body: mustPBRequest(t, &lambdasqs.Request{Path: "/health-check"})},
-	}}
-
-	resp, err := e.HandleSQSMessagesWithResponse(context.Background(), ev)
-	if err != nil {
-		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
-	}
-	if len(resp.BatchItemFailures) != 0 {
-		t.Errorf("Expected 0 failures when running, got %d", len(resp.BatchItemFailures))
-	}
-
-	// Stop the engine
-	e.Stop()
-
-	// Messages should fail when stopped
-	resp, err = e.HandleSQSMessagesWithResponse(context.Background(), ev)
-	if err != nil {
-		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
-	}
-	if len(resp.BatchItemFailures) != 1 {
-		t.Errorf("Expected 1 failure when stopped, got %d", len(resp.BatchItemFailures))
-	}
-
-	// Start the engine again
-	e.Start()
-
-	// Messages should succeed again
-	resp, err = e.HandleSQSMessagesWithResponse(context.Background(), ev)
-	if err != nil {
-		t.Fatalf("HandleSQSMessagesWithResponse error: %v", err)
-	}
-	if len(resp.BatchItemFailures) != 0 {
-		t.Errorf("Expected 0 failures after restart, got %d", len(resp.BatchItemFailures))
-	}
-}
-
 // TestSQSEngineInvokeHealthCheck tests the health check endpoint
 func TestSQSEngineInvokeHealthCheck(t *testing.T) {
 	mock := &mockSQSClient{}

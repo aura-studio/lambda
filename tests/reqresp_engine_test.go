@@ -24,51 +24,6 @@ func TestEngineCreation(t *testing.T) {
 	if !engine.DebugMode {
 		t.Error("DebugMode should be true")
 	}
-
-	if !engine.IsRunning() {
-		t.Error("Engine should be running after creation")
-	}
-}
-
-// TestEngineStartStop tests the Start and Stop methods
-func TestEngineStartStop(t *testing.T) {
-	engine := reqresp.NewEngine(nil, nil)
-
-	if !engine.IsRunning() {
-		t.Error("Engine should be running after creation")
-	}
-
-	engine.Stop()
-	if engine.IsRunning() {
-		t.Error("Engine should not be running after Stop")
-	}
-
-	engine.Start()
-	if !engine.IsRunning() {
-		t.Error("Engine should be running after Start")
-	}
-}
-
-// TestEngineInvokeWhenStopped tests that Invoke returns error when engine is stopped
-func TestEngineInvokeWhenStopped(t *testing.T) {
-	engine := reqresp.NewEngine(nil, nil)
-	engine.Stop()
-
-	resp, err := engine.Invoke(context.Background(), &reqresp.Request{
-		Path:    "/health-check",
-		Payload: []byte("test"),
-	})
-	if err != nil {
-		t.Fatalf("Invoke returned error: %v", err)
-	}
-
-	if resp.Error == "" {
-		t.Error("Expected error in response when engine is stopped")
-	}
-
-	if resp.Error != "engine is stopped" {
-		t.Errorf("Expected error 'engine is stopped', got %q", resp.Error)
-	}
 }
 
 // TestEngineInvokeHealthCheck tests the health check endpoint

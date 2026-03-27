@@ -15,55 +15,13 @@ func TestMatchPattern(t *testing.T) {
 		wantParam   string
 		wantMatched bool
 	}{
-		{
-			name:        "exact match root",
-			pattern:     "/",
-			path:        "/",
-			wantParam:   "",
-			wantMatched: true,
-		},
-		{
-			name:        "exact match health-check",
-			pattern:     "/health-check",
-			path:        "/health-check",
-			wantParam:   "",
-			wantMatched: true,
-		},
-		{
-			name:        "exact match no match",
-			pattern:     "/health-check",
-			path:        "/other",
-			wantParam:   "",
-			wantMatched: false,
-		},
-		{
-			name:        "wildcard api with route",
-			pattern:     "/api/*path",
-			path:        "/api/pkg/v1/route",
-			wantParam:   "/pkg/v1/route",
-			wantMatched: true,
-		},
-		{
-			name:        "wildcard api no route",
-			pattern:     "/api/*path",
-			path:        "/api/",
-			wantParam:   "/",
-			wantMatched: true,
-		},
-		{
-			name:        "wildcard debug api",
-			pattern:     "/_/api/*path",
-			path:        "/_/api/pkg/v1/route",
-			wantParam:   "/pkg/v1/route",
-			wantMatched: true,
-		},
-		{
-			name:        "wildcard deep path",
-			pattern:     "/api/*path",
-			path:        "/api/pkg/v1/users/123/profile/settings",
-			wantParam:   "/pkg/v1/users/123/profile/settings",
-			wantMatched: true,
-		},
+		{"exact match root", "/", "/", "", true},
+		{"exact match health-check", "/health-check", "/health-check", "", true},
+		{"exact match no match", "/health-check", "/other", "", false},
+		{"wildcard api with route", "/api/*path", "/api/pkg/v1/route", "/pkg/v1/route", true},
+		{"wildcard api no route", "/api/*path", "/api/", "/", true},
+		{"wildcard debug api", "/_/api/*path", "/_/api/pkg/v1/route", "/pkg/v1/route", true},
+		{"wildcard deep path", "/api/*path", "/api/pkg/v1/users/123/profile/settings", "/pkg/v1/users/123/profile/settings", true},
 	}
 
 	for _, tt := range tests {
@@ -79,6 +37,12 @@ func TestMatchPattern(t *testing.T) {
 	}
 }
 
+func newContext(path string) *reqresp.Context {
+	c := &reqresp.Context{}
+	c.Set(reqresp.ContextPath, path)
+	return c
+}
+
 // TestRouterDispatch tests the Router.Dispatch function
 func TestRouterDispatch(t *testing.T) {
 	t.Run("dispatch to matching route", func(t *testing.T) {
@@ -86,17 +50,17 @@ func TestRouterDispatch(t *testing.T) {
 		called := false
 		r.Handle("/test", func(c *reqresp.Context) {
 			called = true
-			c.Response = "test-response"
+			c.Set(reqresp.ContextResponse, "test-response")
 		})
 
-		ctx := &reqresp.Context{Path: "/test"}
+		ctx := newContext("/test")
 		r.Dispatch(ctx)
 
 		if !called {
 			t.Error("Handler was not called")
 		}
-		if ctx.Response != "test-response" {
-			t.Errorf("Response = %q, want 'test-response'", ctx.Response)
+		if ctx.GetString(reqresp.ContextResponse) != "test-response" {
+			t.Errorf("Response = %q, want 'test-response'", ctx.GetString(reqresp.ContextResponse))
 		}
 	})
 
@@ -105,10 +69,9 @@ func TestRouterDispatch(t *testing.T) {
 		noRouteCalled := false
 		r.NoRoute(func(c *reqresp.Context) {
 			noRouteCalled = true
-			c.Err = nil // Clear error
 		})
 
-		ctx := &reqresp.Context{Path: "/nonexistent"}
+		ctx := newContext("/nonexistent")
 		r.Dispatch(ctx)
 
 		if !noRouteCalled {
@@ -130,7 +93,7 @@ func TestRouterDispatch(t *testing.T) {
 			order = append(order, "handler")
 		})
 
-		ctx := &reqresp.Context{Path: "/test"}
+		ctx := newContext("/test")
 		r.Dispatch(ctx)
 
 		expected := []string{"middleware1", "middleware2", "handler"}
@@ -155,7 +118,7 @@ func TestRouterDispatch(t *testing.T) {
 			handlerCalled = true
 		})
 
-		ctx := &reqresp.Context{Path: "/test"}
+		ctx := newContext("/test")
 		r.Dispatch(ctx)
 
 		if handlerCalled {
@@ -168,24 +131,14 @@ func TestRouterDispatch(t *testing.T) {
 		var capturedParam string
 
 		r.Handle("/api/*path", func(c *reqresp.Context) {
-			capturedParam = c.ParamPath
+			capturedParam = c.GetString(reqresp.ContextPath)
 		})
 
-		ctx := &reqresp.Context{Path: "/api/pkg/v1/route"}
+		ctx := newContext("/api/pkg/v1/route")
 		r.Dispatch(ctx)
 
 		if capturedParam != "/pkg/v1/route" {
 			t.Errorf("ParamPath = %q, want '/pkg/v1/route'", capturedParam)
 		}
 	})
-}
-
-// TestContextAbort tests the Context.Abort function
-func TestContextAbort(t *testing.T) {
-	ctx := &reqresp.Context{}
-
-	ctx.Abort()
-
-	// After abort, the context should be marked as aborted
-	// This is tested indirectly through router dispatch tests
 }

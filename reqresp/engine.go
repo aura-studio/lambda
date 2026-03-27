@@ -2,81 +2,54 @@ package reqresp
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"sync/atomic"
 
 	"github.com/aura-studio/lambda/dynamic"
 )
 
 type Engine struct {
 	*Options
+	*Router
 	*dynamic.Dynamic
-	r       *Router
-	running atomic.Int32
 }
 
 func NewEngine(reqrespOpts []Option, dynamicOpts []dynamic.Option) *Engine {
 	e := &Engine{
 		Options: NewOptions(reqrespOpts...),
 		Dynamic: dynamic.NewDynamic(dynamicOpts...),
+		Router:  NewRouter(),
 	}
-	e.running.Store(1)
 	e.InstallHandlers()
 	return e
-}
-
-func (e *Engine) Start() {
-	e.running.Store(1)
-}
-
-func (e *Engine) Stop() {
-	e.running.Store(0)
-}
-
-func (e *Engine) IsRunning() bool {
-	return e.running.Load() == 1
 }
 
 func (e *Engine) Invoke(ctx context.Context, req *Request) (*Response, error) {
 	_ = ctx
 
-	if e.running.Load() == 0 {
-		return &Response{Error: "engine is stopped"}, nil
-	}
-
-	c := &Context{
-		Engine:  e,
-		RawPath: req.Path,
-		Path:    req.Path,
-		Request: string(req.Payload),
-	}
+	c := &Context{}
+	c.Set(ContextPath, req.Path)
+	c.Set(ContextRequest, string(req.Payload))
 
 	if e.DebugMode {
-		log.Printf("[ReqResp] Request: %s %s", c.Path, c.Request)
+		log.Printf("[ReqResp] Request: %s %s", c.GetString(ContextPath), c.GetString(ContextRequest))
 	}
 
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				c.Err = fmt.Errorf("panic: %v", r)
-			}
-		}()
-		e.r.Dispatch(c)
-	}()
+	e.Router.Dispatch(c)
 
 	if e.DebugMode {
-		log.Printf("[ReqResp] Response: %s %s", c.Path, c.Response)
+		log.Printf("[ReqResp] Response: %s %s", c.GetString(ContextPath), c.GetString(ContextResponse))
 	}
 
 	resp := &Response{
-		Payload: []byte(c.Response),
+		Payload: []byte(c.GetString(ContextResponse)),
 	}
-	if c.Err != nil {
-		resp.Error = c.Err.Error()
-		if e.DebugMode {
-			log.Printf("[ReqResp] Error: %v", c.Err)
-		}
+	if v, ok := c.Get(ContextPanic); ok && v != nil {
+		resp.Error = v.(error).Error()
+	} else if err := c.GetError(); err != nil {
+		resp.Error = err.Error()
+	}
+	if resp.Error != "" && e.DebugMode {
+		log.Printf("[ReqResp] Error: %s", resp.Error)
 	}
 
 	return resp, nil

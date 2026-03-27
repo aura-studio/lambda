@@ -14,7 +14,4 @@ func Serve(sqsOpts []Option, dynamicOpts []dynamic.Option) {
 }
 
 func Close() {
-	if engine != nil {
-		engine.Stop()
-	}
 }
