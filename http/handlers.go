@@ -17,16 +17,30 @@ import (
 )
 
 const (
-	GinContextHeader    = "header"
-	GinContextPath      = "path"
-	GinContextRequest   = "request"
-	GinContextResponse  = "response"
-	GinContextError     = "error"
-	GinContextPanic     = "panic"
-	GinContextDebug     = "debug"
-	GinContextStdout    = "stdout"
-	GinContextStderr    = "stderr"
-	GinContextProcessor = "processor"
+	GinContextHeader       = "header"
+	GinContextPath         = "path"
+	GinContextRequest      = "request"
+	GinContextResponse     = "response"
+	GinContextRequestMeta  = "request_meta"
+	GinContextResponseMeta = "response_meta"
+	GinContextError        = "error"
+	GinContextPanic        = "panic"
+	GinContextDebug        = "debug"
+	GinContextStdout       = "stdout"
+	GinContextStderr       = "stderr"
+	GinContextProcessor    = "processor"
+)
+
+const (
+	ReqMetaHost       = "host"
+	ReqMetaRemoteAddr = "remote_addr"
+	ReqMetaPath       = "path"
+)
+
+const (
+	RspMetaError       = "error"
+	RspMetaContentType = "content_type"
+	RspMetaStatus      = "status"
 )
 
 type (
@@ -111,6 +125,9 @@ func (e *Engine) API(c *gin.Context) {
 	// header
 	c.Set(GinContextHeader, c.Request.Header)
 
+	// meta
+	c.Set(GinContextRequestMeta, e.genReqMeta(c))
+
 	// request
 	switch c.Request.Method {
 	case http.MethodGet, "": // empty method treated as GET
@@ -154,7 +171,26 @@ func (e *Engine) API(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
-		c.Data(http.StatusOK, "application/json", []byte(c.GetString(GinContextResponse)))
+		rspMeta := c.GetStringMap(GinContextResponseMeta)
+		rspBody := c.GetString(GinContextResponse)
+		contentType := "application/json"
+		statusCode := http.StatusOK
+
+		if rspMeta != nil {
+			if e, ok := rspMeta[RspMetaError]; ok && e != nil && e != "" {
+				c.String(http.StatusInternalServerError, cast.ToString(e))
+				c.Abort()
+				return
+			}
+			if ct, ok := rspMeta[RspMetaContentType]; ok && ct != nil && ct != "" {
+				contentType = cast.ToString(ct)
+			}
+			if s, ok := rspMeta[RspMetaStatus]; ok && s != nil {
+				statusCode = cast.ToInt(s)
+			}
+		}
+
+		c.Data(statusCode, contentType, []byte(rspBody))
 		c.Abort()
 		return
 	}
@@ -288,6 +324,33 @@ func (e *Engine) MethodNotAllowed(c *gin.Context) {
 	c.Abort()
 }
 
+func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
+	meta := map[string]any{}
+
+	// resolve host
+	host := c.Request.Host
+	if v := c.GetHeader("X-Forwarded-Host"); v != "" {
+		host = v
+	} else if v := c.GetHeader("Host"); v != "" {
+		host = v
+	}
+	meta[ReqMetaHost] = strings.Split(strings.Split(host, ", ")[0], ":")[0]
+
+	// resolve remote addr
+	remoteAddr := c.Request.RemoteAddr
+	if v := c.GetHeader("CloudFront-Viewer-Address"); v != "" {
+		remoteAddr = v
+	} else if v := c.GetHeader("X-Forwarded-For"); v != "" {
+		remoteAddr = v
+	}
+	meta[ReqMetaRemoteAddr] = strings.Split(remoteAddr, ", ")[0]
+
+	// path
+	meta[ReqMetaPath] = c.Request.URL.Path
+
+	return meta
+}
+
 func (e *Engine) genGetReq(c *gin.Context) string {
 	dataMap := map[string]any{}
 	for k, v := range c.Request.URL.Query() {
@@ -355,13 +418,14 @@ func (e *Engine) debugWireProcessor(c *gin.Context, f LocalHandler) {
 func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 	path := c.GetString(GinContextPath)
 	req := c.GetString(GinContextRequest)
+	reqMeta := c.GetStringMap(GinContextRequestMeta)
 
-	// 封装请求: {"meta":{}, "data":"base64"}
+	// 封装请求: {"meta":{...}, "data":"base64"}
 	reqEnvelope := struct {
 		Meta map[string]any `json:"meta"`
 		Data string         `json:"data"`
 	}{
-		Meta: map[string]any{},
+		Meta: reqMeta,
 		Data: base64.StdEncoding.EncodeToString([]byte(req)),
 	}
 	reqBytes, err := json.Marshal(reqEnvelope)
@@ -378,7 +442,7 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 		return
 	}
 
-	// 解封装响应: {"meta":{}, "data":"base64"}
+	// 解封装响应: {"meta":{...}, "data":"base64"}
 	var rspEnvelope struct {
 		Meta map[string]any `json:"meta"`
 		Data string         `json:"data"`
@@ -389,9 +453,13 @@ func (e *Engine) doProcessor(c *gin.Context, f LocalHandler) {
 		return
 	}
 
-	if errMsg := cast.ToString(rspEnvelope.Meta["error"]); errMsg != "" {
+	if len(rspEnvelope.Meta) > 0 {
+		c.Set(GinContextResponseMeta, rspEnvelope.Meta)
+	}
+
+	if errMsg := cast.ToString(rspEnvelope.Meta[RspMetaError]); errMsg != "" {
 		c.Set(GinContextResponse, "")
-		c.Set(GinContextError, fmt.Errorf("%s", errMsg))
+		c.Set(GinContextError, cast.ToError(errMsg))
 		return
 	}
 
@@ -485,6 +553,14 @@ func (e *Engine) formatDebug(c *gin.Context) string {
 	buf.WriteString(`Header: `)
 	headerBytes, _ := json.Marshal(c.GetString(GinContextHeader))
 	buf.WriteString(string(headerBytes))
+	buf.WriteString("\n")
+	buf.WriteString(`Request Meta: `)
+	reqMetaBytes, _ := json.Marshal(c.GetStringMap(GinContextRequestMeta))
+	buf.WriteString(string(reqMetaBytes))
+	buf.WriteString("\n")
+	buf.WriteString(`Response Meta: `)
+	rspMetaBytes, _ := json.Marshal(c.GetStringMap(GinContextResponseMeta))
+	buf.WriteString(string(rspMetaBytes))
 	buf.WriteString("\n")
 	buf.WriteString(`Stdout: `)
 	buf.WriteString(c.GetString(GinContextStdout))

@@ -9,6 +9,10 @@ import (
 	"github.com/aura-studio/cast"
 )
 
+const (
+	RspMetaError = "error"
+)
+
 func (e *Engine) InstallHandlers() {
 	if e.r == nil {
 		e.r = NewRouter()
@@ -141,8 +145,8 @@ func (e *Engine) process(path string, req string) (string, error) {
 		return rsp, nil
 	}
 
-	if errMsg := cast.ToString(rspEnvelope.Meta["error"]); errMsg != "" {
-		return "", fmt.Errorf("%s", errMsg)
+	if errMsg := cast.ToString(rspEnvelope.Meta[RspMetaError]); errMsg != "" {
+		return "", cast.ToError(errMsg)
 	}
 
 	data, err := base64.StdEncoding.DecodeString(rspEnvelope.Data)
