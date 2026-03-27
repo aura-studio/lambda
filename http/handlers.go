@@ -17,30 +17,30 @@ import (
 )
 
 const (
-	GinContextHeader       = "header"
-	GinContextPath         = "path"
-	GinContextRequest      = "request"
-	GinContextResponse     = "response"
-	GinContextRequestMeta  = "request_meta"
-	GinContextResponseMeta = "response_meta"
-	GinContextError        = "error"
-	GinContextPanic        = "panic"
-	GinContextDebug        = "debug"
-	GinContextStdout       = "stdout"
-	GinContextStderr       = "stderr"
-	GinContextProcessor    = "processor"
+	GinContextHeader       = "Header"
+	GinContextPath         = "Path"
+	GinContextRequest      = "Request"
+	GinContextResponse     = "Response"
+	GinContextRequestMeta  = "RequestMeta"
+	GinContextResponseMeta = "ResponseMeta"
+	GinContextError        = "Error"
+	GinContextPanic        = "Panic"
+	GinContextDebug        = "Debug"
+	GinContextStdout       = "Stdout"
+	GinContextStderr       = "Stderr"
+	GinContextProcessor    = "Processor"
 )
 
 const (
-	ReqMetaHost       = "host"
-	ReqMetaRemoteAddr = "remote_addr"
-	ReqMetaPath       = "path"
+	ReqMetaHost       = "Host"
+	ReqMetaRemoteAddr = "RemoteAddr"
+	ReqMetaPath       = "Path"
 )
 
 const (
-	RspMetaError       = "error"
-	RspMetaContentType = "content_type"
-	RspMetaStatus      = "status"
+	RspMetaError       = "Error"
+	RspMetaContentType = "ContentType"
+	RspMetaStatus      = "Status"
 )
 
 type (

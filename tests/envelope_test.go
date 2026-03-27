@@ -133,7 +133,7 @@ func TestHTTP_Envelope_ReqMeta_Host(t *testing.T) {
 	e.ServeHTTP(w, req)
 
 	env := decodeEnvelope(t, receivedReq)
-	host, _ := env.Meta["host"].(string)
+	host, _ := env.Meta["Host"].(string)
 	if host != "example.com" {
 		t.Errorf("meta.host = %q, want 'example.com'", host)
 	}
@@ -157,7 +157,7 @@ func TestHTTP_Envelope_ReqMeta_RemoteAddr(t *testing.T) {
 	e.ServeHTTP(w, req)
 
 	env := decodeEnvelope(t, receivedReq)
-	addr, _ := env.Meta["remote_addr"].(string)
+	addr, _ := env.Meta["RemoteAddr"].(string)
 	if addr != "1.2.3.4" {
 		t.Errorf("meta.remote_addr = %q, want '1.2.3.4'", addr)
 	}
@@ -181,7 +181,7 @@ func TestHTTP_Envelope_ReqMeta_RemoteAddr_XForwardedFor(t *testing.T) {
 	e.ServeHTTP(w, req)
 
 	env := decodeEnvelope(t, receivedReq)
-	addr, _ := env.Meta["remote_addr"].(string)
+	addr, _ := env.Meta["RemoteAddr"].(string)
 	if addr != "10.0.0.1" {
 		t.Errorf("meta.remote_addr = %q, want '10.0.0.1'", addr)
 	}
@@ -204,7 +204,7 @@ func TestHTTP_Envelope_ReqMeta_Path(t *testing.T) {
 	e.ServeHTTP(w, req)
 
 	env := decodeEnvelope(t, receivedReq)
-	path, _ := env.Meta["path"].(string)
+	path, _ := env.Meta["Path"].(string)
 	if path != "/api/env-meta-path-pkg/v1/test" {
 		t.Errorf("meta.path = %q, want '/api/env-meta-path-pkg/v1/test'", path)
 	}
@@ -218,7 +218,7 @@ func TestHTTP_Envelope_ReqMeta_Path(t *testing.T) {
 func TestHTTP_Envelope_RspMeta_Error(t *testing.T) {
 	dynamic.RegisterPackage("env-rsperr-pkg", "v1", &mockHTTPTunnel{
 		invokeFunc: func(route, req string) string {
-			return encodeEnvelope(map[string]any{"error": "something went wrong"}, "")
+			return encodeEnvelope(map[string]any{"Error": "something went wrong"}, "")
 		},
 	})
 
@@ -238,7 +238,7 @@ func TestHTTP_Envelope_RspMeta_Error(t *testing.T) {
 func TestHTTP_Envelope_RspMeta_ContentType(t *testing.T) {
 	dynamic.RegisterPackage("env-ct-pkg", "v1", &mockHTTPTunnel{
 		invokeFunc: func(route, req string) string {
-			return encodeEnvelope(map[string]any{"content_type": "text/html"}, "<h1>hello</h1>")
+			return encodeEnvelope(map[string]any{"ContentType": "text/html"}, "<h1>hello</h1>")
 		},
 	})
 
@@ -267,7 +267,7 @@ func TestHTTP_Envelope_RspMeta_ContentType(t *testing.T) {
 func TestHTTP_Envelope_RspMeta_Status(t *testing.T) {
 	dynamic.RegisterPackage("env-status-pkg", "v1", &mockHTTPTunnel{
 		invokeFunc: func(route, req string) string {
-			return encodeEnvelope(map[string]any{"status": 201}, `{"id":"new"}`)
+			return encodeEnvelope(map[string]any{"Status": 201}, `{"id":"new"}`)
 		},
 	})
 
@@ -394,7 +394,7 @@ func TestReqResp_Envelope_RequestFormat(t *testing.T) {
 func TestReqResp_Envelope_RspMeta_Error(t *testing.T) {
 	tunnel := &mockReqRespTunnel{
 		invokeFunc: func(route, req string) string {
-			return encodeEnvelope(map[string]any{"error": "bad request"}, "")
+			return encodeEnvelope(map[string]any{"Error": "bad request"}, "")
 		},
 	}
 	dynamic.RegisterPackage("env-rr-err-pkg", "v1", tunnel)

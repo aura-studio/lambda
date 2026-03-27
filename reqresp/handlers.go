@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	RspMetaError = "error"
+	RspMetaError = "Error"
 )
 
 func (e *Engine) InstallHandlers() {
