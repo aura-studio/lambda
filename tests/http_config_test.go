@@ -25,10 +25,10 @@ prefixLink:
 	if !o.CorsMode {
 		t.Fatalf("CorsMode = false")
 	}
-	if got := o.StaticLinkMap["/a"]; got != "/b" {
-		t.Fatalf("StaticLinkMap['/a'] = %q", got)
+	if got := o.StaticLinkMap["/a"]; got.Dst != "/b" {
+		t.Fatalf("StaticLinkMap['/a'].Dst = %q", got.Dst)
 	}
-	if got := o.PrefixLinkMap["/api"]; got != "/v1" {
-		t.Fatalf("PrefixLinkMap['/api'] = %q", got)
+	if got := o.PrefixLinkMap["/api"]; got.Dst != "/v1" {
+		t.Fatalf("PrefixLinkMap['/api'].Dst = %q", got.Dst)
 	}
 }

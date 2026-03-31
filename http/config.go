@@ -14,12 +14,14 @@ type yamlHTTPConfig struct {
 		Cors      bool `yaml:"cors"`
 	} `yaml:"mode"`
 	StaticLink []struct {
-		SrcPath string `yaml:"srcPath"`
-		DstPath string `yaml:"dstPath"`
+		SrcPath string   `yaml:"srcPath"`
+		DstPath string   `yaml:"dstPath"`
+		Methods []string `yaml:"methods"`
 	} `yaml:"staticLink"`
 	PrefixLink []struct {
-		SrcPrefix string `yaml:"srcPrefix"`
-		DstPrefix string `yaml:"dstPrefix"`
+		SrcPrefix string   `yaml:"srcPrefix"`
+		DstPrefix string   `yaml:"dstPrefix"`
+		Methods   []string `yaml:"methods"`
 	} `yaml:"prefixLink"`
 	PageNotFoundPath string `yaml:"pageNotFoundPath"`
 }
@@ -33,22 +35,22 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 		o.CorsMode = cfg.Mode.Cors
 
 		if o.StaticLinkMap == nil {
-			o.StaticLinkMap = make(map[string]string)
+			o.StaticLinkMap = make(map[string]LinkRule)
 		}
 		if o.PrefixLinkMap == nil {
-			o.PrefixLinkMap = make(map[string]string)
+			o.PrefixLinkMap = make(map[string]LinkRule)
 		}
 		for _, link := range cfg.StaticLink {
 			if link.SrcPath == "" || link.DstPath == "" {
 				continue
 			}
-			o.StaticLinkMap[normalizePath(link.SrcPath)] = normalizePath(link.DstPath)
+			o.StaticLinkMap[normalizePath(link.SrcPath)] = LinkRule{Dst: normalizePath(link.DstPath), Methods: link.Methods}
 		}
 		for _, link := range cfg.PrefixLink {
 			if link.SrcPrefix == "" || link.DstPrefix == "" {
 				continue
 			}
-			o.PrefixLinkMap[normalizePath(link.SrcPrefix)] = normalizePath(link.DstPrefix)
+			o.PrefixLinkMap[normalizePath(link.SrcPrefix)] = LinkRule{Dst: normalizePath(link.DstPrefix), Methods: link.Methods}
 		}
 		if cfg.PageNotFoundPath != "" {
 			o.PageNotFoundPath = cfg.PageNotFoundPath

@@ -58,12 +58,12 @@ func TestHTTPEngineCreation(t *testing.T) {
 		t.Errorf("Address = %q, want ':9090'", e.Address)
 	}
 
-	if e.StaticLinkMap["/static"] != "/public" {
-		t.Errorf("StaticLinkMap['/static'] = %q, want '/public'", e.StaticLinkMap["/static"])
+	if e.StaticLinkMap["/static"].Dst != "/public" {
+		t.Errorf("StaticLinkMap['/static'].Dst = %q, want '/public'", e.StaticLinkMap["/static"].Dst)
 	}
 
-	if e.PrefixLinkMap["/api"] != "/v1" {
-		t.Errorf("PrefixLinkMap['/api'] = %q, want '/v1'", e.PrefixLinkMap["/api"])
+	if e.PrefixLinkMap["/api"].Dst != "/v1" {
+		t.Errorf("PrefixLinkMap['/api'].Dst = %q, want '/v1'", e.PrefixLinkMap["/api"].Dst)
 	}
 }
 

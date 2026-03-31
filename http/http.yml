@@ -3,9 +3,13 @@ mode:
   debug: true
   cors: true
 staticLink:
-  - srcPath: "/static"
-    dstPath: "./public"
+  - srcPath: "/v2"
+    dstPath: "/api/flipper/v2/access"
+    methods: ["POST"]
+  - srcPath: "/auth"
+    dstPath: "/api/flipper/v2/authenticate"
 prefixLink:
   - srcPrefix: "/api"
     dstPrefix: "/v1"
+    methods: ["GET", "POST"]
 pageNotFoundPath: ""

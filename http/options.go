@@ -1,6 +1,8 @@
 package http
 
 import (
+	"strings"
+
 	"github.com/mohae/deepcopy"
 )
 
@@ -12,22 +14,27 @@ type HttpOption func(*Options)
 
 func (f HttpOption) Apply(o *Options) { f(o) }
 
+type LinkRule struct {
+	Dst     string
+	Methods []string // empty or ["ALL"] means all methods
+}
+
 type Options struct {
 	// Http Options
 	Address          string
 	DebugMode        bool
-	CorsMode      bool
-	StaticLinkMap    map[string]string
-	PrefixLinkMap    map[string]string
+	CorsMode         bool
+	StaticLinkMap    map[string]LinkRule
+	PrefixLinkMap    map[string]LinkRule
 	PageNotFoundPath string
 }
 
 var defaultOptions = &Options{
 	Address:          ":8080",
 	DebugMode:        false,
-	CorsMode:      false,
-	StaticLinkMap:    map[string]string{},
-	PrefixLinkMap:    map[string]string{},
+	CorsMode:         false,
+	StaticLinkMap:    map[string]LinkRule{},
+	PrefixLinkMap:    map[string]LinkRule{},
 	PageNotFoundPath: "",
 }
 
@@ -65,15 +72,30 @@ func WithCorsMode() Option {
 }
 
 
-func WithStaticLink(srcPath, dstPath string) Option {
+func (r LinkRule) MatchMethod(method string) bool {
+	if len(r.Methods) == 0 {
+		return true
+	}
+	for _, m := range r.Methods {
+		if strings.EqualFold(m, "ALL") {
+			return true
+		}
+		if strings.EqualFold(m, method) {
+			return true
+		}
+	}
+	return false
+}
+
+func WithStaticLink(srcPath, dstPath string, methods ...string) Option {
 	return HttpOption(func(o *Options) {
-		o.StaticLinkMap[normalizePath(srcPath)] = normalizePath(dstPath)
+		o.StaticLinkMap[normalizePath(srcPath)] = LinkRule{Dst: normalizePath(dstPath), Methods: methods}
 	})
 }
 
-func WithPrefixLink(srcPrefix string, dstPrefix string) Option {
+func WithPrefixLink(srcPrefix string, dstPrefix string, methods ...string) Option {
 	return HttpOption(func(o *Options) {
-		o.PrefixLinkMap[normalizePath(srcPrefix)] = normalizePath(dstPrefix)
+		o.PrefixLinkMap[normalizePath(srcPrefix)] = LinkRule{Dst: normalizePath(dstPrefix), Methods: methods}
 	})
 }
 
