@@ -21,21 +21,21 @@ type LinkRule struct {
 
 type Options struct {
 	// Http Options
-	Address          string
-	DebugMode        bool
-	CorsMode         bool
-	StaticLinkMap    map[string]LinkRule
-	PrefixLinkMap    map[string]LinkRule
-	PageNotFoundPath string
+	Address           string
+	DebugMode         bool
+	CorsMode          bool
+	StaticLinkMap     map[string]LinkRule
+	PrefixLinkMap     map[string]LinkRule
+	PageNotFoundRules []LinkRule
 }
 
 var defaultOptions = &Options{
-	Address:          ":8080",
-	DebugMode:        false,
-	CorsMode:         false,
-	StaticLinkMap:    map[string]LinkRule{},
-	PrefixLinkMap:    map[string]LinkRule{},
-	PageNotFoundPath: "",
+	Address:           ":8080",
+	DebugMode:         false,
+	CorsMode:          false,
+	StaticLinkMap:     map[string]LinkRule{},
+	PrefixLinkMap:     map[string]LinkRule{},
+	PageNotFoundRules: nil,
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -71,7 +71,6 @@ func WithCorsMode() Option {
 	})
 }
 
-
 func (r LinkRule) MatchMethod(method string) bool {
 	if len(r.Methods) == 0 {
 		return true
@@ -99,9 +98,8 @@ func WithPrefixLink(srcPrefix string, dstPrefix string, methods ...string) Optio
 	})
 }
 
-func WithPageNotFoundPath(path string) Option {
+func WithPageNotFoundPath(path string, methods ...string) Option {
 	return HttpOption(func(o *Options) {
-		o.PageNotFoundPath = path
+		o.PageNotFoundRules = append(o.PageNotFoundRules, LinkRule{Dst: normalizePath(path), Methods: methods})
 	})
 }
-

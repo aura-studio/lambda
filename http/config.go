@@ -23,7 +23,10 @@ type yamlHTTPConfig struct {
 		DstPrefix string   `yaml:"dstPrefix"`
 		Methods   []string `yaml:"methods"`
 	} `yaml:"prefixLink"`
-	PageNotFoundPath string `yaml:"pageNotFoundPath"`
+	PageNotFound []struct {
+		Path    string   `yaml:"path"`
+		Methods []string `yaml:"methods"`
+	} `yaml:"pageNotFound"`
 }
 
 func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
@@ -52,8 +55,10 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 			}
 			o.PrefixLinkMap[normalizePath(link.SrcPrefix)] = LinkRule{Dst: normalizePath(link.DstPrefix), Methods: link.Methods}
 		}
-		if cfg.PageNotFoundPath != "" {
-			o.PageNotFoundPath = cfg.PageNotFoundPath
+		for _, nf := range cfg.PageNotFound {
+			if nf.Path != "" {
+				o.PageNotFoundRules = append(o.PageNotFoundRules, LinkRule{Dst: normalizePath(nf.Path), Methods: nf.Methods})
+			}
 		}
 	})
 }

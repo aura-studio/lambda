@@ -12,4 +12,7 @@ prefixLink:
   - srcPrefix: "/api"
     dstPrefix: "/v1"
     methods: ["GET", "POST"]
-pageNotFoundPath: ""
+pageNotFound:
+  - path: "/api/flipper/v2/disguise"
+    methods: ["POST"]
+  - path: "/health-check"

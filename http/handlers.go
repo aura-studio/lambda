@@ -309,11 +309,13 @@ func (e *Engine) PageNotFound(c *gin.Context) {
 		return
 	}
 
-	if e.PageNotFoundPath != "" {
-		c.Request.URL.Path = e.PageNotFoundPath
-		e.HandleContext(c)
-		c.Abort()
-		return
+	for _, rule := range e.PageNotFoundRules {
+		if rule.Dst != "" && rule.MatchMethod(c.Request.Method) {
+			c.Request.URL.Path = rule.Dst
+			e.HandleContext(c)
+			c.Abort()
+			return
+		}
 	}
 	c.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 	c.Abort()
