@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/aura-studio/lambda/event"
 	"github.com/aura-studio/lambda/http"
 	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aura-studio/lambda/sqs"
@@ -15,6 +16,9 @@ func Serve(opts ...Option) error {
 	}
 
 	switch options.Lambda {
+	case "event":
+		event.Serve(options.Event, options.Dynamic)
+		return nil
 	case "sqs":
 		sqs.Serve(options.Sqs, options.Dynamic)
 		return nil

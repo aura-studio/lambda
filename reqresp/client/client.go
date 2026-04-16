@@ -9,6 +9,7 @@ import (
 	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // Client reqresp 客户端
@@ -43,8 +44,9 @@ func (c *Client) Call(ctx context.Context, path string, payload []byte) (*reqres
 	defer cancel()
 
 	output, err := c.LambdaClient.Invoke(ctx, &lambda.InvokeInput{
-		FunctionName: aws.String(c.FunctionName),
-		Payload:      invokePayload,
+		FunctionName:   aws.String(c.FunctionName),
+		InvocationType: types.InvocationTypeRequestResponse,
+		Payload:        invokePayload,
 	})
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
