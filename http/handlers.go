@@ -32,9 +32,14 @@ const (
 )
 
 const (
-	ReqMetaHost       = "Host"
-	ReqMetaRemoteAddr = "RemoteAddr"
-	ReqMetaPath       = "Path"
+	ContextOriginalPath = "OriginalPath"
+)
+
+const (
+	ReqMetaHost         = "Host"
+	ReqMetaRemoteAddr   = "RemoteAddr"
+	ReqMetaPath         = "Path"
+	ReqMetaOriginalPath = "OriginalPath"
 )
 
 const (
@@ -90,6 +95,7 @@ func normalizePath(path string) string {
 func (e *Engine) StaticLink(c *gin.Context) {
 	c.Request.URL.Path = normalizePath(c.Request.URL.Path)
 	if rule, ok := e.StaticLinkMap[c.Request.URL.Path]; ok && rule.MatchMethod(c.Request.Method) {
+		c.Set(ContextOriginalPath, c.Request.URL.Path)
 		c.Request.URL.Path = rule.Dst
 		e.HandleContext(c)
 		c.Abort()
@@ -101,6 +107,7 @@ func (e *Engine) PrefixLink(c *gin.Context) {
 	c.Request.URL.Path = normalizePath(c.Request.URL.Path)
 	for oldPrefix, rule := range e.PrefixLinkMap {
 		if strings.HasPrefix(c.Request.URL.Path, oldPrefix) && rule.MatchMethod(c.Request.Method) {
+			c.Set(ContextOriginalPath, c.Request.URL.Path)
 			c.Request.URL.Path = strings.Replace(c.Request.URL.Path, oldPrefix, rule.Dst, 1)
 			e.HandleContext(c)
 			c.Abort()
@@ -311,6 +318,7 @@ func (e *Engine) PageNotFound(c *gin.Context) {
 
 	for _, rule := range e.PageNotFoundRules {
 		if rule.Dst != "" && rule.MatchMethod(c.Request.Method) {
+			c.Set(ContextOriginalPath, c.Request.URL.Path)
 			c.Request.URL.Path = rule.Dst
 			e.HandleContext(c)
 			c.Abort()
@@ -349,6 +357,11 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 
 	// path
 	meta[ReqMetaPath] = c.Request.URL.Path
+
+	// original path (before rewrite by StaticLink/PrefixLink/PageNotFound)
+	if originalPath := c.GetString(ContextOriginalPath); originalPath != "" {
+		meta[ReqMetaOriginalPath] = originalPath
+	}
 
 	return meta
 }
