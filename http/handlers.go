@@ -677,11 +677,11 @@ func (e *Engine) doDebug(f func()) (stdout string, stderr string, err error) {
 
 // ==================== helpers ====================
 
-func setRequestContext(c *gin.Context, key requestContextKey, value any) {
+func setRequestContext(c *gin.Context, key string, value any) {
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), key, value))
 }
 
-func getRequestContext(c *gin.Context, key requestContextKey) any {
+func getRequestContext(c *gin.Context, key string) any {
 	return c.Request.Context().Value(key)
 }
 
