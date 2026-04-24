@@ -3,6 +3,7 @@ package http
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -32,10 +33,6 @@ const (
 )
 
 const (
-	ContextOriginalPath = "OriginalPath"
-)
-
-const (
 	ReqMetaHost         = "Host"
 	ReqMetaRemoteAddr   = "RemoteAddr"
 	ReqMetaPath         = "Path"
@@ -46,6 +43,10 @@ const (
 	RspMetaError       = "Error"
 	RspMetaContentType = "ContentType"
 	RspMetaStatus      = "Status"
+)
+
+const (
+	RequestContextOriginalPath = "OriginalPath"
 )
 
 type (
@@ -75,27 +76,10 @@ func (e *Engine) HandleAllMethods(relativePath string, handlers ...gin.HandlerFu
 	}
 }
 
-func normalizePath(path string) string {
-	if path == "" {
-		return "/"
-	}
-	path = strings.ReplaceAll(path, "\\", "/")
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-	for strings.Contains(path, "//") {
-		path = strings.ReplaceAll(path, "//", "/")
-	}
-	if len(path) > 1 && strings.HasSuffix(path, "/") {
-		path = strings.TrimRight(path, "/")
-	}
-	return path
-}
-
 func (e *Engine) StaticLink(c *gin.Context) {
 	c.Request.URL.Path = normalizePath(c.Request.URL.Path)
 	if rule, ok := e.StaticLinkMap[c.Request.URL.Path]; ok && rule.MatchMethod(c.Request.Method) {
-		c.Set(ContextOriginalPath, c.Request.URL.Path)
+		setRequestContext(c, RequestContextOriginalPath, c.Request.URL.Path)
 		c.Request.URL.Path = rule.Dst
 		e.HandleContext(c)
 		c.Abort()
@@ -107,7 +91,7 @@ func (e *Engine) PrefixLink(c *gin.Context) {
 	c.Request.URL.Path = normalizePath(c.Request.URL.Path)
 	for oldPrefix, rule := range e.PrefixLinkMap {
 		if strings.HasPrefix(c.Request.URL.Path, oldPrefix) && rule.MatchMethod(c.Request.Method) {
-			c.Set(ContextOriginalPath, c.Request.URL.Path)
+			setRequestContext(c, RequestContextOriginalPath, c.Request.URL.Path)
 			c.Request.URL.Path = strings.Replace(c.Request.URL.Path, oldPrefix, rule.Dst, 1)
 			e.HandleContext(c)
 			c.Abort()
@@ -318,7 +302,7 @@ func (e *Engine) PageNotFound(c *gin.Context) {
 
 	for _, rule := range e.PageNotFoundRules {
 		if rule.Dst != "" && rule.MatchMethod(c.Request.Method) {
-			c.Set(ContextOriginalPath, c.Request.URL.Path)
+			setRequestContext(c, RequestContextOriginalPath, c.Request.URL.Path)
 			c.Request.URL.Path = rule.Dst
 			e.HandleContext(c)
 			c.Abort()
@@ -359,7 +343,7 @@ func (e *Engine) genReqMeta(c *gin.Context) map[string]any {
 	meta[ReqMetaPath] = c.Request.URL.Path
 
 	// original path (before rewrite by StaticLink/PrefixLink/PageNotFound)
-	if originalPath := c.GetString(ContextOriginalPath); originalPath != "" {
+	if originalPath, _ := getRequestContext(c, RequestContextOriginalPath).(string); originalPath != "" {
 		meta[ReqMetaOriginalPath] = originalPath
 	}
 
@@ -689,4 +673,31 @@ func (e *Engine) doDebug(f func()) (stdout string, stderr string, err error) {
 	}
 
 	return stdoutBuf.String(), stderrBuf.String(), nil
+}
+
+// ==================== helpers ====================
+
+func setRequestContext(c *gin.Context, key requestContextKey, value any) {
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), key, value))
+}
+
+func getRequestContext(c *gin.Context, key requestContextKey) any {
+	return c.Request.Context().Value(key)
+}
+
+func normalizePath(path string) string {
+	if path == "" {
+		return "/"
+	}
+	path = strings.ReplaceAll(path, "\\", "/")
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	for strings.Contains(path, "//") {
+		path = strings.ReplaceAll(path, "//", "/")
+	}
+	if len(path) > 1 && strings.HasSuffix(path, "/") {
+		path = strings.TrimRight(path, "/")
+	}
+	return path
 }
