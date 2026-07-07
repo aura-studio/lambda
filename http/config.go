@@ -47,13 +47,21 @@ func optionFromHTTPConfig(cfg yamlHTTPConfig) Option {
 			if link.SrcPath == "" || link.DstPath == "" {
 				continue
 			}
-			o.StaticLinkMap[normalizePath(link.SrcPath)] = LinkRule{Dst: normalizePath(link.DstPath), Methods: link.Methods}
+			key := normalizePath(link.SrcPath)
+			if _, ok := o.StaticLinkMap[key]; !ok {
+				o.StaticLinkKeys = append(o.StaticLinkKeys, key)
+			}
+			o.StaticLinkMap[key] = LinkRule{Dst: normalizePath(link.DstPath), Methods: link.Methods}
 		}
 		for _, link := range cfg.PrefixLink {
 			if link.SrcPrefix == "" || link.DstPrefix == "" {
 				continue
 			}
-			o.PrefixLinkMap[normalizePath(link.SrcPrefix)] = LinkRule{Dst: normalizePath(link.DstPrefix), Methods: link.Methods}
+			key := normalizePath(link.SrcPrefix)
+			if _, ok := o.PrefixLinkMap[key]; !ok {
+				o.PrefixLinkKeys = append(o.PrefixLinkKeys, key)
+			}
+			o.PrefixLinkMap[key] = LinkRule{Dst: normalizePath(link.DstPrefix), Methods: link.Methods}
 		}
 		for _, nf := range cfg.PageNotFound {
 			if nf.Path != "" {

@@ -25,7 +25,9 @@ type Options struct {
 	DebugMode         bool
 	CorsMode          bool
 	StaticLinkMap     map[string]LinkRule
+	StaticLinkKeys    []string
 	PrefixLinkMap     map[string]LinkRule
+	PrefixLinkKeys    []string
 	PageNotFoundRules []LinkRule
 }
 
@@ -34,7 +36,9 @@ var defaultOptions = &Options{
 	DebugMode:         false,
 	CorsMode:          false,
 	StaticLinkMap:     map[string]LinkRule{},
+	StaticLinkKeys:    []string{},
 	PrefixLinkMap:     map[string]LinkRule{},
+	PrefixLinkKeys:    []string{},
 	PageNotFoundRules: nil,
 }
 
@@ -88,13 +92,21 @@ func (r LinkRule) MatchMethod(method string) bool {
 
 func WithStaticLink(srcPath, dstPath string, methods ...string) Option {
 	return HttpOption(func(o *Options) {
-		o.StaticLinkMap[normalizePath(srcPath)] = LinkRule{Dst: normalizePath(dstPath), Methods: methods}
+		key := normalizePath(srcPath)
+		if _, ok := o.StaticLinkMap[key]; !ok {
+			o.StaticLinkKeys = append(o.StaticLinkKeys, key)
+		}
+		o.StaticLinkMap[key] = LinkRule{Dst: normalizePath(dstPath), Methods: methods}
 	})
 }
 
 func WithPrefixLink(srcPrefix string, dstPrefix string, methods ...string) Option {
 	return HttpOption(func(o *Options) {
-		o.PrefixLinkMap[normalizePath(srcPrefix)] = LinkRule{Dst: normalizePath(dstPrefix), Methods: methods}
+		key := normalizePath(srcPrefix)
+		if _, ok := o.PrefixLinkMap[key]; !ok {
+			o.PrefixLinkKeys = append(o.PrefixLinkKeys, key)
+		}
+		o.PrefixLinkMap[key] = LinkRule{Dst: normalizePath(dstPrefix), Methods: methods}
 	})
 }
 

@@ -93,18 +93,25 @@ func normalizePath(path string) string {
 
 func (e *Engine) StaticLink(c *gin.Context) {
 	c.Request.URL.Path = normalizePath(c.Request.URL.Path)
-	if rule, ok := e.StaticLinkMap[c.Request.URL.Path]; ok && rule.MatchMethod(c.Request.Method) {
-		c.Request.Header.Set(HeaderOriginalPath, c.Request.URL.Path)
-		c.Request.URL.Path = rule.Dst
-		e.HandleContext(c)
-		c.Abort()
-		return
+	for _, srcPath := range e.StaticLinkKeys {
+		if c.Request.URL.Path != srcPath {
+			continue
+		}
+		rule := e.StaticLinkMap[srcPath]
+		if rule.MatchMethod(c.Request.Method) {
+			c.Request.Header.Set(HeaderOriginalPath, c.Request.URL.Path)
+			c.Request.URL.Path = rule.Dst
+			e.HandleContext(c)
+			c.Abort()
+			return
+		}
 	}
 }
 
 func (e *Engine) PrefixLink(c *gin.Context) {
 	c.Request.URL.Path = normalizePath(c.Request.URL.Path)
-	for oldPrefix, rule := range e.PrefixLinkMap {
+	for _, oldPrefix := range e.PrefixLinkKeys {
+		rule := e.PrefixLinkMap[oldPrefix]
 		if strings.HasPrefix(c.Request.URL.Path, oldPrefix) && rule.MatchMethod(c.Request.Method) {
 			c.Request.Header.Set(HeaderOriginalPath, c.Request.URL.Path)
 			c.Request.URL.Path = strings.Replace(c.Request.URL.Path, oldPrefix, rule.Dst, 1)
