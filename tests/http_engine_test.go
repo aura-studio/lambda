@@ -125,8 +125,8 @@ func TestHTTPEnginePageNotFound(t *testing.T) {
 		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusNotFound)
 	}
 
-	if !strings.Contains(string(body), "404") {
-		t.Errorf("Body = %q, expected to contain '404'", string(body))
+	if !strings.Contains(string(body), "Not Found") {
+		t.Errorf("Body = %q, expected to contain 'Not Found'", string(body))
 	}
 }
 
@@ -190,7 +190,7 @@ func TestHTTPEngineAPIWithDynamic(t *testing.T) {
 	dynamic.RegisterPackage("httppkg", "v1", &mockHTTPTunnel{
 		invokeFunc: func(route, req string) string {
 			invokedRoute = route
-			invokedReq = req
+			invokedReq = decodeReqData(req)
 			return "http-api-response"
 		},
 	})
@@ -228,7 +228,7 @@ func TestHTTPEngineAPIPost(t *testing.T) {
 	var invokedReq string
 	dynamic.RegisterPackage("httppostpkg", "v1", &mockHTTPTunnel{
 		invokeFunc: func(route, req string) string {
-			invokedReq = req
+			invokedReq = decodeReqData(req)
 			return "post-response"
 		},
 	})

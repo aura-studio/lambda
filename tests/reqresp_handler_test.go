@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -108,7 +107,7 @@ func TestReqRespHandler_API_CallsDynamic(t *testing.T) {
 	tunnel := &mockReqRespTunnel{
 		invokeFunc: func(route, req string) string {
 			invokedRoute = route
-			invokedReq = req
+			invokedReq = decodeReqData(req)
 			return "api-response-data"
 		},
 	}
@@ -244,8 +243,8 @@ func TestReqRespHandler_API_PackageNotFound(t *testing.T) {
 // Debug Mode Tests
 // =============================================================================
 
-// TestReqRespHandler_DebugMode_ReturnsDebugJSON tests that /_/api/* returns debug JSON format
-func TestReqRespHandler_DebugMode_ReturnsDebugJSON(t *testing.T) {
+// TestReqRespHandler_DebugMode_ReturnsDebugText tests that /_/api/* returns debug text format
+func TestReqRespHandler_DebugMode_ReturnsDebugText(t *testing.T) {
 	tunnel := &mockReqRespTunnel{
 		invokeFunc: func(route, req string) string {
 			return "debug-api-response"
@@ -276,36 +275,15 @@ func TestReqRespHandler_DebugMode_ReturnsDebugJSON(t *testing.T) {
 		t.Errorf("Error = %q, want empty", resp.Error)
 	}
 
-	var debugInfo map[string]interface{}
-	if err := json.Unmarshal(resp.Payload, &debugInfo); err != nil {
-		t.Fatalf("Failed to unmarshal debug JSON: %v", err)
+	payloadStr := string(resp.Payload)
+	if !strings.Contains(payloadStr, "Path:") {
+		t.Errorf("Debug payload missing 'Path:', got %q", payloadStr)
 	}
-
-	if _, ok := debugInfo["mode"]; !ok {
-		t.Error("Debug response missing 'mode' field")
+	if !strings.Contains(payloadStr, "Request: debug-request") {
+		t.Errorf("Debug payload missing 'Request: debug-request', got %q", payloadStr)
 	}
-	if _, ok := debugInfo["raw_path"]; !ok {
-		t.Error("Debug response missing 'raw_path' field")
-	}
-	if _, ok := debugInfo["path"]; !ok {
-		t.Error("Debug response missing 'path' field")
-	}
-	if _, ok := debugInfo["param"]; !ok {
-		t.Error("Debug response missing 'param' field")
-	}
-	if _, ok := debugInfo["request"]; !ok {
-		t.Error("Debug response missing 'request' field")
-	}
-	if _, ok := debugInfo["response"]; !ok {
-		t.Error("Debug response missing 'response' field")
-	}
-
-	if mode, ok := debugInfo["mode"].(string); !ok || mode != "api" {
-		t.Errorf("Debug mode = %v, want 'api'", debugInfo["mode"])
-	}
-
-	if debugInfo["response"] != "debug-api-response" {
-		t.Errorf("Debug response = %v, want 'debug-api-response'", debugInfo["response"])
+	if !strings.Contains(payloadStr, "Response: debug-api-response") {
+		t.Errorf("Debug payload missing 'Response: debug-api-response', got %q", payloadStr)
 	}
 }
 
@@ -323,13 +301,14 @@ func TestReqRespHandler_DebugMode_WithError(t *testing.T) {
 		t.Fatalf("Invoke returned error: %v", err)
 	}
 
-	var debugInfo map[string]interface{}
-	if err := json.Unmarshal(resp.Payload, &debugInfo); err != nil {
-		t.Fatalf("Failed to unmarshal debug JSON: %v", err)
-	}
-
-	if errField, ok := debugInfo["error"].(string); !ok || errField == "" {
+	if resp.Error == "" {
 		t.Error("Debug response should contain error for failed request")
+	}
+	if !strings.Contains(string(resp.Payload), "Error:") {
+		t.Errorf("Debug payload missing 'Error:', got %q", string(resp.Payload))
+	}
+	if resp.Error != "" && !strings.Contains(string(resp.Payload), resp.Error) {
+		t.Errorf("Debug payload should contain error text, got %q", string(resp.Payload))
 	}
 }
 

@@ -50,6 +50,21 @@ func decodeEnvelopeData(t *testing.T, raw string) string {
 	return string(data)
 }
 
+func decodeReqData(raw string) string {
+	var env envelope
+	if err := json.Unmarshal([]byte(raw), &env); err != nil {
+		return raw
+	}
+	if env.Data == "" {
+		return raw
+	}
+	b, err := base64.StdEncoding.DecodeString(env.Data)
+	if err != nil {
+		return raw
+	}
+	return string(b)
+}
+
 // =============================================================================
 // HTTP: doProcessor envelope wrap/unwrap
 // =============================================================================

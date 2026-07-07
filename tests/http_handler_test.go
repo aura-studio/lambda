@@ -67,7 +67,7 @@ func TestHTTPHandler_API_GET(t *testing.T) {
 	dynamic.RegisterPackage("handler-get-pkg", "v1", &mockHTTPTunnel{
 		invokeFunc: func(route, req string) string {
 			invokedRoute = route
-			invokedReq = req
+			invokedReq = decodeReqData(req)
 			return "get-response"
 		},
 	})
@@ -106,7 +106,7 @@ func TestHTTPHandler_API_POST(t *testing.T) {
 	dynamic.RegisterPackage("handler-post-pkg", "v1", &mockHTTPTunnel{
 		invokeFunc: func(route, req string) string {
 			invokedRoute = route
-			invokedReq = req
+			invokedReq = decodeReqData(req)
 			return "post-response"
 		},
 	})
@@ -527,7 +527,7 @@ func TestHTTPHandler_NotFoundPath_Empty(t *testing.T) {
 		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusNotFound)
 	}
 
-	if string(body) != "404 page not found" {
-		t.Errorf("Body = %q, want '404 page not found'", string(body))
+	if string(body) != "Not Found" {
+		t.Errorf("Body = %q, want 'Not Found'", string(body))
 	}
 }
