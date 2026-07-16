@@ -455,11 +455,11 @@ func TestHTTPHandler_PanicRecovery(t *testing.T) {
 }
 
 // =============================================================================
-// NotFoundPath Tests
+// NotFound Tests
 // =============================================================================
 
-// TestHTTPHandler_NotFoundPath_Redirect tests that NotFoundPath redirects to specified path
-func TestHTTPHandler_NotFoundPath_Redirect(t *testing.T) {
+// TestHTTPHandler_NotFound_Redirect tests that NotFound redirects to specified path
+func TestHTTPHandler_NotFound_Redirect(t *testing.T) {
 	dynamic.RegisterPackage("handler-notfound-pkg", "v1", &mockHTTPTunnel{
 		invokeFunc: func(route, req string) string {
 			return "notfound-handler-response"
@@ -467,7 +467,7 @@ func TestHTTPHandler_NotFoundPath_Redirect(t *testing.T) {
 	})
 
 	e := lambdahttp.NewEngine([]lambdahttp.Option{
-		lambdahttp.WithPageNotFoundPath("/api/handler-notfound-pkg/v1/fallback"),
+		lambdahttp.WithPageNotFound("/api/handler-notfound-pkg/v1/fallback"),
 	}, nil)
 
 	// Request a non-existent path
@@ -488,10 +488,10 @@ func TestHTTPHandler_NotFoundPath_Redirect(t *testing.T) {
 	}
 }
 
-// TestHTTPHandler_NotFoundPath_ToHealthCheck tests NotFoundPath redirecting to health-check
-func TestHTTPHandler_NotFoundPath_ToHealthCheck(t *testing.T) {
+// TestHTTPHandler_NotFound_ToHealthCheck tests NotFound redirecting to health-check
+func TestHTTPHandler_NotFound_ToHealthCheck(t *testing.T) {
 	e := lambdahttp.NewEngine([]lambdahttp.Option{
-		lambdahttp.WithPageNotFoundPath("/health-check"),
+		lambdahttp.WithPageNotFound("/health-check"),
 	}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/nonexistent/path", nil)
@@ -511,8 +511,8 @@ func TestHTTPHandler_NotFoundPath_ToHealthCheck(t *testing.T) {
 	}
 }
 
-// TestHTTPHandler_NotFoundPath_Empty tests default 404 behavior when NotFoundPath is empty
-func TestHTTPHandler_NotFoundPath_Empty(t *testing.T) {
+// TestHTTPHandler_NotFound_Empty tests default 404 behavior when NotFound is empty
+func TestHTTPHandler_NotFound_Empty(t *testing.T) {
 	e := lambdahttp.NewEngine(nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/nonexistent/path", nil)

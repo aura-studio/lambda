@@ -110,7 +110,7 @@ func WithPrefixLink(srcPrefix string, dstPrefix string, methods ...string) Optio
 	})
 }
 
-func WithPageNotFoundPath(path string, methods ...string) Option {
+func WithPageNotFound(path string, methods ...string) Option {
 	return HttpOption(func(o *Options) {
 		o.PageNotFoundRules = append(o.PageNotFoundRules, LinkRule{Dst: normalizePath(path), Methods: methods})
 	})
