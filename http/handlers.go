@@ -333,15 +333,6 @@ func (e *Engine) Meta(c *gin.Context) {
 }
 
 func (e *Engine) PageNotFound(c *gin.Context) {
-	e.StaticLink(c)
-	if c.IsAborted() {
-		return
-	}
-	e.PrefixLink(c)
-	if c.IsAborted() {
-		return
-	}
-
 	for _, rule := range e.PageNotFoundRules {
 		if rule.Dst != "" && rule.MatchMethod(c.Request.Method) {
 			c.Request.Header.Set(HeaderOriginalPath, c.Request.URL.Path)
