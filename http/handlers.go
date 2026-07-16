@@ -74,6 +74,26 @@ func (e *Engine) HandleAllMethods(relativePath string, handlers ...gin.HandlerFu
 	}
 }
 
+// normalizePath canonicalizes a request path so link matching (StaticLink /
+// PrefixLink) compares against a single, predictable form.
+//
+// Rules:
+//   - "" becomes "/". This is a defensive fallback: per RFC 9112 a real HTTP
+//     client always sends at least "/" in the request line (typing
+//     "www.example.com" makes the browser send "GET / HTTP/1.1"), so over the
+//     wire "www.example.com" and "www.example.com/" are identical and the
+//     server sees "/" either way. An empty path only shows up for
+//     programmatically constructed requests that never touch the wire.
+//   - Backslashes are converted to forward slashes.
+//   - A leading "/" is added if missing.
+//   - Repeated slashes are collapsed ("/a//b" -> "/a/b").
+//   - A trailing slash is trimmed for non-root paths ("/foo/" -> "/foo"),
+//     while root "/" is left untouched.
+//
+// Note: this only normalizes the path once a request reaches the link
+// middleware. Plain routing still happens earlier in gin, where a non-root
+// trailing slash (e.g. "/foo/") is handled by gin's RedirectTrailingSlash with
+// a 301 to "/foo" before any handler runs.
 func normalizePath(path string) string {
 	if path == "" {
 		return "/"
