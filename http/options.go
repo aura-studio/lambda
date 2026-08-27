@@ -1,8 +1,6 @@
 package http
 
 import (
-	"strings"
-
 	"github.com/mohae/deepcopy"
 )
 
@@ -75,15 +73,21 @@ func WithCorsMode() Option {
 	})
 }
 
+// methodAll is the wildcard usable in LinkRule.Methods.
+const methodAll = "ALL"
+
+// MatchMethod reports whether the rule applies to the given request method.
+// The wire-method comparison is case-sensitive on purpose: per RFC 9110 §9.1
+// method tokens are case-sensitive, and gin's method trees are too. Treating a
+// case-variant method (e.g. "get") as GET here would rewrite a request that
+// the router can never match, bouncing it through NoRoute until the goroutine
+// stack overflows.
 func (r LinkRule) MatchMethod(method string) bool {
 	if len(r.Methods) == 0 {
 		return true
 	}
 	for _, m := range r.Methods {
-		if strings.EqualFold(m, "ALL") {
-			return true
-		}
-		if strings.EqualFold(m, method) {
+		if m == methodAll || m == method {
 			return true
 		}
 	}

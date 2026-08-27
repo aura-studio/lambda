@@ -333,6 +333,20 @@ func (e *Engine) Meta(c *gin.Context) {
 }
 
 func (e *Engine) PageNotFound(c *gin.Context) {
+	// Re-dispatch guard: a request that was already rewritten once carries
+	// X-Original-Path. Reaching NoRoute again means the rewritten request
+	// still matches no route — e.g. a stale or misconfigured rule Dst, or a
+	// case-variant method like "get" hitting a method-agnostic rule (gin's
+	// method trees are case-sensitive). Rewriting it again would re-enter
+	// this handler forever and overflow the goroutine stack.
+	// Caveat: a client-supplied X-Original-Path is indistinguishable from an
+	// engine-set one and would suppress the rewrite; accepted as a known
+	// trade-off since the worst outcome is a 404 for such requests.
+	if c.Request.Header.Get(HeaderOriginalPath) != "" {
+		c.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		c.Abort()
+		return
+	}
 	for _, rule := range e.PageNotFoundRules {
 		if rule.Dst != "" && rule.MatchMethod(c.Request.Method) {
 			c.Request.Header.Set(HeaderOriginalPath, c.Request.URL.Path)

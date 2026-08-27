@@ -531,3 +531,47 @@ func TestHTTPHandler_NotFound_Empty(t *testing.T) {
 		t.Errorf("Body = %q, want 'Not Found'", string(body))
 	}
 }
+
+// TestHTTPHandler_NotFound_LowercaseMethod tests that a case-variant method
+// ("get") does not match a PageNotFound rule configured for GET. Method tokens
+// are case-sensitive (RFC 9110 §9.1) and gin's method trees are too, so
+// rewriting such a request would loop through NoRoute until the goroutine
+// stack overflows. The request must get a plain 404 instead.
+func TestHTTPHandler_NotFound_LowercaseMethod(t *testing.T) {
+	e := lambdahttp.NewEngine([]lambdahttp.Option{
+		lambdahttp.WithPageNotFound("/health-check", http.MethodGet),
+	}, nil)
+
+	req := httptest.NewRequest("get", "/nonexistent/path", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+}
+
+// TestHTTPHandler_NotFound_RedispatchGuard tests that a rewritten request
+// which still matches no route is answered 404 by the re-dispatch guard
+// instead of being rewritten forever. Here a method-agnostic rule rewrites a
+// "get" request to /health-check, which gin can never route for a
+// case-variant method.
+func TestHTTPHandler_NotFound_RedispatchGuard(t *testing.T) {
+	e := lambdahttp.NewEngine([]lambdahttp.Option{
+		lambdahttp.WithPageNotFound("/health-check"),
+	}, nil)
+
+	req := httptest.NewRequest("get", "/nonexistent/path", nil)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+}
