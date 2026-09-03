@@ -5,6 +5,7 @@ import (
 	"github.com/aura-studio/lambda/http"
 	"github.com/aura-studio/lambda/reqresp"
 	"github.com/aura-studio/lambda/sqs"
+	"github.com/aura-studio/lambda/websocket"
 )
 
 func Serve(opts ...Option) error {
@@ -24,6 +25,9 @@ func Serve(opts ...Option) error {
 		return nil
 	case "reqresp":
 		reqresp.Serve(options.ReqResp, options.Dynamic)
+		return nil
+	case "websocket":
+		websocket.Serve(options.Websocket, options.Dynamic)
 		return nil
 	case "http":
 		fallthrough
