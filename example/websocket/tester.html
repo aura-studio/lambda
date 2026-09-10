@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebSocket 测试工具 — lambda/websocket</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2029;
+    --border: #2d3644;
+    --text: #d8dee6;
+    --muted: #7d8a9a;
+    --accent: #4da3ff;
+    --green: #3fb96f;
+    --red: #e5534b;
+    --yellow: #d4a72c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 20px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  h1 { font-size: 17px; font-weight: 600; }
+  h1 .sub { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 8px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px;
+  }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  label { font-size: 12px; color: var(--muted); }
+  input[type=text], textarea, select {
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; font-size: 13px; outline: none;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--accent); }
+  #url { flex: 1; min-width: 320px; }
+  #token { width: 140px; }
+  #path { width: 220px; }
+  textarea { width: 100%; height: 80px; resize: vertical; }
+  button {
+    background: var(--accent); color: #fff; border: none; border-radius: 6px;
+    padding: 8px 16px; font-size: 13px; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  button.danger { background: var(--red); }
+  .status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--muted);
+  }
+  .status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status.on { color: var(--green); border-color: var(--green); }
+  .status.on .dot { background: var(--green); }
+  .stats { margin-left: auto; font-size: 12px; color: var(--muted); font-family: "SF Mono", Menlo, monospace; }
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .quick button { font-size: 12px; padding: 5px 10px; }
+  #log {
+    height: 340px; overflow-y: auto;
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .entry { display: flex; gap: 8px; line-height: 1.5; word-break: break-all; }
+  .entry .time { color: var(--muted); flex-shrink: 0; }
+  .entry .tag { flex-shrink: 0; font-weight: 600; width: 34px; }
+  .entry.in .tag { color: var(--green); }
+  .entry.out .tag { color: var(--accent); }
+  .entry.sys .tag { color: var(--yellow); }
+  .entry.err .tag, .entry.err .msg { color: var(--red); }
+  .entry .msg { white-space: pre-wrap; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .hint code { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>WebSocket 测试工具<span class="sub">lambda/websocket example</span></h1>
+
+  <div class="panel">
+    <div class="row">
+      <input type="text" id="url" placeholder="wss://<api-id>.execute-api.<region>.amazonaws.com/dev">
+      <input type="text" id="token" placeholder="token(可选)">
+      <button id="btnConnect">连接</button>
+      <button id="btnDisconnect" class="danger" disabled>断开</button>
+      <span class="status" id="status"><span class="dot"></span><span id="statusText">未连接</span></span>
+      <span class="stats" id="stats">发 0 条 · 收 0 条</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label>心跳</label>
+      <select id="heartbeat">
+        <option value="0">关闭</option>
+        <option value="30">30 秒</option>
+        <option value="60">60 秒</option>
+        <option value="300">5 分钟</option>
+        <option value="480" selected>8 分钟(贴空闲超时)</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:5px">
+        <input type="checkbox" id="autoReconnect"> 断线 2 秒后自动重连
+      </label>
+    </div>
+    <p class="hint" style="margin-top:10px">
+      心跳发送 <code>{"action":"ping"}</code>（应用层消息，计入消息费）。浏览器无法发协议层 ping 帧；
+      空闲 10 分钟网关断连，故默认 8 分钟。服务端 ping 路由回 <code>{"pong":...}</code>。
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <input type="text" id="path" value="/echo/v1/echo" placeholder="/package/version/route">
+    </div>
+    <div style="height:8px"></div>
+    <textarea id="payload" spellcheck="false">{"hello": "world"}</textarea>
+    <div class="quick">
+      <button id="btnSend">发送信封</button>
+      <button class="ghost" data-fill='{"path":"/echo/v1/echo","payload":{"hello":"world"}}'>echo 示例</button>
+      <button class="ghost" data-fill='{"path":"/echo/v1/time"}'>time 示例</button>
+      <button class="ghost" data-fill='{"action":"ping"}'>ping(心跳路由)</button>
+      <button class="ghost" data-fill='{"path":"/echo/v1/nosuch"}'>错误路由(演示 error 回包)</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="margin-bottom:10px">
+      <label>消息日志</label>
+      <button class="ghost" id="btnClear" style="margin-left:auto">清空</button>
+    </div>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var ws = null;
+  var hbTimer = null;
+  var sent = 0, recv = 0;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var logEl = $("log");
+
+  function ts() {
+    var d = new Date();
+    function p(n, l) { return String(n).padStart(l || 2, "0"); }
+    return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()) + "." + p(d.getMilliseconds(), 3);
+  }
+
+  function log(kind, msg) {
+    var tag = { in: "◀ 收", out: "▶ 发", sys: "●", err: "✕" }[kind] || "●";
+    var div = document.createElement("div");
+    div.className = "entry " + kind;
+    var t = document.createElement("span"); t.className = "time"; t.textContent = ts();
+    var g = document.createElement("span"); g.className = "tag"; g.textContent = tag;
+    var m = document.createElement("span"); m.className = "msg"; m.textContent = msg;
+    div.appendChild(t); div.appendChild(g); div.appendChild(m);
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function updateStats() {
+    $("stats").textContent = "发 " + sent + " 条 · 收 " + recv + " 条";
+  }
+
+  function setStatus(on, text) {
+    $("status").className = "status" + (on ? " on" : "");
+    $("statusText").textContent = text;
+    $("btnConnect").disabled = on;
+    $("btnDisconnect").disabled = !on;
+  }
+
+  function stopHeartbeat() {
+    if (hbTimer) { clearInterval(hbTimer); hbTimer = null; }
+  }
+
+  function startHeartbeat() {
+    stopHeartbeat();
+    var sec = parseInt($("heartbeat").value, 10);
+    if (!sec || !ws || ws.readyState !== 1) return;
+    hbTimer = setInterval(function () {
+      if (ws && ws.readyState === 1) {
+        sendRaw(JSON.stringify({ action: "ping" }), true);
+      }
+    }, sec * 1000);
+  }
+
+  function sendRaw(text, isHeartbeat) {
+    try {
+      ws.send(text);
+      sent++;
+      if (!isHeartbeat) log("out", text);
+      updateStats();
+    } catch (e) {
+      log("err", "发送失败: " + e.message);
+    }
+  }
+
+  function connect() {
+    var url = $("url").value.trim();
+    if (!url) { log("err", "请填写 WebSocket 地址"); return; }
+    var token = $("token").value.trim();
+    if (token) url += (url.indexOf("?") === -1 ? "?" : "&") + "token=" + encodeURIComponent(token);
+
+    log("sys", "正在连接 " + url);
+    try { ws = new WebSocket(url); } catch (e) { log("err", "地址无效: " + e.message); return; }
+
+    ws.onopen = function () {
+      setStatus(true, "已连接");
+      log("sys", "连接已建立");
+      startHeartbeat();
+    };
+    ws.onmessage = function (ev) {
+      recv++;
+      var text = typeof ev.data === "string" ? ev.data : "[binary " + ev.data.byteLength + "B]";
+      log("in", text);
+      updateStats();
+    };
+    ws.onclose = function (ev) {
+      setStatus(false, "未连接");
+      stopHeartbeat();
+      log("sys", "连接关闭 code=" + ev.code + (ev.reason ? " reason=" + ev.reason : "") + (ev.wasClean ? "" : " (异常断开)"));
+      ws = null;
+      if ($("autoReconnect").checked) {
+        log("sys", "2 秒后自动重连…");
+        setTimeout(function () { if (!ws) connect(); }, 2000);
+      }
+    };
+    ws.onerror = function () {
+      log("err", "连接出错(若一直失败,检查地址/stage 是否正确,$connect 可能被拒绝)");
+    };
+  }
+
+  function disconnect() {
+    stopHeartbeat();
+    if (ws) { ws.close(1000, "client close"); }
+  }
+
+  function sendEnvelope() {
+    if (!ws || ws.readyState !== 1) { log("err", "未连接"); return; }
+    var path = $("path").value.trim();
+    var raw = $("payload").value.trim();
+
+    var body;
+    try {
+      var parsed = raw ? JSON.parse(raw) : undefined;
+      body = { path: path, payload: parsed };
+      if (parsed === undefined) delete body.payload;
+    } catch (e) {
+      // payload 不是合法 JSON 时按纯文本发送
+      body = { path: path, payload: raw };
+    }
+    sendRaw(JSON.stringify(body));
+  }
+
+  $("btnConnect").onclick = connect;
+  $("btnDisconnect").onclick = disconnect;
+  $("btnSend").onclick = sendEnvelope;
+  $("btnClear").onclick = function () { logEl.innerHTML = ""; };
+  $("heartbeat").onchange = startHeartbeat;
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-fill]"), function (btn) {
+    btn.onclick = function () {
+      var obj = JSON.parse(btn.getAttribute("data-fill"));
+      if (obj.action === "ping") {
+        if (!ws || ws.readyState !== 1) { log("err", "未连接"); return; }
+        sendRaw(JSON.stringify(obj));
+        return;
+      }
+      $("path").value = obj.path || "";
+      $("payload").value = obj.payload !== undefined ? JSON.stringify(obj.payload) : "";
+      sendEnvelope();
+    };
+  });
+
+  window.addEventListener("beforeunload", disconnect);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信封 · The Envelope — lambda/tunnelkit 设计注解</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #081120;
+  --panel: rgba(12, 26, 45, 0.66);
+  --line: rgba(96, 165, 220, 0.16);
+  --line-strong: rgba(96, 165, 220, 0.38);
+  --ink: #dce8f5;
+  --dim: #8ba3c0;
+  --faint: #5b7191;
+  --cyan: #56c8dc;
+  --amber: #ffc857;
+  --pink: #ff7a90;
+  --green: #6ee7a8;
+  --mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Noto Sans SC", sans-serif;
+  font-weight: 300;
+  line-height: 1.85;
+  overflow-x: hidden;
+  /* blueprint grid */
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(86, 200, 220, 0.09), transparent 60%),
+    linear-gradient(rgba(96, 165, 220, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96, 165, 220, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(96, 165, 220, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96, 165, 220, 0.028) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    120px 120px,
+    120px 120px,
+    24px 24px,
+    24px 24px;
+}
+::selection { background: rgba(86, 200, 220, 0.28); }
+
+.wrap { max-width: 1060px; margin: 0 auto; padding: 0 28px; }
+
+/* ============ hero ============ */
+.hero { min-height: 92vh; display: flex; flex-direction: column; justify-content: center; position: relative; padding: 80px 0 60px; }
+.kicker {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.32em;
+  color: var(--cyan); text-transform: uppercase; margin-bottom: 26px;
+  display: flex; align-items: center; gap: 14px;
+}
+.kicker::before { content: ""; width: 46px; height: 1px; background: var(--cyan); display: inline-block; }
+h1 {
+  font-family: "Noto Serif SC", serif; font-weight: 900;
+  font-size: clamp(52px, 9vw, 118px); line-height: 1.06; letter-spacing: 0.02em;
+}
+h1 .en {
+  display: block; font-family: var(--mono); font-weight: 400; font-style: italic;
+  font-size: clamp(15px, 2.2vw, 22px); color: var(--faint); letter-spacing: 0.14em;
+  margin-top: 18px;
+}
+.thesis {
+  margin-top: 44px; max-width: 640px; font-size: clamp(15px, 1.8vw, 18px);
+  color: var(--dim); font-weight: 300;
+}
+.thesis strong { color: var(--ink); font-weight: 500; }
+.thesis code, .inline-code {
+  font-family: var(--mono); font-size: 0.86em; color: var(--amber);
+  background: rgba(255, 200, 87, 0.08); padding: 2px 7px; border-radius: 4px;
+  border: 1px solid rgba(255, 200, 87, 0.18); white-space: nowrap;
+}
+.envelope-badge {
+  margin-top: 40px; display: inline-flex; align-items: center; gap: 0;
+  font-family: var(--mono); font-size: clamp(12px, 1.6vw, 15px);
+  border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden;
+  width: fit-content;
+}
+.envelope-badge span { padding: 10px 16px; }
+.envelope-badge .b-meta { color: var(--cyan); border-right: 1px dashed var(--line-strong); background: rgba(86, 200, 220, 0.06); }
+.envelope-badge .b-data { color: var(--amber); background: rgba(255, 200, 87, 0.06); }
+.scroll-hint {
+  position: absolute; bottom: 26px; left: 28px; font-family: var(--mono);
+  font-size: 11px; letter-spacing: 0.3em; color: var(--faint);
+  animation: bob 2.6s ease-in-out infinite;
+}
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
+
+/* ============ sections ============ */
+section { padding: 110px 0 30px; }
+.sec-head { display: flex; align-items: baseline; gap: 22px; margin-bottom: 18px; }
+.sec-no {
+  font-family: var(--mono); font-size: 13px; color: var(--cyan);
+  border: 1px solid var(--line-strong); padding: 3px 10px; border-radius: 3px;
+  letter-spacing: 0.12em; flex-shrink: 0; transform: translateY(-4px);
+}
+h2 { font-family: "Noto Serif SC", serif; font-weight: 900; font-size: clamp(26px, 4vw, 40px); letter-spacing: 0.03em; }
+.sec-sub { color: var(--dim); max-width: 720px; margin-bottom: 46px; font-size: 15px; }
+
+/* drafting panel with corner ticks */
+.panel {
+  position: relative; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; backdrop-filter: blur(6px);
+}
+.panel::before, .panel::after,
+.ticks::before, .ticks::after {
+  content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none;
+}
+.panel::before { top: -1px; left: -1px; border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan); border-top-left-radius: 8px; }
+.panel::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--cyan); border-right: 2px solid var(--cyan); border-bottom-right-radius: 8px; }
+
+/* three-layer cards */
+.layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.layer-card { padding: 26px 24px 22px; }
+.layer-card .lno { font-family: var(--mono); font-size: 26px; color: var(--faint); }
+.layer-card h3 { font-size: 17px; font-weight: 700; margin: 12px 0 4px; }
+.layer-card .who { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; margin-bottom: 14px; display: inline-block; padding: 2px 9px; border-radius: 999px; }
+.layer-card p { font-size: 13.5px; color: var(--dim); line-height: 1.8; }
+.layer-card p code { font-family: var(--mono); font-size: 0.9em; color: var(--cyan); }
+.l-aws .who { color: var(--pink); border: 1px solid rgba(255, 122, 144, 0.35); }
+.l-env .who { color: var(--amber); border: 1px solid rgba(255, 200, 87, 0.35); }
+.l-app .who { color: var(--green); border: 1px solid rgba(110, 231, 168, 0.35); }
+.l-env { outline: 1px solid rgba(255, 200, 87, 0.28); outline-offset: -1px; }
+.l-env .lno { color: var(--amber); }
+
+/* ============ journey stepper ============ */
+.journey { padding: 34px 30px 30px; }
+.j-track { display: flex; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 6px 0; }
+.j-node { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; background: none; border: none; padding: 4px 2px; }
+.j-node .dot {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid var(--faint); background: var(--bg);
+  transition: all 0.35s;
+}
+.j-node .lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); transition: color 0.35s; white-space: nowrap; }
+.j-node.done .dot { border-color: var(--cyan); background: rgba(86, 200, 220, 0.25); }
+.j-node.done .lbl { color: var(--dim); }
+.j-node.active .dot { border-color: var(--amber); background: var(--amber); box-shadow: 0 0 16px rgba(255, 200, 87, 0.55); }
+.j-node.active .lbl { color: var(--amber); }
+.j-edge { flex: 1; min-width: 18px; height: 1px; background: repeating-linear-gradient(90deg, var(--faint) 0 5px, transparent 5px 10px); opacity: 0.5; margin: 0 8px; transform: translateY(-13px); }
+.j-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.j-title .step { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: 0.14em; }
+.j-note { color: var(--dim); font-size: 13.5px; max-width: 780px; margin-bottom: 20px; }
+.j-note em { color: var(--amber); font-style: normal; font-weight: 500; }
+.j-note strong { color: var(--ink); font-weight: 500; }
+
+.packet {
+  font-family: var(--mono); font-size: 12.8px; line-height: 1.9;
+  background: rgba(4, 10, 20, 0.85); border: 1px solid var(--line);
+  border-radius: 6px; padding: 20px 22px; overflow-x: auto; white-space: pre;
+  min-height: 120px; transition: opacity 0.22s, transform 0.22s;
+}
+.packet.fading { opacity: 0; transform: translateY(6px); }
+.tk-key { color: #9ecbff; }
+.tk-str { color: #b8e6a1; }
+.tk-num { color: #e8c07d; }
+.tk-punct { color: #6b829f; }
+.tk-b64 {
+  color: var(--amber); background: rgba(255, 200, 87, 0.13);
+  border-bottom: 1px dashed var(--amber); cursor: pointer; border-radius: 3px; padding: 0 2px;
+}
+.tk-b64:hover { background: rgba(255, 200, 87, 0.24); }
+.tk-err { color: var(--pink); background: rgba(255, 122, 144, 0.10); border-bottom: 1px dashed var(--pink); border-radius: 3px; padding: 0 2px; }
+.tk-hl { background: rgba(86, 200, 220, 0.12); border-radius: 3px; padding: 0 2px; }
+.j-controls { display: flex; align-items: center; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+.btn {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+  background: none; color: var(--cyan); border: 1px solid var(--line-strong);
+  padding: 9px 20px; border-radius: 4px; cursor: pointer; transition: all 0.25s;
+}
+.btn:hover { border-color: var(--cyan); background: rgba(86, 200, 220, 0.08); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn.primary { color: var(--bg); background: var(--cyan); border-color: var(--cyan); font-weight: 600; }
+.btn.primary:hover { background: #7adcee; filter: brightness(1.12); }
+.j-hint { font-family: var(--mono); font-size: 11px; color: var(--faint); margin-left: auto; }
+
+/* ============ why grid ============ */
+.whys { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.why { padding: 26px 24px; }
+.why h3 { font-size: 16px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.why h3 .glyph { font-family: var(--mono); color: var(--cyan); font-size: 14px; border: 1px solid var(--line-strong); width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; }
+.why p { font-size: 13.5px; color: var(--dim); line-height: 1.85; }
+.why p code { font-family: var(--mono); font-size: 0.88em; color: var(--cyan); }
+.why.hero-why { grid-column: 1 / -1; outline: 1px solid rgba(86, 200, 220, 0.25); outline-offset: -1px; }
+.why.hero-why h3 { color: var(--cyan); }
+
+/* ============ refs ============ */
+.refs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.ref { padding: 24px 22px; display: flex; flex-direction: column; gap: 10px; transition: transform 0.3s, border-color 0.3s; }
+.ref:hover { transform: translateY(-4px); border-color: var(--line-strong); }
+.ref .rname { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--ink); }
+.ref .rtag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--cyan); text-transform: uppercase; }
+.ref p { font-size: 13px; color: var(--dim); line-height: 1.8; }
+.ref p code { font-family: var(--mono); font-size: 0.88em; color: var(--amber); }
+.ref .borrow { margin-top: auto; font-size: 12px; color: var(--faint); border-top: 1px dashed var(--line); padding-top: 10px; }
+.ref .borrow em { color: var(--green); font-style: normal; }
+
+/* ============ footer ============ */
+footer { padding: 120px 0 90px; text-align: center; }
+.takeaway {
+  font-family: "Noto Serif SC", serif; font-weight: 600;
+  font-size: clamp(19px, 3vw, 28px); line-height: 1.7; max-width: 760px; margin: 0 auto;
+}
+.takeaway span { color: var(--amber); }
+footer .src { margin-top: 34px; font-family: var(--mono); font-size: 12px; color: var(--faint); letter-spacing: 0.06em; }
+footer .src code { color: var(--cyan); }
+
+/* reveal on scroll */
+.rv { opacity: 0; transform: translateY(26px); transition: opacity 0.7s cubic-bezier(.2,.7,.3,1), transform 0.7s cubic-bezier(.2,.7,.3,1); }
+.rv.in { opacity: 1; transform: none; }
+
+@media (max-width: 860px) {
+  .layers, .refs { grid-template-columns: 1fr; }
+  .whys { grid-template-columns: 1fr; }
+  .j-node .lbl { display: none; }
+  .journey { padding: 22px 16px; }
+  section { padding-top: 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= HERO ================= -->
+<header class="hero wrap">
+  <div class="kicker">lambda / tunnelkit · 设计注解</div>
+  <h1>信封<span class="en">The Envelope — {"meta":{…}, "data":"…"}</span></h1>
+  <p class="thesis">
+    它不是 AWS 的要求，也不出现在任何 Lambda 文档里。
+    它是 <code>Invoke(string, string) string</code> 这个签名的<strong>必然产物</strong>：
+    当一根 string 既要运结构、又要运二进制、还要运元信息时，你必须自己造一个信封。
+  </p>
+  <div class="envelope-badge">
+    <span class="b-meta">"meta": { … }  ← 旁路</span>
+    <span class="b-data">"data": "base64…"  ← 载荷</span>
+  </div>
+  <div class="scroll-hint">SCROLL ▾</div>
+</header>
+
+<!-- ================= 01 三层格式 ================= -->
+<section class="wrap rv" id="layers">
+  <div class="sec-head"><span class="sec-no">01</span><h2>先分清三层格式</h2></div>
+  <p class="sec-sub">讨论"信封是不是必须的"之前，先看清它在哪一层。三层里只有第一层出自 AWS 之手。</p>
+  <div class="layers">
+    <div class="panel layer-card l-aws">
+      <div class="lno">①</div>
+      <h3>AWS 强制格式</h3>
+      <span class="who">API Gateway ↔ Lambda</span>
+      <p><code>APIGatewayWebsocketProxyRequest</code> 进，<code>APIGatewayProxyResponse{statusCode}</code> 出。这是唯一由 AWS 定义、不可协商的部分。<strong style="color:var(--ink)">信封不在这层。</strong></p>
+    </div>
+    <div class="panel layer-card l-env">
+      <div class="lno">②</div>
+      <h3>框架内部约定</h3>
+      <span class="who">engine ↔ tunnel · 信封在此</span>
+      <p>引擎把请求装进 <code>{"meta","data":base64}</code> 交给 <code>tunnel.Invoke</code>，返回时再拆包。AWS 永远看不到它——它止步于进程内部。</p>
+    </div>
+    <div class="panel layer-card l-app">
+      <div class="lno">③</div>
+      <h3>应用自定义协议</h3>
+      <span class="who">client ↔ API Gateway</span>
+      <p>客户端看到的 <code>{"path","payload"}</code> / <code>{"path","error"}</code>，是引擎拆箱后重新组装的。改它只需改引擎的回包函数，与信封无关。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= journey ================= -->
+<section class="wrap rv" id="journey-sec">
+  <div class="sec-head"><span class="sec-no">02</span><h2>一个数据包的旅程</h2></div>
+  <p class="sec-sub">跟着 <code style="font-family:var(--mono);color:var(--amber)">{"hello":"world"}</code> 走完全程。点击节点跳步，点击报文里<span style="color:var(--amber)">黄色的 base64</span> 可以解码/装回。</p>
+  <div class="panel journey">
+    <div class="j-track" id="jTrack"></div>
+    <div class="j-title"><span class="step" id="jStep"></span><span id="jTitle"></span></div>
+    <p class="j-note" id="jNote"></p>
+    <div class="packet" id="jPacket"></div>
+    <div class="j-controls">
+      <button class="btn" id="jPrev">← 上一步</button>
+      <button class="btn primary" id="jNext">下一步 →</button>
+      <span class="j-hint" id="jHint"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 03 必要性 ================= -->
+<section class="wrap rv" id="why">
+  <div class="sec-head"><span class="sec-no">03</span><h2>为什么必须有它</h2></div>
+  <p class="sec-sub">四条各自独立的约束，收敛出同一个解。删掉信封，等于同时推翻这四条。</p>
+  <div class="whys">
+    <div class="panel why hero-why">
+      <h3><span class="glyph">∴</span>根源：单字符串通道</h3>
+      <p><code>dynamic.Tunnel</code> 的签名是 <code>Invoke(string, string) string</code>——进出各只有一根 string。要在这根 string 里同时塞进"结构化的寻址 + 任意字节的载荷 + 旁路元信息"，除了自编码一个信封，别无选择。这不是审美决策，是类型系统的硬约束。</p>
+    </div>
+    <div class="panel why">
+      <h3><span class="glyph">⇄</span>meta：不污染载荷的旁路</h3>
+      <p>HTTP 引擎要给响应标 <code>ContentType</code>/<code>Status</code>，调用链要传 <code>traceId</code>——这些信息属于"运输"，不属于"货物"。meta 之于 data，正如 HTTP headers 之于 body。</p>
+    </div>
+    <div class="panel why">
+      <h3><span class="glyph">␍</span>base64：二进制过文本桥</h3>
+      <p>JSON 字符串无法安全承载任意字节（控制字符、非法 UTF-8 都会炸）。载荷可能是 protobuf、图片、压缩包——base64 用 33% 的体积换"任何字节都能活着过桥"。</p>
+    </div>
+    <div class="panel why">
+      <h3><span class="glyph">≠</span>meta.Error：两种失败的分离</h3>
+      <p>"系统坏了"（引擎 panic → 500）和"业务拒绝"（余额不足 → <code>meta.Error</code>）是性质完全不同的失败。信封让业务错误搭乘正常响应回家，调用方得以区分 retry 还是放弃。</p>
+    </div>
+    <div class="panel why">
+      <h3><span class="glyph">×3</span>兼容性红利：一个 tunnel，三个引擎</h3>
+      <p>信封是稳定契约：http / sqs / websocket 三个引擎说同一种"信封语"，于是 slots 现成的 tunnel 零改动就被 WebSocket 复用。契约越稳定，生态越敢生长。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 04 参考来源 ================= -->
+<section class="wrap rv" id="refs">
+  <div class="sec-head"><span class="sec-no">04</span><h2>它站在哪些肩膀上</h2></div>
+  <p class="sec-sub">信封没有发明任何新东西——它只是把几个久经考验的模式，缩进了进程内的一根 string 里。</p>
+  <div class="refs">
+    <div class="panel ref">
+      <span class="rtag">RFC 9110</span>
+      <div class="rname">HTTP headers / body</div>
+      <p>元信息与载荷分离的祖师爷。header 改名不影响 body，body 换编码不影响 header。</p>
+      <div class="borrow">借来 → <em>meta 与 data 的分层</em></div>
+    </div>
+    <div class="panel ref">
+      <span class="rtag">gRPC</span>
+      <div class="rname">metadata + message framing</div>
+      <p>gRPC 的 metadata（键值对）与二进制 message 分帧传输，错误状态走 trailer 而非消息体。</p>
+      <div class="borrow">借来 → <em>错误不走载荷通道</em></div>
+    </div>
+    <div class="panel ref">
+      <span class="rtag">JSON-RPC 2.0</span>
+      <div class="rname">method / params / error</div>
+      <p>单通道 RPC 的经典信封：<code>{"method","params"}</code> 调用，<code>{"error"}</code> 与 <code>{"result"}</code> 互斥返回。</p>
+      <div class="borrow">借来 → <em>path/payload 与 error 的形状</em></div>
+    </div>
+    <div class="panel ref">
+      <span class="rtag">RFC 2045 · MIME</span>
+      <div class="rname">Base64</div>
+      <p>1996 年为了让二进制附件穿过只认 7-bit 文本的邮件系统而生。同样的桥，同样的船。</p>
+      <div class="borrow">借来 → <em>data 字段的编码方式</em></div>
+    </div>
+    <div class="panel ref">
+      <span class="rtag">AWS 自家</span>
+      <div class="rname">body + isBase64Encoded</div>
+      <p>API Gateway 代理事件里，AWS 自己就用一模一样的招：JSON 事件塞二进制 body，配一个 <code>isBase64Encoded</code> 标记。</p>
+      <div class="borrow">佐证 → <em>同问题，同解</em></div>
+    </div>
+    <div class="panel ref">
+      <span class="rtag">本仓旁证</span>
+      <div class="rname">sqs protobuf Request</div>
+      <p>同仓库 sqs 引擎用 protobuf 定义 <code>Request{path, payload, correlation_id}</code>——序列化方式不同，信封思想相同。</p>
+      <div class="borrow">佐证 → <em>与序列化无关的必然</em></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= footer ================= -->
+<footer class="wrap rv">
+  <p class="takeaway">信封是框架内部的<span>运输箱</span>。<br>客户端收到的是拆箱后的货物，不是箱子。</p>
+  <p class="src">出处：sqs/handlers.go 的「封装请求 / 解封装响应」· http/handlers.go 同构 · websocket/handlers.go 继承 · tunnelkit 收敛</p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- helpers ---------- */
+  function b64encode(s) { return btoa(unescape(encodeURIComponent(s))); }
+  function b64decode(s) { try { return decodeURIComponent(escape(atob(s))); } catch (e) { return "[解码失败]"; } }
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  /* JSON 语法高亮;hl = {b64: [...], err: [...], hl: [...]} 指定特殊着色的字符串值 */
+  function renderJSON(text, marks) {
+    marks = marks || {};
+    var out = "", i = 0;
+    while (i < text.length) {
+      var ch = text[i];
+      if (ch === '"') {
+        var j = i + 1;
+        while (j < text.length && (text[j] !== '"' || text[j - 1] === "\\")) j++;
+        var tok = text.slice(i, j + 1);
+        var raw = tok.slice(1, -1);
+        var cls = "tk-str";
+        if (marks.b64 && marks.b64.indexOf(raw) !== -1) cls = "tk-b64";
+        else if (marks.err && marks.err.indexOf(raw) !== -1) cls = "tk-err";
+        else if (marks.hl && marks.hl.indexOf(raw) !== -1) cls = "tk-hl";
+        else {
+          /* key 判定: 后面紧跟冒号 */
+          var k = j + 1;
+          while (k < text.length && /\s/.test(text[k])) k++;
+          if (text[k] === ":") cls = "tk-key";
+        }
+        var inner = esc(tok);
+        if (cls === "tk-b64") {
+          out += '<span class="' + cls + '" data-b64="' + esc(raw) + '" title="点击解码/装回">' + inner + "</span>";
+        } else {
+          out += '<span class="' + cls + '">' + inner + "</span>";
+        }
+        i = j + 1;
+      } else if (/[0-9]/.test(ch) || (ch === "-" && /[0-9]/.test(text[i + 1] || ""))) {
+        var m = text.slice(i).match(/^-?\d+(\.\d+)?/);
+        if (!m) { out += esc(ch); i++; continue; }
+        out += '<span class="tk-num">' + m[0] + "</span>";
+        i += m[0].length;
+      } else if ("{}[]:,".indexOf(ch) !== -1) {
+        out += '<span class="tk-punct">' + ch + "</span>";
+        i++;
+      } else {
+        out += esc(ch);
+        i++;
+      }
+    }
+    return out;
+  }
+
+  /* ---------- journey data ---------- */
+  var reqPayload = '{"hello":"world"}';
+  var respPayload = '{"route":"/echo","echo":{"hello":"world"}}';
+  var clientReq = '{"path":"/echo/v1/echo","payload":' + reqPayload + "}";
+  var clientResp = '{"path":"/echo/v1/echo","payload":' + respPayload + "}";
+  var clientErr = '{"path":"/echo/v1/nosuch","error":"unknown route: /nosuch"}';
+
+  function pretty(s) { return JSON.stringify(JSON.parse(s), null, 2); }
+
+  var hops = [
+    {
+      node: "浏览器",
+      title: "应用协议：客户端只说自己懂的话",
+      note: "浏览器发出的是<strong>应用层信封</strong>（第③层）：<em>path</em> 寻址 + <em>payload</em> 货物。它对框架内部一无所知，也不需要知道。",
+      packet: function () { return renderJSON(pretty(clientReq), { hl: ["/echo/v1/echo"] }); },
+      hint: "JSON · 明文 · 客户端协议"
+    },
+    {
+      node: "API Gateway",
+      title: "AWS 的包装：这是唯一由 AWS 定义的格式",
+      note: "网关把消息包成 Lambda 事件。注意最后两个字段——<strong>AWS 自己</strong>在 JSON 事件里运二进制 body 时，用的也是 <em>body + isBase64Encoded</em> 的 base64 方案。同问题，同解。",
+      packet: function () {
+        var ev = {
+          requestContext: {
+            connectionId: "d4NsefByoAMCIVA=",
+            routeKey: "$default",
+            eventType: "MESSAGE",
+            domainName: "abc123.execute-api.ap-southeast-1.amazonaws.com",
+            stage: "dev"
+          },
+          body: clientReq,
+          isBase64Encoded: false
+        };
+        return renderJSON(JSON.stringify(ev, null, 2), { hl: ["$default"], b64: [] });
+      },
+      hint: "AWS 强制格式 · 第①层"
+    },
+    {
+      node: "Engine → Tunnel",
+      title: "装箱：信封在这里诞生",
+      note: "引擎取出 body 里的 payload，连同 meta 一起装进信封，交给 <strong>Invoke(string, string) string</strong>。<em>黄色的 base64</em> 就是那批货——点它可以开箱验货。",
+      packet: function () {
+        var env = { meta: {}, data: b64encode(reqPayload) };
+        return renderJSON(JSON.stringify(env, null, 2), { b64: [b64encode(reqPayload)] });
+      },
+      hint: "框架信封 · 第②层 · 单字符串通道"
+    },
+    {
+      node: "Tunnel 内部",
+      title: "拆箱：业务代码只见货物，不见箱子",
+      note: "tunnelkit 拆信封、解 base64，handler 拿到的只有 <strong>c.Payload</strong>（原始字节）和 <strong>c.Meta</strong>。信封样板被收敛进框架——这就是 tunnelkit 存在的理由。",
+      packet: function () {
+        return renderJSON(
+          '// tunnelkit handler 视角\nfunc onEcho(c *tunnelkit.Context) error {\n    // c.Payload = ' + reqPayload + '\n    // c.Meta    = {}\n    return c.JSON(map[string]any{\n        "route": c.Route,   // "/echo"\n        "echo":  rawOrString(c.Payload),\n    })\n}',
+          {}
+        );
+      },
+      hint: "业务代码 · 无 base64 · 无信封"
+    },
+    {
+      node: "Tunnel → Engine → 客户端",
+      title: "回箱再拆箱：信封止步于引擎",
+      note: "tunnel 把响应装回信封返回；引擎拆箱，<strong>剥掉 base64</strong>，重组成应用协议推给客户端。客户端永远没见过信封——它只收到拆箱后的货物。",
+      packet: function () {
+        var wire = "// ① tunnel 返回 (信封 · 内部)\n" +
+          JSON.stringify({ meta: {}, data: b64encode(respPayload) }, null, 2) +
+          "\n\n// ② 引擎拆箱后推给客户端 (应用协议 · 外部)\n" +
+          pretty(clientResp);
+        return renderJSON(wire, { b64: [b64encode(respPayload)] });
+      },
+      hint: "信封越不过引擎边界"
+    },
+    {
+      node: "错误路径",
+      title: "meta.Error：业务失败搭乘正常响应回家",
+      note: "业务错误（如未知路由）写进 <em>meta.Error</em>，引擎翻译为客户端的 <em>error</em> 字段。它和「系统坏了」（panic → 500）是两条独立通道——调用方据此决定重试还是放弃。",
+      packet: function () {
+        var wire = "// ① tunnel 返回\n" +
+          JSON.stringify({ meta: { Error: "unknown route: /nosuch" }, data: "" }, null, 2) +
+          "\n\n// ② 客户端收到\n" +
+          pretty(clientErr);
+        return renderJSON(wire, { err: ["unknown route: /nosuch"] });
+      },
+      hint: "错误约定 · 与传输错误解耦"
+    }
+  ];
+
+  var cur = 0;
+  var track = document.getElementById("jTrack");
+  var packetEl = document.getElementById("jPacket");
+
+  hops.forEach(function (h, idx) {
+    var node = document.createElement("button");
+    node.className = "j-node";
+    node.innerHTML = '<span class="dot"></span><span class="lbl">' + h.node + "</span>";
+    node.onclick = function () { go(idx); };
+    track.appendChild(node);
+    if (idx < hops.length - 1) {
+      var edge = document.createElement("div");
+      edge.className = "j-edge";
+      track.appendChild(edge);
+    }
+  });
+
+  function render() {
+    var nodes = track.querySelectorAll(".j-node");
+    nodes.forEach(function (n, i) {
+      n.classList.toggle("active", i === cur);
+      n.classList.toggle("done", i < cur);
+    });
+    document.getElementById("jStep").textContent = "HOP " + (cur + 1) + " / " + hops.length;
+    document.getElementById("jTitle").textContent = hops[cur].title;
+    document.getElementById("jNote").innerHTML = hops[cur].note;
+    document.getElementById("jHint").textContent = hops[cur].hint;
+    document.getElementById("jPrev").disabled = cur === 0;
+    document.getElementById("jNext").disabled = cur === hops.length - 1;
+
+    packetEl.classList.add("fading");
+    setTimeout(function () {
+      packetEl.innerHTML = hops[cur].packet();
+      packetEl.classList.remove("fading");
+    }, 180);
+  }
+
+  function go(i) {
+    cur = Math.max(0, Math.min(hops.length - 1, i));
+    render();
+  }
+
+  document.getElementById("jPrev").onclick = function () { go(cur - 1); };
+  document.getElementById("jNext").onclick = function () { go(cur + 1); };
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") go(cur + 1);
+    if (e.key === "ArrowLeft") go(cur - 1);
+  });
+
+  /* base64 解码/装回(事件委托) */
+  packetEl.addEventListener("click", function (e) {
+    var t = e.target.closest(".tk-b64");
+    if (!t) return;
+    var raw = t.getAttribute("data-b64");
+    if (t.getAttribute("data-open") === "1") {
+      t.textContent = '"' + raw + '"';
+      t.setAttribute("data-open", "0");
+    } else {
+      t.textContent = '"' + b64decode(raw) + '"';
+      t.setAttribute("data-open", "1");
+    }
+  });
+
+  render();
+
+  /* ---------- scroll reveal ---------- */
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".rv").forEach(function (el) { io.observe(el); });
+})();
+</script>
+</body>
+</html>
